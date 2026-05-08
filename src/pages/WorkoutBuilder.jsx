@@ -6,17 +6,73 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
+const MUSCLE_GROUPS = ['Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const GROUP_COLORS = {
-  Arms: { bg: 'rgba(240,158,40,.15)', color: '#F4B455' },
-  Back: { bg: 'rgba(80,150,230,.15)', color: '#6BB5F5' },
-  Legs: { bg: 'rgba(230,70,60,.15)', color: '#F88080' },
-  Core: { bg: 'rgba(50,200,140,.15)', color: '#5DD99A' },
+  Arms:      { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
+  Back:      { bg: 'rgba(80,150,230,.15)',  color: '#6BB5F5' },
+  Legs:      { bg: 'rgba(230,70,60,.15)',   color: '#F88080' },
+  Core:      { bg: 'rgba(50,200,140,.15)',  color: '#5DD99A' },
   Shoulders: { bg: 'rgba(160,100,230,.15)', color: '#C084F5' },
 }
 
 function GroupBadge({ group }) {
   const c = GROUP_COLORS[group] || { bg: 'var(--br)', color: 'var(--mu)' }
   return <span style={{ padding: '2px 7px', borderRadius: 20, fontSize: 11, fontWeight: 500, background: c.bg, color: c.color }}>{group}</span>
+}
+
+// Weighted randomizer — respects bias sliders
+function weightedRandomize(allExercises, randGroups, randBias, randDiff, randCount) {
+  const activeGroups = randGroups.length > 0 ? randGroups : MUSCLE_GROUPS
+
+  // Filter by difficulty
+  const pool = allExercises.filter(e => {
+    if (!activeGroups.includes(e.muscle_group)) return false
+    if (randDiff !== 'All' && e.difficulty !== randDiff) return false
+    return true
+  })
+
+  // Group pool by muscle group
+  const byGroup = {}
+  activeGroups.forEach(g => { byGroup[g] = pool.filter(e => e.muscle_group === g) })
+
+  // Calculate total bias
+  const totalBias = activeGroups.reduce((sum, g) => sum + (randBias[g] ?? 50), 0)
+  if (totalBias === 0) return pool.sort(() => Math.random() - 0.5).slice(0, randCount)
+
+  // Allocate slots per group proportionally
+  let allocations = {}
+  let allocated = 0
+  activeGroups.forEach(g => {
+    const bias = randBias[g] ?? 50
+    const slots = Math.floor(randCount * (bias / totalBias))
+    allocations[g] = slots
+    allocated += slots
+  })
+
+  // Distribute remaining slots to highest bias groups
+  let remaining = randCount - allocated
+  const sorted = [...activeGroups].sort((a, b) => (randBias[b] ?? 50) - (randBias[a] ?? 50))
+  for (let i = 0; i < remaining; i++) {
+    allocations[sorted[i % sorted.length]]++
+  }
+
+  // Pick exercises from each group
+  const result = []
+  activeGroups.forEach(g => {
+    const available = byGroup[g] || []
+    const slots = Math.min(allocations[g], available.length)
+    const shuffled = available.sort(() => Math.random() - 0.5).slice(0, slots)
+    result.push(...shuffled)
+  })
+
+  // If we didn't get enough (due to small pools), fill from remaining pool
+  if (result.length < randCount) {
+    const usedIds = new Set(result.map(e => e.id))
+    const leftover = pool.filter(e => !usedIds.has(e.id)).sort(() => Math.random() - 0.5)
+    result.push(...leftover.slice(0, randCount - result.length))
+  }
+
+  return result.sort(() => Math.random() - 0.5).slice(0, randCount)
 }
 
 export default function WorkoutBuilder() {
@@ -26,20 +82,27 @@ export default function WorkoutBuilder() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  // Mobile tab: 'pick' | 'build' | 'random'
   const [mobileTab, setMobileTab] = useState('pick')
-  // Desktop tab: 'manual' | 'randomizer'
   const [desktopTab, setDesktopTab] = useState('manual')
 
   const [name, setName] = useState('')
   const [allExercises, setAllExercises] = useState([])
   const [filterGroup, setFilterGroup] = useState('All')
+  const [filterDiff, setFilterDiff] = useState('All')
+  const [search, setSearch] = useState('')
+
+  // Workout exercises (committed)
   const [selected, setSelected] = useState([])
+  // Pending pick selection (not yet committed)
+  const [pendingPick, setPendingPick] = useState(new Set())
+
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Randomizer
   const [randGroups, setRandGroups] = useState([])
-  const [randDiff, setRandDiff] = useState('Medium')
+  const [randBias, setRandBias] = useState({})   // { Arms: 50, Core: 80, ... }
+  const [randDiff, setRandDiff] = useState('All')
   const [randCount, setRandCount] = useState(6)
   const [randResult, setRandResult] = useState([])
 
@@ -55,8 +118,7 @@ export default function WorkoutBuilder() {
     const { data } = await supabase
       .from('workouts')
       .select('*, workout_exercises(*, exercises(*))')
-      .eq('id', id)
-      .single()
+      .eq('id', id).single()
     if (data) {
       setName(data.name)
       const items = (data.workout_exercises || [])
@@ -72,10 +134,44 @@ export default function WorkoutBuilder() {
     }
   }
 
-  const filtered = allExercises.filter(e => filterGroup === 'All' || e.muscle_group === filterGroup)
+  const committedIds = new Set(selected.map(s => s.exercise.id))
 
-  function addExercise(ex) {
-    if (selected.find(s => s.exercise.id === ex.id)) return
+  const filtered = allExercises.filter(e => {
+    if (filterGroup !== 'All' && e.muscle_group !== filterGroup) return false
+    if (filterDiff !== 'All' && e.difficulty !== filterDiff) return false
+    if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  })
+
+  // Toggle pending pick
+  function togglePending(ex) {
+    if (committedIds.has(ex.id)) return
+    setPendingPick(prev => {
+      const next = new Set(prev)
+      next.has(ex.id) ? next.delete(ex.id) : next.add(ex.id)
+      return next
+    })
+  }
+
+  // Commit pending picks → add to workout
+  function commitPending() {
+    const toAdd = allExercises
+      .filter(e => pendingPick.has(e.id))
+      .map(e => ({
+        exercise: e,
+        sets: e.default_sets,
+        reps: e.default_reps || '',
+        duration_seconds: e.default_duration_seconds || '',
+        rest_seconds: e.default_rest_seconds,
+      }))
+    setSelected(prev => [...prev, ...toAdd])
+    setPendingPick(new Set())
+    setMobileTab('build')
+  }
+
+  // Desktop: instant add (no pending flow needed — panel is always visible)
+  function addExerciseDesktop(ex) {
+    if (committedIds.has(ex.id)) return
     setSelected(prev => [...prev, {
       exercise: ex,
       sets: ex.default_sets,
@@ -83,7 +179,6 @@ export default function WorkoutBuilder() {
       duration_seconds: ex.default_duration_seconds || '',
       rest_seconds: ex.default_rest_seconds,
     }])
-    if (isMobile) setMobileTab('build')
   }
 
   function removeExercise(idx) {
@@ -96,32 +191,44 @@ export default function WorkoutBuilder() {
 
   function moveUp(idx) {
     if (idx === 0) return
-    setSelected(prev => { const a = [...prev]; [a[idx - 1], a[idx]] = [a[idx], a[idx - 1]]; return a })
+    setSelected(prev => { const a = [...prev]; [a[idx-1], a[idx]] = [a[idx], a[idx-1]]; return a })
   }
 
   function moveDown(idx) {
-    setSelected(prev => { if (idx >= prev.length - 1) return prev; const a = [...prev]; [a[idx], a[idx + 1]] = [a[idx + 1], a[idx]]; return a })
+    setSelected(prev => {
+      if (idx >= prev.length - 1) return prev
+      const a = [...prev]; [a[idx], a[idx+1]] = [a[idx+1], a[idx]]; return a
+    })
+  }
+
+  // Randomizer
+  function toggleRandGroup(g) {
+    setRandGroups(prev => {
+      if (prev.includes(g)) {
+        const next = prev.filter(x => x !== g)
+        setRandBias(b => { const nb = { ...b }; delete nb[g]; return nb })
+        return next
+      } else {
+        setRandBias(b => ({ ...b, [g]: 50 }))
+        return [...prev, g]
+      }
+    })
   }
 
   function randomize() {
-    let pool = allExercises.filter(e => {
-      if (randGroups.length > 0 && !randGroups.includes(e.muscle_group)) return false
-      if (randDiff !== 'All' && e.difficulty !== randDiff) return false
-      return true
-    })
-    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, randCount)
-    setRandResult(shuffled)
+    const result = weightedRandomize(allExercises, randGroups, randBias, randDiff, randCount)
+    setRandResult(result)
   }
 
   function useRandomResult() {
-    const items = randResult.map(ex => ({
+    setSelected(randResult.map(ex => ({
       exercise: ex,
       sets: ex.default_sets,
       reps: ex.default_reps || '',
       duration_seconds: ex.default_duration_seconds || '',
       rest_seconds: ex.default_rest_seconds,
-    }))
-    setSelected(items)
+    })))
+    setRandResult([])
     if (isMobile) setMobileTab('build')
     else setDesktopTab('manual')
   }
@@ -129,32 +236,25 @@ export default function WorkoutBuilder() {
   async function save() {
     if (!name.trim()) { setError('Workout name is required'); return }
     if (selected.length === 0) { setError('Add at least one exercise'); return }
-    setSaving(true)
-    setError('')
-
+    setSaving(true); setError('')
     let workoutId = id
-
     if (isEdit) {
       await supabase.from('workouts').update({ name }).eq('id', id)
       await supabase.from('workout_exercises').delete().eq('workout_id', id)
     } else {
-      const { data: w, error: we } = await supabase
-        .from('workouts').insert({ coach_id: user.id, name }).select().single()
+      const { data: w, error: we } = await supabase.from('workouts').insert({ coach_id: user.id, name }).select().single()
       if (we) { setError(we.message); setSaving(false); return }
       workoutId = w.id
     }
-
-    const rows = selected.map((s, i) => ({
-      workout_id: workoutId,
-      exercise_id: s.exercise.id,
-      position: i,
-      sets: Number(s.sets) || 3,
-      reps: s.reps ? Number(s.reps) : null,
-      duration_seconds: s.duration_seconds ? Number(s.duration_seconds) : null,
-      rest_seconds: Number(s.rest_seconds) || 30,
-    }))
-
-    await supabase.from('workout_exercises').insert(rows)
+    await supabase.from('workout_exercises').insert(
+      selected.map((s, i) => ({
+        workout_id: workoutId, exercise_id: s.exercise.id, position: i,
+        sets: Number(s.sets) || 3,
+        reps: s.reps ? Number(s.reps) : null,
+        duration_seconds: s.duration_seconds ? Number(s.duration_seconds) : null,
+        rest_seconds: Number(s.rest_seconds) || 30,
+      }))
+    )
     navigate('/dashboard')
   }
 
@@ -163,7 +263,155 @@ export default function WorkoutBuilder() {
     style: { width: w, background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--tx)', fontSize: 12, padding: '4px 6px', textAlign: 'center', fontFamily: 'var(--mono)', outline: 'none' }
   })
 
-  // ── MOBILE LAYOUT ──────────────────────────────────────────────
+  // ── SHARED: BUILD LIST ───────────────────────────────────────
+  function BuildList() {
+    return selected.length === 0 ? (
+      <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--mu)' }}>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>👈</div>
+        <p style={{ fontSize: 14 }}>{isMobile ? 'Go to Pick tab to add exercises' : 'Pick exercises from the panel on the left'}</p>
+      </div>
+    ) : (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {selected.map((item, i) => (
+          <div key={item.exercise.id} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 10, padding: isMobile ? 12 : '10px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>{item.exercise.name}</span>
+                <GroupBadge group={item.exercise.muscle_group} />
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button onClick={() => moveUp(i)} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '3px 7px', cursor: 'pointer' }}>↑</button>
+                <button onClick={() => moveDown(i)} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '3px 7px', cursor: 'pointer' }}>↓</button>
+                <button onClick={() => removeExercise(i)} style={{ background: 'transparent', border: 'none', color: '#F88080', fontSize: 15, cursor: 'pointer', padding: '0 4px' }}>✕</button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: 11, color: 'var(--mu)' }}>Sets</span>
+                <input {...inp(item.sets, e => updateField(i, 'sets', e.target.value), 40)} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: 11, color: 'var(--mu)' }}>{item.exercise.default_reps !== null ? 'Reps' : 'Secs'}</span>
+                <input {...inp(item.reps || item.duration_seconds, e => {
+                  if (item.exercise.default_reps !== null) updateField(i, 'reps', e.target.value)
+                  else updateField(i, 'duration_seconds', e.target.value)
+                }, 46)} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: 11, color: 'var(--mu)' }}>Rest(s)</span>
+                <input {...inp(item.rest_seconds, e => updateField(i, 'rest_seconds', e.target.value), 46)} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  // ── SHARED: RANDOMIZER PANEL ─────────────────────────────────
+  function RandomizerPanel() {
+    return (
+      <div style={{ maxWidth: isMobile ? '100%' : 500 }}>
+        {/* Muscle groups + bias sliders */}
+        <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>
+            Muscle groups &amp; bias
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 12, lineHeight: 1.5 }}>
+            Select groups then drag sliders to weight the mix
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {MUSCLE_GROUPS.map(g => {
+              const on = randGroups.includes(g)
+              const c = GROUP_COLORS[g]
+              const bias = randBias[g] ?? 50
+              return (
+                <div key={g}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: on ? 8 : 0 }}>
+                    <button onClick={() => toggleRandGroup(g)} style={{
+                      padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer',
+                      background: on ? c.bg : 'var(--br)', color: on ? c.color : 'var(--mu)',
+                      outline: on ? `1px solid ${c.color}` : 'none', minWidth: 90, textAlign: 'left',
+                    }}>{g}</button>
+                    {on && <span style={{ fontSize: 11, color: c.color, fontWeight: 600, minWidth: 32 }}>{bias}%</span>}
+                  </div>
+                  {on && (
+                    <div style={{ paddingLeft: 4 }}>
+                      <input
+                        type="range" min={0} max={100} value={bias}
+                        onChange={e => setRandBias(prev => ({ ...prev, [g]: Number(e.target.value) }))}
+                        style={{
+                          width: '100%', height: 4, borderRadius: 2, outline: 'none', cursor: 'pointer',
+                          accentColor: c.color, background: `linear-gradient(to right, ${c.color} ${bias}%, var(--br) ${bias}%)`,
+                        }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--mu)', marginTop: 3 }}>
+                        <span>Low</span><span>Equal</span><span>High</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {randGroups.length > 1 && (
+            <div style={{ marginTop: 12, padding: '8px 10px', background: 'var(--bg)', borderRadius: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {randGroups.map(g => {
+                const c = GROUP_COLORS[g]
+                const bias = randBias[g] ?? 50
+                const total = randGroups.reduce((s, x) => s + (randBias[x] ?? 50), 0)
+                const pct = total > 0 ? Math.round((bias / total) * 100) : 0
+                return <span key={g} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: c.bg, color: c.color }}>{g} ~{pct}%</span>
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Difficulty */}
+        <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Difficulty</div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+            {['Easy', 'Medium', 'Hard', 'All'].map(d => (
+              <button key={d} onClick={() => setRandDiff(d)} style={{
+                flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer',
+                background: randDiff === d ? 'var(--ac)' : 'var(--br)', color: randDiff === d ? '#0C1118' : 'var(--mu)',
+              }}>{d}</button>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Exercise count</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}>
+            <button onClick={() => setRandCount(c => Math.max(1, c - 1))} style={{ width: 38, height: 38, background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', fontSize: 20, cursor: 'pointer' }}>−</button>
+            <span style={{ fontSize: 26, fontWeight: 700, minWidth: 30, textAlign: 'center' }}>{randCount}</span>
+            <button onClick={() => setRandCount(c => Math.min(20, c + 1))} style={{ width: 38, height: 38, background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', fontSize: 20, cursor: 'pointer' }}>+</button>
+          </div>
+        </div>
+
+        <button onClick={randomize} style={{ width: '100%', padding: 14, background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, color: 'var(--tx)', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}>
+          🎲 Generate workout
+        </button>
+
+        {randResult.length > 0 && (
+          <div style={{ background: 'var(--s2)', border: '1px solid rgba(168,237,82,.25)', borderRadius: 12, padding: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{randResult.length} exercises generated</div>
+              <button onClick={useRandomResult} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                Use this →
+              </button>
+            </div>
+            {randResult.map((ex, i) => (
+              <div key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--br)', borderRadius: 8, marginBottom: 5 }}>
+                <span style={{ width: 22, height: 22, background: 'rgba(80,200,140,.15)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#5DD99A', flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ flex: 1, fontSize: 13 }}>{ex.name}</span>
+                <GroupBadge group={ex.muscle_group} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── MOBILE LAYOUT ────────────────────────────────────────────
   if (isMobile) {
     return (
       <Layout>
@@ -171,19 +419,13 @@ export default function WorkoutBuilder() {
         <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--s1)', borderBottom: '1px solid var(--br)' }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
-            <input
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Workout name..."
-              style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 14, fontWeight: 600, outline: 'none' }}
-            />
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Workout name..."
+              style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 14, fontWeight: 600, outline: 'none' }} />
           </div>
-
-          {/* Mobile tab bar */}
           <div style={{ display: 'flex', borderTop: '1px solid var(--br)' }}>
             {[
-              { key: 'pick', label: '📚 Pick', badge: null },
-              { key: 'build', label: '✏️ Build', badge: selected.length || null },
+              { key: 'pick',   label: '📚 Pick',   badge: pendingPick.size > 0 ? pendingPick.size : null },
+              { key: 'build',  label: '✏️ Build',  badge: selected.length || null },
               { key: 'random', label: '🎲 Random', badge: null },
             ].map(t => (
               <button key={t.key} onClick={() => setMobileTab(t.key)} style={{
@@ -205,12 +447,17 @@ export default function WorkoutBuilder() {
         </div>
 
         {/* Tab content */}
-        <div style={{ padding: '12px 16px' }}>
+        <div style={{ padding: '12px 16px', paddingBottom: pendingPick.size > 0 ? 100 : 16 }}>
 
           {/* PICK TAB */}
           {mobileTab === 'pick' && (
             <>
-              <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 10, marginBottom: 10 }}>
+              {/* Search */}
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
+                style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 11px', fontSize: 13, outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
+
+              {/* Group filter pills */}
+              <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 10, marginBottom: 6 }}>
                 {GROUPS.map(g => (
                   <button key={g} onClick={() => setFilterGroup(g)} style={{
                     padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: filterGroup === g ? 600 : 400, whiteSpace: 'nowrap',
@@ -218,18 +465,52 @@ export default function WorkoutBuilder() {
                   }}>{g}</button>
                 ))}
               </div>
+
+              {/* Difficulty filter */}
+              <div style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
+                {['All', 'Easy', 'Medium', 'Hard'].map(d => (
+                  <button key={d} onClick={() => setFilterDiff(d)} style={{
+                    padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: filterDiff === d ? 600 : 400,
+                    background: filterDiff === d ? 'var(--br2)' : 'var(--br)', color: filterDiff === d ? 'var(--tx)' : 'var(--mu)', border: 'none', cursor: 'pointer',
+                  }}>{d}</button>
+                ))}
+              </div>
+
+              {/* Selection hint */}
+              {pendingPick.size === 0 && selected.length === 0 && (
+                <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 10 }}>
+                  Tap exercises to select, then hit Add to add them all at once
+                </div>
+              )}
+
+              {/* Exercise list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {filtered.map(ex => {
-                  const already = selected.some(s => s.exercise.id === ex.id)
+                  const committed = committedIds.has(ex.id)
+                  const pending = pendingPick.has(ex.id)
                   return (
-                    <div key={ex.id} onClick={() => !already && addExercise(ex)}
-                      style={{ padding: '11px 12px', background: already ? 'rgba(168,237,82,.05)' : 'var(--s2)', border: `1px solid ${already ? 'rgba(168,237,82,.2)' : 'var(--br)'}`, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, cursor: already ? 'default' : 'pointer' }}>
+                    <div key={ex.id} onClick={() => togglePending(ex)}
+                      style={{
+                        padding: '11px 12px',
+                        background: committed ? 'rgba(168,237,82,.04)' : pending ? 'rgba(168,237,82,.08)' : 'var(--s2)',
+                        border: `1px solid ${committed ? 'rgba(168,237,82,.15)' : pending ? 'rgba(168,237,82,.4)' : 'var(--br)'}`,
+                        borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10,
+                        cursor: committed ? 'default' : 'pointer',
+                        transition: 'all .1s',
+                      }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 3 }}>{ex.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: committed ? 'var(--mu)' : 'var(--tx)', marginBottom: 3 }}>{ex.name}</div>
                         <GroupBadge group={ex.muscle_group} />
                       </div>
-                      <div style={{ width: 28, height: 28, flexShrink: 0, background: already ? 'rgba(168,237,82,.15)' : 'var(--br)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: already ? 'var(--ac)' : 'var(--mu)' }}>
-                        {already ? '✓' : '+'}
+                      <div style={{
+                        width: 28, height: 28, flexShrink: 0, borderRadius: 8,
+                        background: committed ? 'rgba(168,237,82,.1)' : pending ? 'var(--ac)' : 'var(--br)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: pending ? 16 : 14,
+                        color: committed ? 'var(--ac)' : pending ? '#0C1118' : 'var(--mu)',
+                        transition: 'all .1s',
+                      }}>
+                        {committed ? '✓' : pending ? '✓' : '+'}
                       </div>
                     </div>
                   )
@@ -241,55 +522,13 @@ export default function WorkoutBuilder() {
           {/* BUILD TAB */}
           {mobileTab === 'build' && (
             <>
-              {selected.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--mu)' }}>
-                  <div style={{ fontSize: 32, marginBottom: 10 }}>👈</div>
-                  <p style={{ fontSize: 14 }}>Go to Pick tab to add exercises</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {selected.map((item, i) => (
-                    <div key={item.exercise.id} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 10, padding: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600 }}>{item.exercise.name}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <button onClick={() => moveUp(i)} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '3px 7px', cursor: 'pointer' }}>↑</button>
-                          <button onClick={() => moveDown(i)} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '3px 7px', cursor: 'pointer' }}>↓</button>
-                          <button onClick={() => removeExercise(i)} style={{ background: 'transparent', border: 'none', color: '#F88080', fontSize: 15, cursor: 'pointer', padding: '0 4px' }}>✕</button>
-                        </div>
-                      </div>
-                      <GroupBadge group={item.exercise.muscle_group} />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontSize: 11, color: 'var(--mu)' }}>Sets</span>
-                          <input {...inp(item.sets, e => updateField(i, 'sets', e.target.value), 40)} />
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontSize: 11, color: 'var(--mu)' }}>{item.exercise.default_reps !== null ? 'Reps' : 'Secs'}</span>
-                          <input {...inp(item.reps || item.duration_seconds, e => {
-                            if (item.exercise.default_reps !== null) updateField(i, 'reps', e.target.value)
-                            else updateField(i, 'duration_seconds', e.target.value)
-                          }, 46)} />
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontSize: 11, color: 'var(--mu)' }}>Rest(s)</span>
-                          <input {...inp(item.rest_seconds, e => updateField(i, 'rest_seconds', e.target.value), 46)} />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
+              <BuildList />
               {error && <p style={{ fontSize: 12, color: '#F88080', marginTop: 12, textAlign: 'center' }}>{error}</p>}
-
               <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-                <button onClick={() => navigate('/dashboard')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: '12px', fontSize: 13, cursor: 'pointer' }}>
+                <button onClick={() => navigate('/dashboard')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer' }}>
                   Cancel
                 </button>
-                <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: '12px', fontSize: 14, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
+                <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
                   {saving ? 'Saving...' : isEdit ? 'Update' : 'Save workout'}
                 </button>
               </div>
@@ -297,82 +536,47 @@ export default function WorkoutBuilder() {
           )}
 
           {/* RANDOM TAB */}
-          {mobileTab === 'random' && (
-            <div>
-              <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Muscle groups</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {['Arms', 'Back', 'Legs', 'Core', 'Shoulders'].map(g => {
-                    const on = randGroups.includes(g)
-                    const c = GROUP_COLORS[g]
-                    return (
-                      <button key={g} onClick={() => setRandGroups(prev => on ? prev.filter(x => x !== g) : [...prev, g])} style={{
-                        padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer',
-                        background: on ? c.bg : 'var(--br)', color: on ? c.color : 'var(--mu)',
-                        outline: on ? `1px solid ${c.color}` : 'none',
-                      }}>{g}</button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Difficulty</div>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-                  {['Easy', 'Medium', 'Hard', 'All'].map(d => (
-                    <button key={d} onClick={() => setRandDiff(d)} style={{
-                      flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer',
-                      background: randDiff === d ? 'var(--ac)' : 'var(--br)', color: randDiff === d ? '#0C1118' : 'var(--mu)',
-                    }}>{d}</button>
-                  ))}
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Exercises</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}>
-                  <button onClick={() => setRandCount(c => Math.max(1, c - 1))} style={{ width: 38, height: 38, background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', fontSize: 20, cursor: 'pointer' }}>−</button>
-                  <span style={{ fontSize: 26, fontWeight: 700, minWidth: 30, textAlign: 'center' }}>{randCount}</span>
-                  <button onClick={() => setRandCount(c => Math.min(20, c + 1))} style={{ width: 38, height: 38, background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', fontSize: 20, cursor: 'pointer' }}>+</button>
-                </div>
-              </div>
-
-              <button onClick={randomize} style={{ width: '100%', padding: 14, background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, color: 'var(--tx)', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}>
-                🎲 Generate
-              </button>
-
-              {randResult.length > 0 && (
-                <div style={{ background: 'var(--s2)', border: '1px solid rgba(168,237,82,.25)', borderRadius: 12, padding: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{randResult.length} exercises</div>
-                    <button onClick={useRandomResult} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                      Use this →
-                    </button>
-                  </div>
-                  {randResult.map((ex, i) => (
-                    <div key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--br)', borderRadius: 8, marginBottom: 5 }}>
-                      <span style={{ width: 22, height: 22, background: 'rgba(80,200,140,.15)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#5DD99A', flexShrink: 0 }}>{i + 1}</span>
-                      <span style={{ flex: 1, fontSize: 13 }}>{ex.name}</span>
-                      <GroupBadge group={ex.muscle_group} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          {mobileTab === 'random' && <RandomizerPanel />}
         </div>
+
+        {/* Floating commit bar — appears when exercises are pending */}
+        {pendingPick.size > 0 && mobileTab === 'pick' && (
+          <div style={{
+            position: 'fixed', bottom: 'calc(60px + env(safe-area-inset-bottom) + 10px)',
+            left: 16, right: 16, zIndex: 50,
+            display: 'flex', gap: 8,
+          }}>
+            <button onClick={() => setPendingPick(new Set())} style={{
+              background: 'var(--br)', border: '1px solid var(--br2)', borderRadius: 12,
+              color: 'var(--mu)', padding: '13px 16px', fontSize: 13, cursor: 'pointer',
+            }}>✕</button>
+            <button onClick={commitPending} style={{
+              flex: 1, background: 'var(--ac)', color: '#0C1118', border: 'none',
+              borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              boxShadow: '0 4px 20px rgba(168,237,82,.3)',
+            }}>
+              Add {pendingPick.size} exercise{pendingPick.size !== 1 ? 's' : ''} to workout →
+            </button>
+          </div>
+        )}
       </Layout>
     )
   }
 
-  // ── DESKTOP LAYOUT ─────────────────────────────────────────────
+  // ── DESKTOP LAYOUT ───────────────────────────────────────────
   return (
     <Layout>
       <div style={{ display: 'flex', height: '100%' }}>
-        <div style={{ width: 220, minWidth: 220, borderRight: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 12px', borderBottom: '1px solid var(--br)' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Add exercises</div>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+
+        {/* Left panel — exercise picker */}
+        <div style={{ width: 240, minWidth: 240, borderRight: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 10px', borderBottom: '1px solid var(--br)', display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
+              style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 7, color: 'var(--tx)', padding: '7px 10px', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+            <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
               {GROUPS.map(g => (
                 <button key={g} onClick={() => setFilterGroup(g)} style={{
-                  padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: filterGroup === g ? 600 : 400,
+                  padding: '3px 8px', borderRadius: 20, fontSize: 11, fontWeight: filterGroup === g ? 600 : 400,
                   background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer'
                 }}>{g}</button>
               ))}
@@ -380,15 +584,19 @@ export default function WorkoutBuilder() {
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
             {filtered.map(ex => {
-              const already = selected.some(s => s.exercise.id === ex.id)
+              const committed = committedIds.has(ex.id)
               return (
-                <div key={ex.id} style={{ padding: '8px 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 3, opacity: already ? 0.4 : 1 }}>
+                <div key={ex.id} style={{ padding: '7px 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 3, opacity: committed ? 0.4 : 1 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
                     <GroupBadge group={ex.muscle_group} />
                   </div>
-                  <button onClick={() => addExercise(ex)} disabled={already} style={{ width: 22, height: 22, flexShrink: 0, background: already ? 'transparent' : 'var(--br)', border: already ? '1px solid var(--br)' : 'none', borderRadius: 6, color: 'var(--mu)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: already ? 'default' : 'pointer' }}>
-                    {already ? '✓' : '+'}
+                  <button onClick={() => addExerciseDesktop(ex)} disabled={committed} style={{
+                    width: 22, height: 22, flexShrink: 0, background: committed ? 'transparent' : 'var(--br)',
+                    border: committed ? '1px solid var(--br)' : 'none', borderRadius: 6, color: 'var(--mu)', fontSize: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: committed ? 'default' : 'pointer'
+                  }}>
+                    {committed ? '✓' : '+'}
                   </button>
                 </div>
               )
@@ -396,6 +604,7 @@ export default function WorkoutBuilder() {
           </div>
         </div>
 
+        {/* Right panel — build / randomizer */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', alignItems: 'center', gap: 12 }}>
             {['manual', 'randomizer'].map(t => (
@@ -411,105 +620,15 @@ export default function WorkoutBuilder() {
               <>
                 <input value={name} onChange={e => setName(e.target.value)} placeholder="Workout name..."
                   style={{ width: '100%', background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '10px 14px', fontSize: 16, fontWeight: 600, outline: 'none', marginBottom: 16 }} />
-                {selected.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--mu)' }}>
-                    <div style={{ fontSize: 32, marginBottom: 10 }}>👈</div>
-                    <p style={{ fontSize: 14 }}>Pick exercises from the panel on the left</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {selected.map((item, i) => (
-                      <div key={item.exercise.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 10 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <button onClick={() => moveUp(i)} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 10, cursor: 'pointer', lineHeight: 1 }}>▲</button>
-                          <button onClick={() => moveDown(i)} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 10, cursor: 'pointer', lineHeight: 1 }}>▼</button>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600 }}>{item.exercise.name}</span>
-                            <GroupBadge group={item.exercise.muscle_group} />
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                            <input {...inp(item.sets, e => updateField(i, 'sets', e.target.value), 38)} />
-                            <span style={{ fontSize: 11, color: 'var(--mu)' }}>sets ×</span>
-                            <input {...inp(item.reps || item.duration_seconds, e => {
-                              if (item.exercise.default_reps !== null) updateField(i, 'reps', e.target.value)
-                              else updateField(i, 'duration_seconds', e.target.value)
-                            }, 46)} />
-                            <span style={{ fontSize: 11, color: 'var(--mu)' }}>{item.exercise.default_reps !== null ? 'reps' : 'sec'}</span>
-                            <span style={{ fontSize: 11, color: 'var(--mu)' }}>rest</span>
-                            <input {...inp(item.rest_seconds, e => updateField(i, 'rest_seconds', e.target.value), 46)} />
-                            <span style={{ fontSize: 11, color: 'var(--mu)' }}>s</span>
-                          </div>
-                        </div>
-                        <button onClick={() => removeExercise(i)} style={{ background: 'none', border: 'none', color: '#F88080', fontSize: 16, cursor: 'pointer', flexShrink: 0 }}>✕</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <BuildList />
               </>
-            ) : (
-              <div style={{ maxWidth: 500 }}>
-                <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 18 }}>Auto-generate a workout</h2>
-                <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Muscle groups</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {['Arms', 'Back', 'Legs', 'Core', 'Shoulders'].map(g => {
-                      const on = randGroups.includes(g)
-                      return (
-                        <label key={g} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                          <div onClick={() => setRandGroups(prev => on ? prev.filter(x => x !== g) : [...prev, g])}
-                            style={{ width: 18, height: 18, background: on ? 'rgba(80,200,140,.2)' : 'var(--br)', border: on ? '1.5px solid rgba(80,200,140,.5)' : '1px solid rgba(255,255,255,.1)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#5DD99A', flexShrink: 0 }}>
-                            {on ? '✓' : ''}
-                          </div>
-                          <GroupBadge group={g} />
-                        </label>
-                      )
-                    })}
-                  </div>
-                </div>
-                <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Difficulty</div>
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-                    {['Easy', 'Medium', 'Hard', 'All'].map(d => (
-                      <button key={d} onClick={() => setRandDiff(d)} style={{ flex: 1, padding: '7px', borderRadius: 8, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer', background: randDiff === d ? 'var(--ac)' : 'var(--br)', color: randDiff === d ? '#0C1118' : 'var(--mu)' }}>{d}</button>
-                    ))}
-                  </div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Exercise count</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <button onClick={() => setRandCount(c => Math.max(1, c - 1))} style={{ width: 32, height: 32, background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', fontSize: 18, cursor: 'pointer' }}>−</button>
-                    <span style={{ fontSize: 24, fontWeight: 700, minWidth: 30, textAlign: 'center' }}>{randCount}</span>
-                    <button onClick={() => setRandCount(c => Math.min(20, c + 1))} style={{ width: 32, height: 32, background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', fontSize: 18, cursor: 'pointer' }}>+</button>
-                  </div>
-                </div>
-                <button onClick={randomize} style={{ width: '100%', padding: 12, background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--tx)', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 14 }}>
-                  🎲 Generate
-                </button>
-                {randResult.length > 0 && (
-                  <div style={{ background: 'var(--s2)', border: '1px solid rgba(168,237,82,.22)', borderRadius: 12, padding: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600 }}>{randResult.length} exercises</div>
-                      <button onClick={useRandomResult} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Use this →</button>
-                    </div>
-                    {randResult.map((ex, i) => (
-                      <div key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: 'var(--br)', borderRadius: 8, marginBottom: 5 }}>
-                        <span style={{ width: 22, height: 22, background: 'rgba(80,200,140,.15)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#5DD99A', flexShrink: 0 }}>{i + 1}</span>
-                        <span style={{ flex: 1, fontSize: 13 }}>{ex.name}</span>
-                        <GroupBadge group={ex.muscle_group} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            ) : <RandomizerPanel />}
           </div>
 
           <div style={{ padding: '12px 20px', borderTop: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', gap: 10, alignItems: 'center' }}>
-            {error && <span style={{ fontSize: 12, color: '#F88080', flex: 1 }}>{error}</span>}
+            {error && <span style={{ fontSize: 12, color: '#F88080' }}>{error}</span>}
             <div style={{ flex: 1 }} />
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 'var(--r)', color: 'var(--mu)', padding: '9px 16px', fontSize: 13, cursor: 'pointer' }}>
-              Cancel
-            </button>
+            <button onClick={() => navigate('/dashboard')} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 'var(--r)', color: 'var(--mu)', padding: '9px 16px', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
             <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', padding: '9px 20px', fontSize: 13, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
               {saving ? 'Saving...' : isEdit ? 'Update workout' : 'Save workout'}
             </button>
