@@ -33,7 +33,7 @@ export default function Sidebar() {
     <aside style={s.sidebar}>
       <div style={s.logo}>
         <ChalkUpLogo size={28} />
-        <span style={s.logoText}>Chalk Up</span>
+        <span style={s.logoText}>chalkup</span>
       </div>
 
       <nav style={s.nav}>

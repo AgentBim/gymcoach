@@ -38,7 +38,7 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <div style={{ width: 36, height: 36, background: 'var(--ac)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🏆</div>
-            <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--tx)' }}>GymCoach</span>
+            <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--tx)' }}>chalkup</span>
           </div>
           <p style={{ fontSize: 13, color: 'var(--mu)' }}>Gymnastics workout planning for coaches</p>
         </div>

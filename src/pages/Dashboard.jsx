@@ -69,7 +69,7 @@ export default function Dashboard() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <ChalkUpLogo size={24} />
-              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>Chalk Up</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>chalkup</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--mu)', marginTop: 1 }}>
               {coach?.full_name ? `Coach ${coach.full_name.split(' ')[0]}` : 'Dashboard'}
