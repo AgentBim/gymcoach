@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
@@ -35,6 +36,7 @@ export default function Library() {
   const [diff, setDiff] = useState('All')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const isMobile = useIsMobile()
 
   useEffect(() => { fetchExercises() }, [])
 
@@ -53,27 +55,47 @@ export default function Library() {
 
   const pill = (active, onClick, label) => (
     <button key={label} onClick={onClick} style={{
-      padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: active ? 600 : 400,
-      background: active ? 'var(--ac)' : 'var(--br)', color: active ? '#0C1118' : 'var(--mu)',
-      border: 'none', cursor: 'pointer', transition: 'all .15s'
+      padding: isMobile ? '5px 10px' : '5px 12px',
+      borderRadius: 20, fontSize: isMobile ? 11 : 12,
+      fontWeight: active ? 600 : 400,
+      background: active ? 'var(--ac)' : 'var(--br)',
+      color: active ? '#0C1118' : 'var(--mu)',
+      border: 'none', cursor: 'pointer', transition: 'all .15s',
+      whiteSpace: 'nowrap',
     }}>{label}</button>
   )
 
   return (
     <Layout>
-      <div style={{ padding: '20px 24px' }}>
-        <div style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 2 }}>Exercise library</h1>
-          <p style={{ fontSize: 13, color: 'var(--mu)' }}>{filtered.length} of {exercises.length} exercises</p>
-        </div>
-
-        <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: 14, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {isMobile && (
+        <div style={{ padding: '14px 16px 12px', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <div style={{ width: 24, height: 24, background: 'var(--ac)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🏆</div>
+            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)' }}>Exercise Library</span>
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--mu)' }}>{filtered.length}</span>
+          </div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
             style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '9px 12px', fontSize: 13, outline: 'none' }} />
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        </div>
+      )}
+
+      <div style={{ padding: isMobile ? '12px 16px' : '20px 24px' }}>
+        {!isMobile && (
+          <div style={{ marginBottom: 20 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 2 }}>Exercise library</h1>
+            <p style={{ fontSize: 13, color: 'var(--mu)' }}>{filtered.length} of {exercises.length} exercises</p>
+          </div>
+        )}
+
+        <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: isMobile ? 10 : 14, marginBottom: isMobile ? 12 : 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {!isMobile && (
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
+              style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+          )}
+          <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
             {GROUPS.map(g => pill(group === g, () => setGroup(g), g))}
           </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
             {DIFFICULTIES.map(d => pill(diff === d, () => setDiff(d), d))}
           </div>
         </div>
@@ -81,15 +103,15 @@ export default function Library() {
         {loading ? (
           <div style={{ color: 'var(--mu)', padding: 40, textAlign: 'center' }}>Loading...</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: isMobile ? 8 : 12 }}>
             {filtered.map(ex => (
-              <div key={ex.id} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <div key={ex.id} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: isMobile ? 12 : 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 7 }}>
                   <Badge label={ex.muscle_group} colors={{ background: GROUP_COLORS[ex.muscle_group]?.bg, color: GROUP_COLORS[ex.muscle_group]?.color }} />
                   <Badge label={ex.difficulty} colors={{ background: DIFF_COLORS[ex.difficulty]?.bg, color: DIFF_COLORS[ex.difficulty]?.color }} />
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 5 }}>{ex.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--mu)', lineHeight: 1.6, marginBottom: 10 }}>{ex.description}</div>
+                <div style={{ fontSize: isMobile ? 13 : 14, fontWeight: 600, marginBottom: 4 }}>{ex.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--mu)', lineHeight: 1.6, marginBottom: 8 }}>{ex.description}</div>
                 <div style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'var(--mono)' }}>{formatDefault(ex)}</div>
               </div>
             ))}
