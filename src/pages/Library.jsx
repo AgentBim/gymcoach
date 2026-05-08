@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import Layout from '../components/Layout'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
@@ -71,7 +72,7 @@ export default function Library() {
         <div style={{ padding: '14px 16px 12px', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <div style={{ width: 24, height: 24, background: 'var(--ac)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🏆</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)' }}>Exercise Library</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)' }}>Chalk Up</span>
             <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--mu)' }}>{filtered.length}</span>
           </div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."

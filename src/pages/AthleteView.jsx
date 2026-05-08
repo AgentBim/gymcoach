@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { ChalkUpLogo } from '../components/ChalkUpLogo'
 
 const GROUP_COLORS = {
   Arms:      { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
@@ -286,8 +287,8 @@ export default function AthleteView() {
       {/* Header */}
       <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', padding: '13px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 24, height: 24, background: 'var(--ac)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🏆</div>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>GymCoach</span>
+          <ChalkUpLogo size={24} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>Chalk Up</span>
         </div>
         {allDone
           ? <span style={{ fontSize: 11, color: 'var(--ac)', background: 'rgba(168,237,82,.12)', padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>✓ Complete</span>
@@ -420,7 +421,7 @@ export default function AthleteView() {
         )}
 
         <div style={{ marginTop: 40, textAlign: 'center' }}>
-          <p style={{ fontSize: 12, color: 'var(--mu)' }}>Made with GymCoach</p>
+          <p style={{ fontSize: 12, color: 'var(--mu)' }}>Made with Chalk Up</p>
         </div>
       </div>
     </div>

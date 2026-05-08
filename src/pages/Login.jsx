@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import { useAuth } from '../hooks/useAuth'
 
 export default function Login() {
@@ -39,7 +40,7 @@ export default function Login() {
             <div style={{ width: 36, height: 36, background: 'var(--ac)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🏆</div>
             <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--tx)' }}>GymCoach</span>
           </div>
-          <p style={{ fontSize: 13, color: 'var(--mu)' }}>Workout planning for gymnastics coaches</p>
+          <p style={{ fontSize: 13, color: 'var(--mu)' }}>Gymnastics workout planning for coaches</p>
         </div>
 
         <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 14, padding: 24 }}>

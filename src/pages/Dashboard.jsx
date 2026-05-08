@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import Layout from '../components/Layout'
 
 const GROUP_COLORS = {
@@ -67,8 +68,8 @@ export default function Dashboard() {
         <div style={{ padding: '14px 16px 12px', background: 'var(--s1)', borderBottom: '1px solid var(--br)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 24, height: 24, background: 'var(--ac)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🏆</div>
-              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>GymCoach</span>
+              <ChalkUpLogo size={24} />
+              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>Chalk Up</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--mu)', marginTop: 1 }}>
               {coach?.full_name ? `Coach ${coach.full_name.split(' ')[0]}` : 'Dashboard'}

@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { ChalkUpLogo } from './ChalkUpLogo'
 
 const s = {
   sidebar: { width: 200, minWidth: 200, background: 'var(--s1)', borderRight: '1px solid var(--br)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0 },
@@ -31,8 +32,8 @@ export default function Sidebar() {
   return (
     <aside style={s.sidebar}>
       <div style={s.logo}>
-        <div style={s.logoIcon}>🏆</div>
-        <span style={s.logoText}>GymCoach</span>
+        <ChalkUpLogo size={28} />
+        <span style={s.logoText}>Chalk Up</span>
       </div>
 
       <nav style={s.nav}>
