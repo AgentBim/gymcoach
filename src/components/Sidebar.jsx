@@ -40,6 +40,9 @@ export default function Sidebar() {
         <NavLink to="/dashboard" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
           🏠 Dashboard
         </NavLink>
+        <NavLink to="/roster" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
+          🤸 Roster
+        </NavLink>
         <NavLink to="/library" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
           📚 Exercise library
         </NavLink>

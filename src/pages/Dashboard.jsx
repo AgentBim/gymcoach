@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import Layout from '../components/Layout'
+import AssignModal from '../components/AssignModal'
 
 const GROUP_COLORS = {
   Arms: { bg: 'rgba(240,158,40,.15)', color: '#F4B455' },
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [workouts, setWorkouts] = useState([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)
+  const [assigningWorkout, setAssigningWorkout] = useState(null)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -122,6 +124,7 @@ export default function Dashboard() {
                   {w.workout_exercises?.length || 0} exercises
                 </div>
                 <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', gap: 8 }}>
+                  <button onClick={() => setAssigningWorkout(w)} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '8px 10px', cursor: 'pointer' }}>Assign</button>
                   <button onClick={() => copyShareLink(w.share_token)} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '8px 10px' }}>
                     {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
                   </button>
@@ -143,6 +146,12 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      {assigningWorkout && (
+        <AssignModal
+          workout={assigningWorkout}
+          onClose={() => setAssigningWorkout(null)}
+        />
+      )}
     </Layout>
   )
 }

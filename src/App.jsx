@@ -6,6 +6,9 @@ import Dashboard from './pages/Dashboard'
 import Library from './pages/Library'
 import WorkoutBuilder from './pages/WorkoutBuilder'
 import AthleteView from './pages/AthleteView'
+import Roster from './pages/Roster'
+import AthleteForm from './pages/AthleteForm'
+import AthleteProfile from './pages/AthleteProfile'
 
 export default function App() {
   return (
@@ -18,6 +21,10 @@ export default function App() {
           <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
           <Route path="/workout/new" element={<ProtectedRoute><WorkoutBuilder /></ProtectedRoute>} />
           <Route path="/workout/:id/edit" element={<ProtectedRoute><WorkoutBuilder /></ProtectedRoute>} />
+          <Route path="/roster" element={<ProtectedRoute><Roster /></ProtectedRoute>} />
+          <Route path="/roster/new" element={<ProtectedRoute><AthleteForm /></ProtectedRoute>} />
+          <Route path="/roster/:id" element={<ProtectedRoute><AthleteProfile /></ProtectedRoute>} />
+          <Route path="/roster/:id/edit" element={<ProtectedRoute><AthleteForm /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

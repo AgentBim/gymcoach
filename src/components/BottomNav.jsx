@@ -41,8 +41,8 @@ export default function BottomNav() {
       alignItems: 'stretch',
       zIndex: 100,
     }}>
-      {tab('/dashboard', '🏠', 'Dashboard', true)}
-      {tab('/library', '📚', 'Library', true)}
+      {tab('/dashboard', '🏠', 'Home', true)}
+      {tab('/roster', '🤸', 'Roster', true)}
 
       {/* Centre new workout button */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -69,8 +69,8 @@ export default function BottomNav() {
         </button>
       </div>
 
-      {tab('/workout/new', '🎲', 'Randomize', false)}
-      {tab('/library', '⚙️', 'Settings', false)}
+      {tab('/library', '📚', 'Library', true)}
+      {tab('/workout/new', '🎲', 'Random', false)}
     </nav>
   )
 }
