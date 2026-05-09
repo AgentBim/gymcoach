@@ -51,7 +51,27 @@ export default function Dashboard() {
     setWorkouts(w => w.filter(x => x.id !== id))
   }
 
-  function copyShareLink(token) {
+  async function duplicateWorkout(w) {
+    const { data: newW } = await supabase
+      .from('workouts')
+      .insert({ coach_id: user.id, name: `${w.name} (copy)` })
+      .select().single()
+    if (!newW) return
+    const { data: exercises } = await supabase
+      .from('workout_exercises').select('*').eq('workout_id', w.id)
+    if (exercises?.length) {
+      await supabase.from('workout_exercises').insert(
+        exercises.map(e => ({
+          workout_id: newW.id, exercise_id: e.exercise_id,
+          position: e.position, sets: e.sets, reps: e.reps,
+          duration_seconds: e.duration_seconds, rest_seconds: e.rest_seconds,
+        }))
+      )
+    }
+    fetchWorkouts()
+  }
+
+    function copyShareLink(token) {
     const url = `${window.location.origin}/share/${token}`
     navigator.clipboard.writeText(url)
     setCopied(token)
