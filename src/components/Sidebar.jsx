@@ -43,6 +43,9 @@ export default function Sidebar() {
         <NavLink to="/roster" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
           🤸 Roster
         </NavLink>
+        <NavLink to="/programs" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
+          📅 Programs
+        </NavLink>
         <NavLink to="/history" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
           📊 History
         </NavLink>

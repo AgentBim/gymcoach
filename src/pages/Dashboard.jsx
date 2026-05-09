@@ -26,6 +26,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)
   const [assigningWorkout, setAssigningWorkout] = useState(null)
+  const [search, setSearch] = useState('')
+  const [filterGroup, setFilterGroup] = useState('All')
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -60,6 +62,17 @@ export default function Dashboard() {
     return [...groups]
   }
 
+  const GROUP_OPTIONS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
+
+  const filteredWorkouts = workouts.filter(w => {
+    if (search && !w.name.toLowerCase().includes(search.toLowerCase())) return false
+    if (filterGroup !== 'All') {
+      const groups = new Set(w.workout_exercises?.map(we => we.exercises?.muscle_group).filter(Boolean))
+      if (!groups.has(filterGroup)) return false
+    }
+    return true
+  })
+
   if (loading) return <Layout><div style={{ padding: 40, color: 'var(--mu)' }}>Loading...</div></Layout>
 
   const gridCols = isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))'
@@ -88,7 +101,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <div>
               <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>My workouts</h1>
-              <p style={{ fontSize: 13, color: 'var(--mu)', marginTop: 2 }}>{workouts.length} saved</p>
+              <p style={{ fontSize: 13, color: 'var(--mu)', marginTop: 2 }}>{filteredWorkouts.length} of {workouts.length}</p>
             </div>
             <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', padding: '9px 16px', fontSize: 13, fontWeight: 700 }}>
               + New workout
@@ -103,6 +116,10 @@ export default function Dashboard() {
           </div>
         )}
 
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workouts..." style={{ background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '7px 11px', fontSize: 13, outline: 'none', width: 200 }} />
+          {GROUP_OPTIONS.map(g => <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterGroup === g ? 600 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer' }}>{g}</button>)}
+        </div>
         {workouts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mu)' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏋️</div>
@@ -114,7 +131,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 14 }}>
-            {workouts.map(w => (
+            {filteredWorkouts.map(w => (
               <div key={w.id} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: isMobile ? 14 : 16 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{w.name}</div>
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>

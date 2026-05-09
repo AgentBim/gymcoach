@@ -10,6 +10,9 @@ import Roster from './pages/Roster'
 import AthleteForm from './pages/AthleteForm'
 import AthleteProfile from './pages/AthleteProfile'
 import History from './pages/History'
+import Programs from './pages/Programs'
+import ProgramBuilder from './pages/ProgramBuilder'
+import CustomExercise from './pages/CustomExercise'
 
 export default function App() {
   return (
@@ -27,6 +30,11 @@ export default function App() {
           <Route path="/roster/:id" element={<ProtectedRoute><AthleteProfile /></ProtectedRoute>} />
           <Route path="/roster/:id/edit" element={<ProtectedRoute><AthleteForm /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+          <Route path="/programs" element={<ProtectedRoute><Programs /></ProtectedRoute>} />
+          <Route path="/programs/new" element={<ProtectedRoute><ProgramBuilder /></ProtectedRoute>} />
+          <Route path="/programs/:id" element={<ProtectedRoute><ProgramBuilder /></ProtectedRoute>} />
+          <Route path="/library/new" element={<ProtectedRoute><CustomExercise /></ProtectedRoute>} />
+          <Route path="/library/:id/edit" element={<ProtectedRoute><CustomExercise /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

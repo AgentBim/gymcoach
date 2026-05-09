@@ -37,12 +37,18 @@ export default function Library() {
   const [diff, setDiff] = useState('All')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const isMobile = useIsMobile()
 
   useEffect(() => { fetchExercises() }, [])
 
   async function fetchExercises() {
-    const { data } = await supabase.from('exercises').select('*').order('muscle_group').order('name')
+    const { data } = await supabase
+      .from('exercises')
+      .select('*')
+      .or(user ? `coach_id.is.null,coach_id.eq.${user.id}` : 'coach_id.is.null')
+      .order('is_custom').order('muscle_group').order('name')
     setExercises(data || [])
     setLoading(false)
   }
@@ -73,7 +79,7 @@ export default function Library() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <div style={{ width: 24, height: 24, background: 'var(--ac)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🏆</div>
             <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)' }}>chalkup</span>
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--mu)' }}>{filtered.length}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}><span style={{ fontSize: 12, color: 'var(--mu)' }}>{filtered.length}</span><button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 7, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Custom</button></div>
           </div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
             style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '9px 12px', fontSize: 13, outline: 'none' }} />
@@ -83,8 +89,7 @@ export default function Library() {
       <div style={{ padding: isMobile ? '12px 16px' : '20px 24px' }}>
         {!isMobile && (
           <div style={{ marginBottom: 20 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 2 }}>Exercise library</h1>
-            <p style={{ fontSize: 13, color: 'var(--mu)' }}>{filtered.length} of {exercises.length} exercises</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}><div><h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 2 }}>Exercise library</h1><p style={{ fontSize: 13, color: 'var(--mu)' }}>{filtered.length} of {exercises.length} exercises</p></div><button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Custom exercise</button></div>
           </div>
         )}
 

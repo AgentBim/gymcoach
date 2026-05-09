@@ -44,22 +44,12 @@ export default function BottomNav() {
       {tab('/dashboard', '🏠', 'Home', true)}
       {tab('/roster', '🤸', 'Roster', true)}
 
-      {/* Centre new workout button */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <button
-          onClick={() => navigate('/workout/new')}
-          style={{
-            width: 48, height: 48, borderRadius: '50%',
-            background: 'var(--ac)', border: 'none', color: '#0C1118',
-            fontSize: 26, fontWeight: 700,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(168,237,82,.35)', cursor: 'pointer', marginBottom: 4,
-          }}
-        >＋</button>
+        <button onClick={() => navigate('/workout/new')} style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--ac)', border: 'none', color: '#0C1118', fontSize: 26, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(168,237,82,.35)', cursor: 'pointer', marginBottom: 4 }}>＋</button>
       </div>
 
+      {tab('/programs', '📅', 'Programs', true)}
       {tab('/history', '📊', 'History', true)}
-      {tab('/library', '📚', 'Library', true)}
     </nav>
   )
 }
