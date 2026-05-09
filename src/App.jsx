@@ -9,6 +9,7 @@ import AthleteView from './pages/AthleteView'
 import Roster from './pages/Roster'
 import AthleteForm from './pages/AthleteForm'
 import AthleteProfile from './pages/AthleteProfile'
+import History from './pages/History'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/roster/new" element={<ProtectedRoute><AthleteForm /></ProtectedRoute>} />
           <Route path="/roster/:id" element={<ProtectedRoute><AthleteProfile /></ProtectedRoute>} />
           <Route path="/roster/:id/edit" element={<ProtectedRoute><AthleteForm /></ProtectedRoute>} />
+          <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
