@@ -95,32 +95,33 @@ export default function CustomExercise() {
               style={{ ...inp, height: 80, resize: 'none', lineHeight: 1.5 }} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Muscle group *</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {MUSCLE_GROUPS.map(g => (
-                  <button key={g} onClick={() => setMuscleGroup(g)} style={{
-                    padding: '8px 12px', borderRadius: 8, fontSize: 13, border: 'none', cursor: 'pointer', textAlign: 'left',
-                    background: muscleGroup === g ? 'rgba(168,237,82,.12)' : 'var(--br)',
-                    color: muscleGroup === g ? 'var(--ac)' : 'var(--mu)',
-                    outline: muscleGroup === g ? '1px solid rgba(168,237,82,.3)' : 'none',
-                  }}>{g}</button>
-                ))}
-              </div>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Muscle group *</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {MUSCLE_GROUPS.map(g => (
+                <button key={g} onClick={() => setMuscleGroup(g)} style={{
+                  padding: '8px 14px', borderRadius: 20, fontSize: 13, border: 'none', cursor: 'pointer',
+                  background: muscleGroup === g ? 'rgba(168,237,82,.12)' : 'var(--br)',
+                  color: muscleGroup === g ? 'var(--ac)' : 'var(--mu)',
+                  outline: muscleGroup === g ? '1px solid rgba(168,237,82,.3)' : 'none',
+                  fontWeight: muscleGroup === g ? 600 : 400,
+                }}>{g}</button>
+              ))}
             </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Difficulty *</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {DIFFICULTIES.map(d => (
-                  <button key={d} onClick={() => setDifficulty(d)} style={{
-                    padding: '8px 12px', borderRadius: 8, fontSize: 13, border: 'none', cursor: 'pointer', textAlign: 'left',
-                    background: difficulty === d ? 'rgba(168,237,82,.12)' : 'var(--br)',
-                    color: difficulty === d ? 'var(--ac)' : 'var(--mu)',
-                    outline: difficulty === d ? '1px solid rgba(168,237,82,.3)' : 'none',
-                  }}>{d}</button>
-                ))}
-              </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Difficulty *</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {DIFFICULTIES.map(d => (
+                <button key={d} onClick={() => setDifficulty(d)} style={{
+                  flex: 1, padding: '10px 8px', borderRadius: 10, fontSize: 13, border: 'none', cursor: 'pointer',
+                  background: difficulty === d ? 'rgba(168,237,82,.12)' : 'var(--br)',
+                  color: difficulty === d ? 'var(--ac)' : 'var(--mu)',
+                  outline: difficulty === d ? '1px solid rgba(168,237,82,.3)' : 'none',
+                  fontWeight: difficulty === d ? 600 : 400,
+                }}>{d}</button>
+              ))}
             </div>
           </div>
 

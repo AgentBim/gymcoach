@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [assigningWorkout, setAssigningWorkout] = useState(null)
   const [search, setSearch] = useState('')
   const [filterGroup, setFilterGroup] = useState('All')
+  const [filterOpen, setFilterOpen] = useState(false)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -80,19 +81,26 @@ export default function Dashboard() {
   return (
     <Layout>
       {isMobile && (
-        <div style={{ padding: '14px 16px 12px', background: 'var(--s1)', borderBottom: '1px solid var(--br)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ChalkUpLogo size={24} />
-              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>chalkup</span>
-            </div>
-            <p style={{ fontSize: 12, color: 'var(--mu)', marginTop: 1 }}>
-              {coach?.full_name ? `Coach ${coach.full_name.split(' ')[0]}` : 'Dashboard'}
-            </p>
+        <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
+          {/* Main header row */}
+          <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ChalkUpLogo size={22} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em', flex: 1 }}>chalkup</span>
+            <button onClick={() => setFilterOpen(o => !o)} style={{ background: filterOpen || search || filterGroup !== 'All' ? 'rgba(168,237,82,.12)' : 'var(--br)', border: 'none', borderRadius: 8, color: filterOpen || search || filterGroup !== 'All' ? 'var(--ac)' : 'var(--mu)', padding: '7px 10px', fontSize: 13, cursor: 'pointer' }}>
+              {filterOpen ? '✕' : '🔍'}
+            </button>
+            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
           </div>
-          <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700 }}>
-            + New
-          </button>
+          {/* Expandable search + filter */}
+          {filterOpen && (
+            <div style={{ padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workouts..." autoFocus
+                style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 11px', fontSize: 13, outline: 'none' }} />
+              <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
+                {GROUP_OPTIONS.map(g => <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 11px', borderRadius: 20, fontSize: 11, fontWeight: filterGroup === g ? 600 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--s2)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>{g}</button>)}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -101,38 +101,33 @@ export default function ProgramBuilder() {
 
   const weekData = Array.from({ length: weeks }, (_, i) => i + 1)
 
-  // Mobile: show one week at a time
+  // Desktop grid — 7 columns
   const renderWeekGrid = (week) => (
-    <div key={week} style={{ marginBottom: isMobile ? 0 : 20 }}>
-      {!isMobile && (
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 8 }}>
-          Week {week}
-        </div>
-      )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? 6 : 8 }}>
+    <div key={week} style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 8 }}>
+        Week {week}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
         {DAYS.map((day, di) => {
           const key = `w${week}d${di}`
           const cell = days[key]
           const dt = cell ? getDayType(cell.day_type) : null
           const workout = cell?.workout_id ? workouts.find(w => w.id === cell.workout_id) : null
           const isActive = activeCell === key
-
           return (
-            <div key={di}
-              onClick={() => setActiveCell(isActive ? null : key)}
+            <div key={di} onClick={() => setActiveCell(isActive ? null : key)}
               style={{
                 background: cell ? dt.bg : 'var(--br)',
                 border: `1px solid ${isActive ? 'var(--ac)' : cell ? 'rgba(255,255,255,.08)' : 'transparent'}`,
-                borderRadius: 8, padding: isMobile ? '8px 4px' : '10px 6px',
-                cursor: 'pointer', textAlign: 'center', minHeight: isMobile ? 64 : 72,
+                borderRadius: 8, padding: '10px 6px', cursor: 'pointer', textAlign: 'center', minHeight: 72,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
                 transition: 'all .15s',
               }}>
               <div style={{ fontSize: 10, color: 'var(--mu)', fontWeight: 500 }}>{day}</div>
               {cell ? (
                 <>
-                  <div style={{ fontSize: isMobile ? 16 : 18 }}>{dt.icon}</div>
-                  {workout && <div style={{ fontSize: 9, color: dt.color, fontWeight: 500, lineHeight: 1.2, textAlign: 'center', wordBreak: 'break-word' }}>{workout.name.length > 12 ? workout.name.slice(0, 12) + '…' : workout.name}</div>}
+                  <div style={{ fontSize: 18 }}>{dt.icon}</div>
+                  {workout && <div style={{ fontSize: 9, color: dt.color, fontWeight: 500, lineHeight: 1.2 }}>{workout.name.length > 12 ? workout.name.slice(0, 12) + '…' : workout.name}</div>}
                   {!workout && cell.day_type !== 'training' && <div style={{ fontSize: 9, color: dt.color }}>{dt.label}</div>}
                 </>
               ) : (
@@ -142,6 +137,81 @@ export default function ProgramBuilder() {
           )
         })}
       </div>
+    </div>
+  )
+
+  // Mobile list — each day as a full-width row
+  const renderWeekList = (week) => (
+    <div key={week}>
+      {DAYS.map((day, di) => {
+        const key = `w${week}d${di}`
+        const cell = days[key]
+        const dt = cell ? getDayType(cell.day_type) : DAY_TYPES[0]
+        const workout = cell?.workout_id ? workouts.find(w => w.id === cell.workout_id) : null
+        const isActive = activeCell === key
+        return (
+          <div key={di}>
+            <div onClick={() => setActiveCell(isActive ? null : key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
+                borderBottom: '1px solid var(--br)', cursor: 'pointer',
+              }}>
+              <div style={{ width: 36, fontSize: 11, fontWeight: 600, color: 'var(--mu)', flexShrink: 0 }}>{day}</div>
+              <div style={{
+                flex: 1, display: 'flex', alignItems: 'center', gap: 10,
+                background: cell ? dt.bg : 'var(--br)', borderRadius: 10,
+                padding: '10px 12px',
+                border: `1px solid ${isActive ? 'var(--ac)' : 'transparent'}`,
+              }}>
+                <span style={{ fontSize: 18 }}>{cell ? dt.icon : '+'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {cell ? (
+                    <>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: dt.color }}>{dt.label}</div>
+                      {workout && <div style={{ fontSize: 12, color: 'var(--tx)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{workout.name}</div>}
+                      {cell.notes && <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{cell.notes}</div>}
+                    </>
+                  ) : (
+                    <span style={{ fontSize: 12, color: 'var(--mu)' }}>Tap to set</span>
+                  )}
+                </div>
+                {cell && <div style={{ fontSize: 18, color: 'var(--mu)' }}>›</div>}
+              </div>
+            </div>
+            {/* Inline cell editor on mobile */}
+            {isActive && (
+              <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 10, padding: 14, margin: '8px 0 4px' }}>
+                <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Day type</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                  {DAY_TYPES.map(t => (
+                    <button key={t.key} onClick={() => setCell(key, { day_type: t.key })}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12,
+                        background: (cell?.day_type ?? 'training') === t.key ? t.bg : 'var(--br)',
+                        color: (cell?.day_type ?? 'training') === t.key ? t.color : 'var(--mu)',
+                        outline: (cell?.day_type ?? 'training') === t.key ? `1px solid ${t.color}` : 'none' }}>
+                      {t.icon} {t.label}
+                    </button>
+                  ))}
+                </div>
+                {(cell?.day_type ?? 'training') === 'training' && (
+                  <>
+                    <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 7 }}>Workout</div>
+                    <select value={cell?.workout_id || ''} onChange={e => setCell(key, { day_type: cell?.day_type || 'training', workout_id: e.target.value || null, notes: cell?.notes || '' })}
+                      style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '9px 10px', fontSize: 13, outline: 'none', marginBottom: 10 }}>
+                      <option value="">— no workout —</option>
+                      {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                    </select>
+                  </>
+                )}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setActiveCell(null)} style={{ flex: 1, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Done</button>
+                  {cell && <button onClick={() => { clearCell(key); setActiveCell(null) }} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#F88080', padding: '9px 14px', fontSize: 13, cursor: 'pointer' }}>Clear</button>}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 
@@ -189,13 +259,13 @@ export default function ProgramBuilder() {
               </div>
             )}
 
-            {/* Grids */}
+            {/* Grids (desktop) / List (mobile) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {isMobile ? renderWeekGrid(viewWeek) : weekData.map(w => renderWeekGrid(w))}
+              {isMobile ? renderWeekList(viewWeek) : weekData.map(w => renderWeekGrid(w))}
             </div>
 
-            {/* Cell editor panel */}
-            {activeCell && (
+            {/* Cell editor panel — desktop only */}
+            {!isMobile && activeCell && (
               <div style={{ marginTop: 16, background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 14 }}>
                 {(() => {
                   const [wPart, dPart] = activeCell.split('d')
