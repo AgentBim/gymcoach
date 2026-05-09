@@ -150,9 +150,9 @@ export default function Roster() {
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                          <button onClick={() => navigate(`/roster/${a.id}`)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '6px 11px', cursor: 'pointer' }}>View</button>
-                          <button onClick={() => navigate(`/roster/${a.id}/edit`)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '6px 11px', cursor: 'pointer' }}>Edit</button>
-                          <button onClick={() => deleteAthlete(a.id)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '6px 11px', cursor: 'pointer' }}>✕</button>
+                          <button onClick={() => navigate(`/roster/${a.id}`)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '8px 12px', cursor: 'pointer', minHeight: 36 }}>View</button>
+                          <button onClick={() => navigate(`/roster/${a.id}/edit`)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '8px 12px', cursor: 'pointer', minHeight: 36 }}>Edit</button>
+                          <button onClick={() => deleteAthlete(a.id)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '8px 12px', cursor: 'pointer', minHeight: 36 }}>✕</button>
                         </div>
                       </div>
                     )

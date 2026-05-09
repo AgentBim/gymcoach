@@ -129,8 +129,8 @@ export default function CustomExercise() {
           <div>
             <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Measured by</div>
             <div style={{ display: 'flex', background: 'var(--br)', borderRadius: 8, padding: 3, marginBottom: 10 }}>
-              <button onClick={() => setUseTime(false)} style={{ flex: 1, padding: '7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, background: !useTime ? 'var(--s2)' : 'transparent', color: !useTime ? 'var(--tx)' : 'var(--mu)' }}>Reps</button>
-              <button onClick={() => setUseTime(true)} style={{ flex: 1, padding: '7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, background: useTime ? 'var(--s2)' : 'transparent', color: useTime ? 'var(--tx)' : 'var(--mu)' }}>Time (seconds)</button>
+              <button onClick={() => setUseTime(false)} style={{ flex: 1, padding: '10px 7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, background: !useTime ? 'var(--s2)' : 'transparent', color: !useTime ? 'var(--tx)' : 'var(--mu)', minHeight: 40 }}>Reps</button>
+              <button onClick={() => setUseTime(true)} style={{ flex: 1, padding: '10px 7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, background: useTime ? 'var(--s2)' : 'transparent', color: useTime ? 'var(--tx)' : 'var(--mu)', minHeight: 40 }}>Time (s)</button>
             </div>
           </div>
 
@@ -155,8 +155,8 @@ export default function CustomExercise() {
           {error && <p style={{ fontSize: 12, color: '#F88080' }}>{error}</p>}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-            <button onClick={() => navigate('/library')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-            <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+            <button onClick={() => navigate('/library')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 48 }}>Cancel</button>
+            <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, minHeight: 48 }}>
               {saving ? 'Saving...' : isEdit ? 'Update exercise' : 'Add to library'}
             </button>
           </div>

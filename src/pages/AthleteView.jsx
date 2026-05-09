@@ -187,7 +187,7 @@ function FeedbackForm({ workout, exercises, shareToken, athleteName, onSubmit })
       <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, marginBottom: 12 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 4 }}>Effort level (RPE)</div>
         <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 12 }}>1 = very easy · 10 = maximum effort</div>
-        <div style={{ display: 'flex', gap: 5, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4 }}>
           {[1,2,3,4,5,6,7,8,9,10].map(n => (
             <button key={n} onClick={() => setRpe(n)} style={{
               width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
@@ -325,7 +325,7 @@ export default function AthleteView() {
   const muscleGroups = [...new Set(exercises.map(e => e.exercises?.muscle_group).filter(Boolean))]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingBottom: 60 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 40px)' }}>
       {/* Header */}
       <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', padding: '13px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

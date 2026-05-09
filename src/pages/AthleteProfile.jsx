@@ -91,7 +91,7 @@ export default function AthleteProfile() {
                 {athlete.group_name && <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: 11, background: 'var(--br)', color: 'var(--mu)' }}>{athlete.group_name}</span>}
               </div>
             </div>
-            <button onClick={() => navigate(`/roster/${id}/edit`)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: 'var(--mu)', fontSize: 12, padding: '7px 12px', cursor: 'pointer' }}>Edit</button>
+            <button onClick={() => navigate(`/roster/${id}/edit`)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: 'var(--mu)', fontSize: 12, padding: '10px 14px', cursor: 'pointer', minHeight: 40 }}>Edit</button>
           </div>
           {athlete.notes && (
             <div style={{ borderTop: '1px solid var(--br)', paddingTop: 12, fontSize: 13, color: 'var(--mu)', lineHeight: 1.6 }}>
@@ -128,10 +128,10 @@ export default function AthleteProfile() {
                     Assigned {new Date(a.assigned_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
                   <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', gap: 8 }}>
-                    <button onClick={() => copyLink(a.workouts?.share_token)} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === a.workouts?.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer' }}>
+                    <button onClick={() => copyLink(a.workouts?.share_token)} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === a.workouts?.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '10px 10px', cursor: 'pointer', minHeight: 40 }}>
                       {copied === a.workouts?.share_token ? '✓ Copied!' : '🔗 Copy link'}
                     </button>
-                    <button onClick={() => removeAssignment(a.id)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '7px 12px', cursor: 'pointer' }}>Remove</button>
+                    <button onClick={() => removeAssignment(a.id)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '10px 12px', cursor: 'pointer', minHeight: 40 }}>Remove</button>
                   </div>
                 </div>
               )

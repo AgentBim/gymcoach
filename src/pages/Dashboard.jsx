@@ -168,17 +168,33 @@ export default function Dashboard() {
                 <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 12 }}>
                   {w.workout_exercises?.length || 0} exercises
                 </div>
-                <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', gap: 8 }}>
-                  <button onClick={() => setAssigningWorkout(w)} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '8px 10px', cursor: 'pointer' }}>Assign</button>
-                  <button onClick={() => copyShareLink(w.share_token)} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '8px 10px' }}>
-                    {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
-                  </button>
-                  <button onClick={() => navigate(`/workout/${w.id}/edit`)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '8px 12px' }}>
-                    Edit
-                  </button>
-                  <button onClick={() => deleteWorkout(w.id)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '8px 12px' }}>
-                    🗑
-                  </button>
+                <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {/* Primary row */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => copyShareLink(w.share_token)}
+                      style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', minHeight: 36 }}>
+                      {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
+                    </button>
+                    <button onClick={() => setAssigningWorkout(w)}
+                      style={{ flex: 1, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 6, color: 'var(--ac)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', fontWeight: 500, minHeight: 36 }}>
+                      Assign
+                    </button>
+                  </div>
+                  {/* Secondary row */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => navigate(`/workout/${w.id}/edit`)}
+                      style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>
+                      ✏️ Edit
+                    </button>
+                    <button onClick={() => duplicateWorkout(w)}
+                      style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>
+                      ⧉ Duplicate
+                    </button>
+                    <button onClick={() => deleteWorkout(w.id)}
+                      style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '7px 12px', cursor: 'pointer', minHeight: 34 }}>
+                      🗑
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

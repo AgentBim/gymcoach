@@ -77,14 +77,22 @@ export default function Library() {
   return (
     <Layout>
       {isMobile && (
-        <div style={{ padding: '14px 16px 12px', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <div style={{ width: 24, height: 24, background: 'var(--ac)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🏆</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ac)' }}>chalkup</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}><span style={{ fontSize: 12, color: 'var(--mu)' }}>{filtered.length}</span><button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 7, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Custom</button></div>
+        <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--tx)', flex: 1 }}>Exercise Library</span>
+            <span style={{ fontSize: 12, color: 'var(--mu)' }}>{filtered.length}</span>
+            <button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 7, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', minHeight: 32, whiteSpace: 'nowrap' }}>+ Custom</button>
           </div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
-            style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+          <div style={{ padding: '0 16px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
+              style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+            <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
+              {GROUPS.map(g => pill(group === g, () => setGroup(g), g))}
+            </div>
+            <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
+              {DIFFICULTIES.map(d => pill(diff === d, () => setDiff(d), d))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -95,18 +103,18 @@ export default function Library() {
           </div>
         )}
 
-        <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: isMobile ? 10 : 14, marginBottom: isMobile ? 12 : 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {!isMobile && (
+        {!isMobile && (
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: 14, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
               style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '9px 12px', fontSize: 13, outline: 'none' }} />
-          )}
-          <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
-            {GROUPS.map(g => pill(group === g, () => setGroup(g), g))}
+            <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
+              {GROUPS.map(g => pill(group === g, () => setGroup(g), g))}
+            </div>
+            <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
+              {DIFFICULTIES.map(d => pill(diff === d, () => setDiff(d), d))}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
-            {DIFFICULTIES.map(d => pill(diff === d, () => setDiff(d), d))}
-          </div>
-        </div>
+        )}
 
         {loading ? (
           <div style={{ color: 'var(--mu)', padding: 40, textAlign: 'center' }}>Loading...</div>

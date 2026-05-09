@@ -67,7 +67,7 @@ export default function AthleteForm() {
             </div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Level</div>
-              <select value={level} onChange={e => setLevel(e.target.value)} style={{ ...inp, appearance: 'none' }}>
+              <select value={level} onChange={e => setLevel(e.target.value)} style={{ ...inp, appearance: 'none', WebkitAppearance: 'none' }}>
                 <option value="">— select —</option>
                 {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
@@ -83,8 +83,8 @@ export default function AthleteForm() {
           {error && <p style={{ fontSize: 12, color: '#F88080' }}>{error}</p>}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-            <button onClick={() => navigate('/roster')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-            <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+            <button onClick={() => navigate('/roster')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 46 }}>Cancel</button>
+            <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, minHeight: 46 }}>
               {saving ? 'Saving...' : isEdit ? 'Update athlete' : 'Add to roster'}
             </button>
           </div>
