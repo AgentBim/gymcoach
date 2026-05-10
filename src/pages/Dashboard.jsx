@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)
   const [assigningWorkout, setAssigningWorkout] = useState(null)
+  const [sheetWorkout, setSheetWorkout] = useState(null)
   const [search, setSearch] = useState('')
   const [filterGroup, setFilterGroup] = useState('All')
   const [filterOpen, setFilterOpen] = useState(false)
@@ -168,33 +169,52 @@ export default function Dashboard() {
                 <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 12 }}>
                   {w.workout_exercises?.length || 0} exercises
                 </div>
-                <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {/* Primary row */}
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => copyShareLink(w.share_token)}
-                      style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', minHeight: 36 }}>
-                      {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
-                    </button>
-                    <button onClick={() => setAssigningWorkout(w)}
-                      style={{ flex: 1, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 6, color: 'var(--ac)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', fontWeight: 500, minHeight: 36 }}>
-                      Assign
-                    </button>
-                  </div>
-                  {/* Secondary row */}
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => navigate(`/workout/${w.id}/edit`)}
-                      style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>
-                      ✏️ Edit
-                    </button>
-                    <button onClick={() => duplicateWorkout(w)}
-                      style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>
-                      ⧉ Duplicate
-                    </button>
-                    <button onClick={() => deleteWorkout(w.id)}
-                      style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '7px 12px', cursor: 'pointer', minHeight: 34 }}>
-                      🗑
-                    </button>
-                  </div>
+                <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10 }}>
+                  {isMobile ? (
+                    /* Mobile: Share + Assign + ••• */
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => copyShareLink(w.share_token)}
+                        style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 13, padding: '11px 10px', cursor: 'pointer', minHeight: 44 }}>
+                        {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
+                      </button>
+                      <button onClick={() => setAssigningWorkout(w)}
+                        style={{ flex: 1, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 13, padding: '11px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 44 }}>
+                        Assign
+                      </button>
+                      <button onClick={() => setSheetWorkout(w)}
+                        style={{ width: 44, minHeight: 44, background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--mu)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        •••
+                      </button>
+                    </div>
+                  ) : (
+                    /* Desktop: two-row layout */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => copyShareLink(w.share_token)}
+                          style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', minHeight: 36 }}>
+                          {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
+                        </button>
+                        <button onClick={() => setAssigningWorkout(w)}
+                          style={{ flex: 1, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 6, color: 'var(--ac)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', fontWeight: 500, minHeight: 36 }}>
+                          Assign
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => navigate(`/workout/${w.id}/edit`)}
+                          style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>
+                          ✏️ Edit
+                        </button>
+                        <button onClick={() => duplicateWorkout(w)}
+                          style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>
+                          ⧉ Duplicate
+                        </button>
+                        <button onClick={() => deleteWorkout(w.id)}
+                          style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '7px 12px', cursor: 'pointer', minHeight: 34 }}>
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -212,6 +232,57 @@ export default function Dashboard() {
           workout={assigningWorkout}
           onClose={() => setAssigningWorkout(null)}
         />
+      )}
+
+      {/* Mobile ••• bottom sheet */}
+      {sheetWorkout && (
+        <div
+          onClick={() => setSheetWorkout(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width: '100%', background: 'var(--s1)', borderRadius: '18px 18px 0 0', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)', overflow: 'hidden' }}>
+
+            {/* Handle */}
+            <div style={{ width: 36, height: 4, background: 'var(--br2)', borderRadius: 2, margin: '12px auto 16px' }} />
+
+            {/* Workout name */}
+            <div style={{ padding: '0 20px 14px', borderBottom: '1px solid var(--br)' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', marginBottom: 2 }}>{sheetWorkout.name}</div>
+              <div style={{ fontSize: 12, color: 'var(--mu)' }}>{sheetWorkout.workout_exercises?.length || 0} exercises</div>
+            </div>
+
+            {/* 2×2 action grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '14px 16px 4px' }}>
+              {[
+                { icon: '✏️', label: 'Edit', color: 'var(--tx)', action: () => { setSheetWorkout(null); navigate(`/workout/${sheetWorkout.id}/edit`) } },
+                { icon: '⧉',  label: 'Duplicate', color: 'var(--tx)', action: () => { duplicateWorkout(sheetWorkout); setSheetWorkout(null) } },
+                { icon: '🔗', label: 'Copy link', color: 'var(--tx)', action: () => { copyShareLink(sheetWorkout.share_token); setSheetWorkout(null) } },
+                { icon: '🗑', label: 'Delete', color: '#F88080', action: () => { deleteWorkout(sheetWorkout.id); setSheetWorkout(null) }, danger: true },
+              ].map(item => (
+                <button key={item.label} onClick={item.action}
+                  style={{
+                    background: item.danger ? 'rgba(248,128,128,.07)' : 'var(--s2)',
+                    border: `1px solid ${item.danger ? 'rgba(248,128,128,.2)' : 'var(--br)'}`,
+                    borderRadius: 12, padding: '16px 12px',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                    cursor: 'pointer', minHeight: 80,
+                  }}>
+                  <span style={{ fontSize: 24 }}>{item.icon}</span>
+                  <span style={{ fontSize: 13, color: item.color, fontWeight: 500 }}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Cancel */}
+            <div style={{ padding: '10px 16px 0' }}>
+              <button onClick={() => setSheetWorkout(null)}
+                style={{ width: '100%', padding: '14px', background: 'var(--br)', border: 'none', borderRadius: 12, color: 'var(--mu)', fontSize: 15, cursor: 'pointer', fontWeight: 500 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </Layout>
   )
