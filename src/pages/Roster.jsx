@@ -82,7 +82,7 @@ export default function Roster() {
   return (
     <Layout>
       {isMobile && (
-        <div style={{ padding: '14px 16px 12px', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ padding: '14px 16px 12px', paddingTop: 'max(14px, calc(var(--sat) + 6px))', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--tx)' }}>Roster</span>
             <button onClick={() => navigate('/roster/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '7px 13px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Add</button>

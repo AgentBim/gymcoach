@@ -109,7 +109,7 @@ export default function History() {
     <Layout>
       {/* Mobile header */}
       {isMobile && (
-        <div style={{ padding: '14px 16px 12px', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ padding: '14px 16px 12px', paddingTop: 'max(14px, calc(var(--sat) + 6px))', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--tx)', marginBottom: 2 }}>Feedback history</div>
           <div style={{ fontSize: 12, color: 'var(--mu)' }}>{totalFeedback} response{totalFeedback !== 1 ? 's' : ''}</div>
         </div>

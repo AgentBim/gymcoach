@@ -342,7 +342,7 @@ export default function AthleteView() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 40px)' }}>
       {/* Header */}
-      <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', padding: '13px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
+      <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', padding: '13px 20px', paddingTop: 'max(13px, calc(var(--sat) + 6px))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <ChalkUpLogo size={24} />
           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>chalkup</span>

@@ -121,7 +121,7 @@ export default function Library() {
   return (
     <Layout>
       {isMobile && (
-        <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10, paddingTop: 'var(--sat)' }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--tx)', flex: 1 }}>Exercise Library</span>
             <span style={{ fontSize: 12, color: 'var(--mu)' }}>{filtered.length}</span>

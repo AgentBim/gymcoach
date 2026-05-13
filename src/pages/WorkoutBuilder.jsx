@@ -592,7 +592,7 @@ export default function WorkoutBuilder() {
     return (
       <Layout>
         {/* Sticky header */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--s1)', borderBottom: '1px solid var(--br)' }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--s1)', borderBottom: '1px solid var(--br)', paddingTop: 'var(--sat)' }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Workout name..."

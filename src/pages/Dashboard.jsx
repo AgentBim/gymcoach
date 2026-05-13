@@ -102,7 +102,7 @@ export default function Dashboard() {
   return (
     <Layout>
       {isMobile && (
-        <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10, paddingTop: 'var(--sat)' }}>
           {/* Main header row */}
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <ChalkUpLogo size={22} />
