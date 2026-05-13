@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import AIGeneratorModal from '../components/AIGeneratorModal'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const MUSCLE_GROUPS = ['Arms', 'Back', 'Legs', 'Core', 'Shoulders']
@@ -98,6 +99,8 @@ export default function WorkoutBuilder() {
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [showAIGenerator, setShowAIGenerator] = useState(false)
+  const [isAiGenerated, setIsAiGenerated] = useState(false)
 
   // Randomizer
   const [randGroups, setRandGroups] = useState([])
@@ -276,7 +279,7 @@ export default function WorkoutBuilder() {
       await supabase.from('workout_exercises').delete().eq('workout_id', id)
       await supabase.from('workout_prehab').delete().eq('workout_id', id)
     } else {
-      const { data: w, error: we } = await supabase.from('workouts').insert({ coach_id: user.id, name }).select().single()
+      const { data: w, error: we } = await supabase.from('workouts').insert({ coach_id: user.id, name, is_ai_generated: isAiGenerated }).select().single()
       if (we) { setError(we.message); setSaving(false); return }
       workoutId = w.id
     }
@@ -587,9 +590,19 @@ export default function WorkoutBuilder() {
     )
   }
 
+  function handleAIResult({ name: aiName, exercises: aiExercises, prehab: aiPrehab }) {
+    if (aiName) setName(aiName)
+    setSelected(aiExercises)
+    setPrehab(aiPrehab)
+    setIsAiGenerated(true)
+    setMobileTab('build')
+    setDesktopTab('manual')
+  }
+
   // ── MOBILE LAYOUT ────────────────────────────────────────────
   if (isMobile) {
     return (
+      <>
       <Layout>
         {/* Sticky header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--s1)', borderBottom: '1px solid var(--br)', paddingTop: 'var(--sat)' }}>
@@ -625,6 +638,24 @@ export default function WorkoutBuilder() {
 
         {/* Tab content */}
         <div style={{ padding: '12px 16px', paddingBottom: pendingPick.size > 0 ? 100 : 16 }}>
+
+          {/* AI Generator entry button — shown on prehab + build tabs */}
+          {(mobileTab === 'prehab' || mobileTab === 'build') && (
+            <button onClick={() => setShowAIGenerator(true)} style={{
+              width: '100%', marginBottom: 12, padding: '12px 14px',
+              background: 'linear-gradient(135deg,rgba(167,139,250,.1),rgba(79,158,255,.07))',
+              border: '1px solid rgba(167,139,250,.3)', borderRadius: 14,
+              display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+              textAlign: 'left',
+            }}>
+              <span style={{ fontSize: 20 }}>✦</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#A78BFA', marginBottom: 2 }}>Generate with AI</div>
+                <div style={{ fontSize: 11, color: 'var(--mu2)' }}>Describe the session — AI picks from your library</div>
+              </div>
+              <span style={{ color: '#A78BFA', fontSize: 16 }}>›</span>
+            </button>
+          )}
 
           {/* PREHAB TAB */}
           {mobileTab === 'prehab' && <PrehabPanel />}
@@ -740,11 +771,20 @@ export default function WorkoutBuilder() {
           </div>
         )}
       </Layout>
+      {showAIGenerator && (
+        <AIGeneratorModal
+          allExercises={allExercises}
+          onClose={() => setShowAIGenerator(false)}
+          onResult={handleAIResult}
+        />
+      )}
+    </>
     )
   }
 
   // ── DESKTOP LAYOUT ───────────────────────────────────────────
   return (
+    <>
     <Layout>
       <div style={{ display: 'flex', height: '100%' }}>
 
@@ -806,7 +846,22 @@ export default function WorkoutBuilder() {
 
           <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
             {desktopTab === 'prehab' ? (
-              <PrehabPanel />
+              <>
+                <button onClick={() => setShowAIGenerator(true)} style={{
+                  width: '100%', marginBottom: 14, padding: '11px 14px',
+                  background: 'linear-gradient(135deg,rgba(167,139,250,.1),rgba(79,158,255,.07))',
+                  border: '1px solid rgba(167,139,250,.3)', borderRadius: 12,
+                  display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left',
+                }}>
+                  <span style={{ fontSize: 18 }}>✦</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#A78BFA', marginBottom: 1 }}>Generate with AI</div>
+                    <div style={{ fontSize: 11, color: 'var(--mu2)' }}>Describe the session — AI picks from your library</div>
+                  </div>
+                  <span style={{ color: '#A78BFA', fontSize: 15 }}>›</span>
+                </button>
+                <PrehabPanel />
+              </>
             ) : desktopTab === 'manual' ? (
               <>
                 <input value={name} onChange={e => setName(e.target.value)} placeholder="Workout name..."
@@ -827,5 +882,13 @@ export default function WorkoutBuilder() {
         </div>
       </div>
     </Layout>
+    {showAIGenerator && (
+      <AIGeneratorModal
+        allExercises={allExercises}
+        onClose={() => setShowAIGenerator(false)}
+        onResult={handleAIResult}
+      />
+    )}
+    </>
   )
 }

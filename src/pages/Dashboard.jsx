@@ -161,8 +161,11 @@ export default function Dashboard() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 14 }}>
             {filteredWorkouts.map(w => (
-              <div key={w.id} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: isMobile ? 14 : 16 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{w.name}</div>
+              <div key={w.id} style={{ background: 'var(--s2)', border: `1px solid ${w.is_ai_generated ? 'rgba(167,139,250,.25)' : 'var(--br)'}`, borderRadius: 12, padding: isMobile ? 14 : 16, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  {w.name}
+                  {w.is_ai_generated && <span style={{ fontSize: 11, background: 'rgba(167,139,250,.12)', color: '#A78BFA', border: '1px solid rgba(167,139,250,.25)', borderRadius: 20, padding: '1px 7px', fontWeight: 700, flexShrink: 0 }}>✦ AI</span>}
+                </div>
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
                   {getMuscleGroups(w).map(g => <Badge key={g} group={g} />)}
                 </div>
