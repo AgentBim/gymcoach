@@ -223,10 +223,12 @@ export default function AthleteView() {
   const { token } = useParams()
   const [workout, setWorkout] = useState(null)
   const [exercises, setExercises] = useState([])
+  const [prehabExercises, setPrehabExercises] = useState([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
   const [checked, setChecked] = useState({})
+  const [prehabChecked, setPrehabChecked] = useState({})
   const [activeTimer, setActiveTimer] = useState(null) // exercise id
   const [restingAfter, setRestingAfter] = useState(null) // exercise id
   const [showFeedback, setShowFeedback] = useState(false)
@@ -251,15 +253,28 @@ export default function AthleteView() {
       .eq('workout_id', w.id)
       .order('position')
 
+    const { data: pre } = await supabase
+      .from('workout_prehab')
+      .select('*, exercises(*)')
+      .eq('workout_id', w.id)
+      .order('position')
+
     setWorkout(w)
     setExercises(ex || [])
+    setPrehabExercises(pre || [])
     setLoading(false)
   }
 
   const totalCount = exercises.length
   const checkedCount = Object.values(checked).filter(Boolean).length
+  const prehabTotal = prehabExercises.length
+  const prehabCheckedCount = Object.values(prehabChecked).filter(Boolean).length
   const allDone = totalCount > 0 && checkedCount === totalCount
   const progress = totalCount > 0 ? (checkedCount / totalCount) * 100 : 0
+
+  function togglePrehabCheck(id) {
+    setPrehabChecked(prev => ({ ...prev, [id]: !prev[id] }))
+  }
 
   function toggleCheck(id) {
     const nowChecked = !checked[id]
@@ -362,6 +377,49 @@ export default function AthleteView() {
             </div>
           )}
         </div>
+
+        {/* Prehab block — shown before main workout */}
+        {!showFeedback && prehabExercises.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ background: 'rgba(50,200,140,.08)', border: '1px solid rgba(50,200,140,.25)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(50,200,140,.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#5DD99A' }}>🛡 Prehab first</div>
+                  <div style={{ fontSize: 11, color: 'rgba(93,217,154,.7)', marginTop: 2 }}>Complete before your main workout</div>
+                </div>
+                <span style={{ fontSize: 11, color: '#5DD99A', background: 'rgba(50,200,140,.15)', padding: '3px 8px', borderRadius: 20, fontWeight: 600 }}>
+                  {prehabCheckedCount}/{prehabTotal}
+                </span>
+              </div>
+              <div style={{ padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {prehabExercises.map((wp) => {
+                  const ex = wp.exercises
+                  const isDone = prehabChecked[wp.id]
+                  const sets = `${wp.sets} sets`
+                  const reps = wp.reps ? `× ${wp.reps} reps` : wp.duration_seconds ? `× ${wp.duration_seconds}s` : ''
+                  return (
+                    <div key={wp.id} onClick={() => togglePrehabCheck(wp.id)} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0',
+                      cursor: 'pointer', opacity: isDone ? 0.55 : 1, transition: 'opacity .2s',
+                    }}>
+                      <div style={{
+                        width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                        background: isDone ? 'rgba(50,200,140,.3)' : 'rgba(50,200,140,.1)',
+                        border: `1.5px solid ${isDone ? 'rgba(50,200,140,.6)' : 'rgba(50,200,140,.3)'}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, color: '#5DD99A',
+                      }}>{isDone ? '✓' : ''}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', textDecoration: isDone ? 'line-through' : 'none' }}>{ex?.name}</div>
+                        <div style={{ fontSize: 11, color: 'rgba(93,217,154,.8)', marginTop: 1 }}>{[sets, reps].filter(Boolean).join(' ')}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Exercise list */}
         {!showFeedback && (

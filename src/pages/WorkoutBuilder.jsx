@@ -82,7 +82,7 @@ export default function WorkoutBuilder() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  const [mobileTab, setMobileTab] = useState('pick')
+  const [mobileTab, setMobileTab] = useState('prehab')
   const [desktopTab, setDesktopTab] = useState('manual')
 
   const [name, setName] = useState('')
@@ -106,6 +106,12 @@ export default function WorkoutBuilder() {
   const [randCount, setRandCount] = useState(6)
   const [randResult, setRandResult] = useState([])
 
+  // Prehab
+  const [prehab, setPrehab] = useState([])           // committed prehab items
+  const [prehabSearch, setPrehabSearch] = useState('')
+  const [prehabGroup, setPrehabGroup] = useState('All')
+  const [suggestDismissed, setSuggestDismissed] = useState(false)
+
   useEffect(() => { fetchExercises() }, [])
   useEffect(() => { if (isEdit) fetchWorkout() }, [id])
 
@@ -117,7 +123,7 @@ export default function WorkoutBuilder() {
   async function fetchWorkout() {
     const { data } = await supabase
       .from('workouts')
-      .select('*, workout_exercises(*, exercises(*))')
+      .select('*, workout_exercises(*, exercises(*)), workout_prehab(*, exercises(*))')
       .eq('id', id).single()
     if (data) {
       setName(data.name)
@@ -131,17 +137,44 @@ export default function WorkoutBuilder() {
           rest_seconds: we.rest_seconds,
         }))
       setSelected(items)
+      const prehabItems = (data.workout_prehab || [])
+        .sort((a, b) => a.position - b.position)
+        .map(wp => ({
+          exercise: wp.exercises,
+          sets: wp.sets,
+          reps: wp.reps || '',
+          duration_seconds: wp.duration_seconds || '',
+          rest_seconds: wp.rest_seconds,
+        }))
+      setPrehab(prehabItems)
     }
   }
 
   const committedIds = new Set(selected.map(s => s.exercise.id))
+  const prehabCommittedIds = new Set(prehab.map(p => p.exercise.id))
 
   const filtered = allExercises.filter(e => {
+    if ((e.category || 'strength') !== 'strength') return false
     if (filterGroup !== 'All' && e.muscle_group !== filterGroup) return false
     if (filterDiff !== 'All' && e.difficulty !== filterDiff) return false
     if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
+
+  const prehabExercises = allExercises.filter(e => {
+    if (e.category !== 'prehab') return false
+    if (prehabGroup !== 'All' && e.muscle_group !== prehabGroup) return false
+    if (prehabSearch && !e.name.toLowerCase().includes(prehabSearch.toLowerCase())) return false
+    return true
+  })
+
+  // Auto-suggest: prehab exercises matching muscle groups in selected
+  const selectedGroups = [...new Set(selected.map(s => s.exercise?.muscle_group).filter(Boolean))]
+  const suggestedPrehab = allExercises.filter(e =>
+    e.category === 'prehab' &&
+    selectedGroups.includes(e.muscle_group) &&
+    !prehabCommittedIds.has(e.id)
+  ).slice(0, 6)
 
   // Toggle pending pick
   function togglePending(ex) {
@@ -241,6 +274,7 @@ export default function WorkoutBuilder() {
     if (isEdit) {
       await supabase.from('workouts').update({ name }).eq('id', id)
       await supabase.from('workout_exercises').delete().eq('workout_id', id)
+      await supabase.from('workout_prehab').delete().eq('workout_id', id)
     } else {
       const { data: w, error: we } = await supabase.from('workouts').insert({ coach_id: user.id, name }).select().single()
       if (we) { setError(we.message); setSaving(false); return }
@@ -255,6 +289,17 @@ export default function WorkoutBuilder() {
         rest_seconds: Number(s.rest_seconds) || 30,
       }))
     )
+    if (prehab.length > 0) {
+      await supabase.from('workout_prehab').insert(
+        prehab.map((p, i) => ({
+          workout_id: workoutId, exercise_id: p.exercise.id, position: i,
+          sets: Number(p.sets) || 2,
+          reps: p.reps ? Number(p.reps) : null,
+          duration_seconds: p.duration_seconds ? Number(p.duration_seconds) : null,
+          rest_seconds: Number(p.rest_seconds) || 20,
+        }))
+      )
+    }
     navigate('/dashboard')
   }
 
@@ -262,6 +307,137 @@ export default function WorkoutBuilder() {
     value: val, onChange,
     style: { width: w, background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--tx)', fontSize: 12, padding: '4px 6px', textAlign: 'center', fontFamily: 'var(--mono)', outline: 'none' }
   })
+
+  // ── PREHAB HELPERS ───────────────────────────────────────────
+  function addPrehab(ex) {
+    if (prehabCommittedIds.has(ex.id)) return
+    setPrehab(prev => [...prev, { exercise: ex, sets: 2, reps: ex.default_reps || '', duration_seconds: ex.default_duration_seconds || '', rest_seconds: ex.default_rest_seconds || 20 }])
+  }
+
+  function removePrehab(idx) {
+    setPrehab(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  function updatePrehabItem(idx, field, val) {
+    setPrehab(prev => prev.map((p, i) => i === idx ? { ...p, [field]: val } : p))
+  }
+
+  const FOCUS_COLORS = {
+    activation: { bg: 'rgba(168,237,82,.12)', color: '#A8ED52' },
+    stability:  { bg: 'rgba(80,150,230,.12)', color: '#6BB5F5' },
+    mobility:   { bg: 'rgba(160,100,230,.12)', color: '#C084F5' },
+    strength:   { bg: 'rgba(240,158,40,.12)',  color: '#F4B455' },
+  }
+
+  function FocusBadge({ focus }) {
+    if (!focus) return null
+    const c = FOCUS_COLORS[focus] || { bg: 'var(--br)', color: 'var(--mu)' }
+    return <span style={{ padding: '2px 7px', borderRadius: 20, fontSize: 10, fontWeight: 500, background: c.bg, color: c.color, textTransform: 'capitalize' }}>{focus}</span>
+  }
+
+  function PrehabBuildList() {
+    return prehab.length === 0 ? (
+      <div style={{ textAlign: 'center', padding: '30px 20px', color: 'var(--mu)' }}>
+        <div style={{ fontSize: 28, marginBottom: 8 }}>🛡</div>
+        <p style={{ fontSize: 14, marginBottom: 4 }}>No prehab exercises yet</p>
+        <p style={{ fontSize: 12 }}>Pick from the list{isMobile ? ' above' : ' on the left'} or accept a suggestion</p>
+      </div>
+    ) : (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {prehab.map((p, idx) => (
+          <div key={p.exercise.id} style={{ background: 'rgba(50,200,140,.05)', border: '1px solid rgba(50,200,140,.2)', borderRadius: 10, padding: '10px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 3 }}>{p.exercise.name}</div>
+                <FocusBadge focus={p.exercise.prehab_focus} />
+              </div>
+              <button onClick={() => removePrehab(idx)} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 16, cursor: 'pointer', padding: '0 0 0 8px', lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--mu)' }}>Sets <input {...inp(p.sets, e => updatePrehabItem(idx, 'sets', e.target.value))} /></label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--mu)' }}>Reps <input {...inp(p.reps, e => updatePrehabItem(idx, 'reps', e.target.value))} /></label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--mu)' }}>Rest <input {...inp(p.rest_seconds, e => updatePrehabItem(idx, 'rest_seconds', e.target.value), 50)} />s</label>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  function PrehabPanel() {
+    const showSuggestions = suggestedPrehab.length > 0 && !suggestDismissed && selected.length > 0
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {showSuggestions && (
+          <div style={{ background: 'rgba(50,200,140,.06)', border: '1px solid rgba(50,200,140,.25)', borderRadius: 10, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#5DD99A' }}>🤖 Suggested prehab</span>
+              <button onClick={() => setSuggestDismissed(true)} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 12, cursor: 'pointer', padding: 0 }}>Dismiss</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {suggestedPrehab.map(ex => (
+                <div key={ex.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
+                    <FocusBadge focus={ex.prehab_focus} />
+                  </div>
+                  <button onClick={() => addPrehab(ex)} style={{ background: 'rgba(50,200,140,.15)', border: '1px solid rgba(50,200,140,.3)', borderRadius: 6, color: '#5DD99A', fontSize: 12, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 10, padding: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--mu)', marginBottom: 8 }}>Browse prehab exercises</div>
+          <input value={prehabSearch} onChange={e => setPrehabSearch(e.target.value)} placeholder="Search prehab..."
+            style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 7, color: 'var(--tx)', padding: '7px 10px', fontSize: 12, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+            {GROUPS.map(g => (
+              <button key={g} onClick={() => setPrehabGroup(g)} style={{
+                padding: '3px 8px', borderRadius: 20, fontSize: 11,
+                fontWeight: prehabGroup === g ? 600 : 400,
+                background: prehabGroup === g ? 'rgba(50,200,140,.15)' : 'var(--br)',
+                color: prehabGroup === g ? '#5DD99A' : 'var(--mu)',
+                border: prehabGroup === g ? '1px solid rgba(50,200,140,.3)' : '1px solid transparent',
+                cursor: 'pointer',
+              }}>{g}</button>
+            ))}
+          </div>
+          <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {prehabExercises.length === 0
+              ? <div style={{ fontSize: 12, color: 'var(--mu)', padding: 12, textAlign: 'center' }}>No exercises found</div>
+              : prehabExercises.map(ex => {
+                  const committed = prehabCommittedIds.has(ex.id)
+                  return (
+                    <div key={ex.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '7px 8px', borderRadius: 7, opacity: committed ? 0.4 : 1 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
+                        <FocusBadge focus={ex.prehab_focus} />
+                      </div>
+                      <button onClick={() => addPrehab(ex)} disabled={committed} style={{
+                        width: 24, height: 24, flexShrink: 0,
+                        background: committed ? 'transparent' : 'var(--br)',
+                        border: committed ? '1px solid var(--br)' : 'none',
+                        borderRadius: 6, color: committed ? 'var(--mu)' : 'var(--tx)',
+                        fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: committed ? 'default' : 'pointer',
+                      }}>{committed ? '✓' : '+'}</button>
+                    </div>
+                  )
+                })
+            }
+          </div>
+        </div>
+
+        <div style={{ marginTop: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--mu)', marginBottom: 8 }}>
+            Added prehab ({prehab.length})
+          </div>
+          <PrehabBuildList />
+        </div>
+      </div>
+    )
+  }
 
   // ── SHARED: BUILD LIST ───────────────────────────────────────
   function BuildList() {
@@ -424,6 +600,7 @@ export default function WorkoutBuilder() {
           </div>
           <div style={{ display: 'flex', borderTop: '1px solid var(--br)' }}>
             {[
+              { key: 'prehab', label: '🛡 Prehab', badge: prehab.length || null },
               { key: 'pick',   label: '📚 Pick',   badge: pendingPick.size > 0 ? pendingPick.size : null },
               { key: 'build',  label: '✏️ Build',  badge: selected.length || null },
               { key: 'random', label: '🎲 Random', badge: null },
@@ -448,6 +625,9 @@ export default function WorkoutBuilder() {
 
         {/* Tab content */}
         <div style={{ padding: '12px 16px', paddingBottom: pendingPick.size > 0 ? 100 : 16 }}>
+
+          {/* PREHAB TAB */}
+          {mobileTab === 'prehab' && <PrehabPanel />}
 
           {/* PICK TAB */}
           {mobileTab === 'pick' && (
@@ -604,19 +784,30 @@ export default function WorkoutBuilder() {
           </div>
         </div>
 
-        {/* Right panel — build / randomizer */}
+        {/* Right panel — build / randomizer / prehab */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', alignItems: 'center', gap: 12 }}>
-            {['manual', 'randomizer'].map(t => (
-              <button key={t} onClick={() => setDesktopTab(t)} style={{
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {[
+              { key: 'prehab',     label: '🛡 Prehab',     badge: prehab.length || null },
+              { key: 'manual',     label: '✏️ Manual build', badge: null },
+              { key: 'randomizer', label: '🎲 Randomizer',  badge: null },
+            ].map(t => (
+              <button key={t.key} onClick={() => setDesktopTab(t.key)} style={{
                 padding: '6px 14px', borderRadius: 'var(--r)', border: 'none', fontSize: 13, fontWeight: 500,
-                background: desktopTab === t ? 'var(--br)' : 'transparent', color: desktopTab === t ? 'var(--tx)' : 'var(--mu)', cursor: 'pointer'
-              }}>{t === 'manual' ? '✏️ Manual build' : '🎲 Randomizer'}</button>
+                background: desktopTab === t.key ? 'var(--br)' : 'transparent',
+                color: desktopTab === t.key ? 'var(--tx)' : 'var(--mu)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 5,
+              }}>
+                {t.label}
+                {t.badge ? <span style={{ width: 18, height: 18, background: 'var(--ac)', color: '#0C1118', borderRadius: '50%', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.badge}</span> : null}
+              </button>
             ))}
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-            {desktopTab === 'manual' ? (
+            {desktopTab === 'prehab' ? (
+              <PrehabPanel />
+            ) : desktopTab === 'manual' ? (
               <>
                 <input value={name} onChange={e => setName(e.target.value)} placeholder="Workout name..."
                   style={{ width: '100%', background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '10px 14px', fontSize: 16, fontWeight: 600, outline: 'none', marginBottom: 16 }} />

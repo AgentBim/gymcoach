@@ -6,6 +6,17 @@ import Layout from '../components/Layout'
 
 const MUSCLE_GROUPS = ['Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard']
+const CATEGORIES = [
+  { value: 'strength', label: '💪 Strength' },
+  { value: 'prehab',   label: '🛡 Prehab' },
+  { value: 'mobility', label: '🧘 Mobility' },
+]
+const PREHAB_FOCUSES = [
+  { value: 'activation', label: 'Activation' },
+  { value: 'stability',  label: 'Stability' },
+  { value: 'mobility',   label: 'Mobility' },
+  { value: 'strength',   label: 'Strength' },
+]
 
 export default function CustomExercise() {
   const { id } = useParams()
@@ -24,6 +35,8 @@ export default function CustomExercise() {
   const [useTime, setUseTime] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [category, setCategory] = useState('strength')
+  const [prehabFocus, setPrehabFocus] = useState('')
 
   useEffect(() => { if (isEdit) fetchExercise() }, [id])
 
@@ -39,6 +52,8 @@ export default function CustomExercise() {
       setDuration(data.default_duration_seconds || '')
       setRest(data.default_rest_seconds)
       setUseTime(!!data.default_duration_seconds)
+      setCategory(data.category || 'strength')
+      setPrehabFocus(data.prehab_focus || '')
     }
   }
 
@@ -59,6 +74,8 @@ export default function CustomExercise() {
       default_rest_seconds: Number(rest) || 30,
       coach_id: user.id,
       is_custom: true,
+      category,
+      prehab_focus: category === 'prehab' ? (prehabFocus || null) : null,
     }
 
     if (isEdit) {
