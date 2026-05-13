@@ -108,6 +108,8 @@ export default function WorkoutBuilder() {
   const [randDiff, setRandDiff] = useState('All')
   const [randCount, setRandCount] = useState(6)
   const [randResult, setRandResult] = useState([])
+  const [randPrehabSuggestions, setRandPrehabSuggestions] = useState([])
+  const [randPrehabSelected, setRandPrehabSelected] = useState(new Set())
 
   // Prehab
   const [prehab, setPrehab] = useState([])           // committed prehab items
@@ -254,6 +256,13 @@ export default function WorkoutBuilder() {
   function randomize() {
     const result = weightedRandomize(allExercises, randGroups, randBias, randDiff, randCount)
     setRandResult(result)
+    // Suggest prehab matching the generated muscle groups
+    const groups = [...new Set(result.map(e => e.muscle_group).filter(Boolean))]
+    const suggestions = allExercises
+      .filter(e => e.category === 'prehab' && groups.includes(e.muscle_group))
+      .slice(0, 6)
+    setRandPrehabSuggestions(suggestions)
+    setRandPrehabSelected(new Set())
   }
 
   function useRandomResult() {
@@ -264,7 +273,20 @@ export default function WorkoutBuilder() {
       duration_seconds: ex.default_duration_seconds || '',
       rest_seconds: ex.default_rest_seconds,
     })))
+    // Add any individually selected prehab suggestions
+    const chosenPrehab = randPrehabSuggestions
+      .filter(ex => randPrehabSelected.has(ex.id))
+      .map(ex => ({
+        exercise: ex,
+        sets: ex.default_sets || 2,
+        reps: ex.default_reps || '',
+        duration_seconds: ex.default_duration_seconds || '',
+        rest_seconds: ex.default_rest_seconds || 20,
+      }))
+    if (chosenPrehab.length > 0) setPrehab(chosenPrehab)
     setRandResult([])
+    setRandPrehabSuggestions([])
+    setRandPrehabSelected(new Set())
     if (isMobile) setMobileTab('build')
     else setDesktopTab('manual')
   }
@@ -584,6 +606,41 @@ export default function WorkoutBuilder() {
                 <GroupBadge group={ex.muscle_group} />
               </div>
             ))}
+
+            {/* Prehab suggestions */}
+            {randPrehabSuggestions.length > 0 && (
+              <div style={{ marginTop: 12, background: 'rgba(48,232,200,.05)', border: '1px solid rgba(48,232,200,.2)', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ padding: '9px 12px', background: 'rgba(48,232,200,.07)', borderBottom: '1px solid rgba(48,232,200,.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#30E8C8', textTransform: 'uppercase', letterSpacing: '.05em' }}>🛡 Suggested prehab</span>
+                  <span style={{ fontSize: 10, color: 'rgba(48,232,200,.7)' }}>{randPrehabSelected.size} selected</span>
+                </div>
+                {randPrehabSuggestions.map(ex => {
+                  const selected = randPrehabSelected.has(ex.id)
+                  return (
+                    <div key={ex.id} onClick={() => setRandPrehabSelected(prev => {
+                      const next = new Set(prev)
+                      next.has(ex.id) ? next.delete(ex.id) : next.add(ex.id)
+                      return next
+                    })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderBottom: '1px solid rgba(48,232,200,.07)', cursor: 'pointer', opacity: selected ? 1 : 0.75, transition: 'opacity .15s' }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${selected ? 'rgba(48,232,200,.7)' : 'rgba(48,232,200,.3)'}`, background: selected ? 'rgba(48,232,200,.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, color: '#30E8C8' }}>
+                        {selected ? '✓' : ''}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--tx)' }}>{ex.name}</div>
+                        <div style={{ fontSize: 10, color: 'rgba(48,232,200,.8)', marginTop: 1 }}>
+                          {ex.muscle_group}{ex.prehab_focus ? ` · ${ex.prehab_focus}` : ''} · {ex.default_sets} × {ex.default_reps ? `${ex.default_reps} reps` : `${ex.default_duration_seconds}s`}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                {randPrehabSelected.size > 0 && (
+                  <div style={{ padding: '8px 12px', fontSize: 11, color: 'rgba(48,232,200,.8)', fontStyle: 'italic' }}>
+                    {randPrehabSelected.size} prehab exercise{randPrehabSelected.size !== 1 ? 's' : ''} will be added when you tap "Use this →"
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
