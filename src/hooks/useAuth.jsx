@@ -44,11 +44,23 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
+    return supabase.auth.signOut()
+  }
+
+  async function requestPasswordReset(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/update-password`,
+    })
+    return { error }
+  }
+
+  async function updatePassword(password) {
+    const { error } = await supabase.auth.updateUser({ password })
+    return { error }
   }
 
   return (
-    <AuthContext.Provider value={{ user, coach, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, coach, loading, signUp, signIn, signOut, requestPasswordReset, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )

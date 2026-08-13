@@ -43,23 +43,30 @@ export default function Roster() {
   const [loading, setLoading] = useState(true)
   const [filterGroup, setFilterGroup] = useState('All')
   const [search, setSearch] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => { fetchAthletes() }, [user])
 
   async function fetchAthletes() {
     if (!user) return
-    const { data } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('athletes')
       .select('*, workout_assignments(id)')
       .eq('coach_id', user.id)
       .order('group_name').order('full_name')
-    setAthletes(data || [])
+    if (fetchError) setError(fetchError.message || 'Could not load athletes')
+    else setAthletes(data || [])
     setLoading(false)
   }
 
   async function deleteAthlete(id) {
     if (!confirm('Remove this athlete from your roster?')) return
-    await supabase.from('athletes').delete().eq('id', id)
+    setError('')
+    const { error: deleteError } = await supabase.from('athletes').delete().eq('id', id)
+    if (deleteError) {
+      setError(deleteError.message || 'Could not remove athlete')
+      return
+    }
     setAthletes(a => a.filter(x => x.id !== id))
   }
 
@@ -93,6 +100,7 @@ export default function Roster() {
       )}
 
       <div style={{ padding: isMobile ? '12px 16px' : '20px 24px' }}>
+        {error && <p role="alert" style={{ color: '#F88080', fontSize: 13, marginBottom: 12 }}>{error}</p>}
         {!isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>

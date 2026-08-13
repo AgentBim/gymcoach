@@ -11,23 +11,30 @@ export default function Programs() {
   const isMobile = useIsMobile()
   const [programs, setPrograms] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => { fetchPrograms() }, [user])
 
   async function fetchPrograms() {
     if (!user) return
-    const { data } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('programs')
       .select('*, program_days(id)')
       .eq('coach_id', user.id)
       .order('created_at', { ascending: false })
-    setPrograms(data || [])
+    if (fetchError) setError(fetchError.message || 'Could not load programs')
+    else setPrograms(data || [])
     setLoading(false)
   }
 
   async function deleteProgram(id) {
     if (!confirm('Delete this program?')) return
-    await supabase.from('programs').delete().eq('id', id)
+    setError('')
+    const { error: deleteError } = await supabase.from('programs').delete().eq('id', id)
+    if (deleteError) {
+      setError(deleteError.message || 'Could not delete program')
+      return
+    }
     setPrograms(p => p.filter(x => x.id !== id))
   }
 
@@ -40,6 +47,7 @@ export default function Programs() {
         </div>
       )}
       <div style={{ padding: isMobile ? '14px 16px' : '20px 24px' }}>
+        {error && <p role="alert" style={{ color: '#F88080', fontSize: 13, marginBottom: 12 }}>{error}</p>}
         {!isMobile && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div>

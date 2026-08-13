@@ -78,10 +78,13 @@ export default function CustomExercise() {
       prehab_focus: category === 'prehab' ? (prehabFocus || null) : null,
     }
 
-    if (isEdit) {
-      await supabase.from('exercises').update(payload).eq('id', id)
-    } else {
-      await supabase.from('exercises').insert(payload)
+    const { error: saveError } = isEdit
+      ? await supabase.from('exercises').update(payload).eq('id', id)
+      : await supabase.from('exercises').insert(payload)
+    if (saveError) {
+      setError(saveError.message || 'Could not save exercise')
+      setSaving(false)
+      return
     }
     navigate('/library')
   }

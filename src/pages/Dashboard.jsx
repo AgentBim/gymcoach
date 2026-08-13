@@ -21,15 +21,15 @@ function Badge({ group }) {
 }
 
 export default function Dashboard() {
-  const { user, coach } = useAuth()
+  const { user } = useAuth()
   const [workouts, setWorkouts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState(null)
   const [assigningWorkout, setAssigningWorkout] = useState(null)
   const [sheetWorkout, setSheetWorkout] = useState(null)
   const [search, setSearch] = useState('')
   const [filterGroup, setFilterGroup] = useState('All')
   const [filterOpen, setFilterOpen] = useState(false)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -37,46 +37,33 @@ export default function Dashboard() {
 
   async function fetchWorkouts() {
     if (!user) return
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('workouts')
       .select('*, workout_exercises(exercise_id, exercises(muscle_group))')
       .eq('coach_id', user.id)
       .order('created_at', { ascending: false })
+    if (error) setError(error.message)
     setWorkouts(data || [])
     setLoading(false)
   }
 
   async function deleteWorkout(id) {
     if (!confirm('Delete this workout?')) return
-    await supabase.from('workouts').delete().eq('id', id)
+    const { error } = await supabase.from('workouts').delete().eq('id', id)
+    if (error) { setError(error.message); return }
     setWorkouts(w => w.filter(x => x.id !== id))
   }
 
   async function duplicateWorkout(w) {
-    const { data: newW } = await supabase
-      .from('workouts')
-      .insert({ coach_id: user.id, name: `${w.name} (copy)` })
-      .select().single()
-    if (!newW) return
-    const { data: exercises } = await supabase
-      .from('workout_exercises').select('*').eq('workout_id', w.id)
-    if (exercises?.length) {
-      await supabase.from('workout_exercises').insert(
-        exercises.map(e => ({
-          workout_id: newW.id, exercise_id: e.exercise_id,
-          position: e.position, sets: e.sets, reps: e.reps,
-          duration_seconds: e.duration_seconds, rest_seconds: e.rest_seconds,
-        }))
-      )
+    setError('')
+    const { error: duplicateError } = await supabase.rpc('duplicate_workout', {
+      p_workout_id: w.id,
+    })
+    if (duplicateError) {
+      setError(`Workout could not be duplicated. ${duplicateError.message}`)
+      return
     }
     fetchWorkouts()
-  }
-
-    function copyShareLink(token) {
-    const url = `${window.location.origin}/share/${token}`
-    navigator.clipboard.writeText(url)
-    setCopied(token)
-    setTimeout(() => setCopied(null), 2000)
   }
 
   function getMuscleGroups(workout) {
@@ -145,10 +132,13 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workouts..." style={{ background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '7px 11px', fontSize: 13, outline: 'none', width: 200 }} />
-          {GROUP_OPTIONS.map(g => <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterGroup === g ? 600 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer' }}>{g}</button>)}
-        </div>
+        {!isMobile && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workouts..." style={{ background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '7px 11px', fontSize: 13, outline: 'none', width: 200 }} />
+            {GROUP_OPTIONS.map(g => <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterGroup === g ? 600 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer' }}>{g}</button>)}
+          </div>
+        )}
+        {error && <p role="alert" style={{ color: '#F88080', fontSize: 12, marginBottom: 12 }}>{error}</p>}
         {workouts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mu)' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏋️</div>
@@ -174,15 +164,11 @@ export default function Dashboard() {
                 </div>
                 <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10 }}>
                   {isMobile ? (
-                    /* Mobile: Share + Assign + ••• */
+                    /* Mobile: assignment links are athlete-specific */
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => copyShareLink(w.share_token)}
-                        style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 13, padding: '11px 10px', cursor: 'pointer', minHeight: 44 }}>
-                        {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
-                      </button>
                       <button onClick={() => setAssigningWorkout(w)}
                         style={{ flex: 1, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 13, padding: '11px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 44 }}>
-                        Assign
+                        Assign & share
                       </button>
                       <button onClick={() => setSheetWorkout(w)}
                         style={{ width: 44, minHeight: 44, background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--mu)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -193,13 +179,9 @@ export default function Dashboard() {
                     /* Desktop: two-row layout */
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => copyShareLink(w.share_token)}
-                          style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', minHeight: 36 }}>
-                          {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
-                        </button>
                         <button onClick={() => setAssigningWorkout(w)}
                           style={{ flex: 1, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 6, color: 'var(--ac)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', fontWeight: 500, minHeight: 36 }}>
-                          Assign
+                          Assign & share
                         </button>
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -260,7 +242,7 @@ export default function Dashboard() {
               {[
                 { icon: '✏️', label: 'Edit', color: 'var(--tx)', action: () => { setSheetWorkout(null); navigate(`/workout/${sheetWorkout.id}/edit`) } },
                 { icon: '⧉',  label: 'Duplicate', color: 'var(--tx)', action: () => { duplicateWorkout(sheetWorkout); setSheetWorkout(null) } },
-                { icon: '🔗', label: 'Copy link', color: 'var(--tx)', action: () => { copyShareLink(sheetWorkout.share_token); setSheetWorkout(null) } },
+                { icon: '🔗', label: 'Assign & share', color: 'var(--tx)', action: () => { setAssigningWorkout(sheetWorkout); setSheetWorkout(null) } },
                 { icon: '🗑', label: 'Delete', color: '#F88080', action: () => { deleteWorkout(sheetWorkout.id); setSheetWorkout(null) }, danger: true },
               ].map(item => (
                 <button key={item.label} onClick={item.action}

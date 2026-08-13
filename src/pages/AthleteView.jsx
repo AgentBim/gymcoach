@@ -130,26 +130,29 @@ function RestTimer({ seconds, onDone }) {
 }
 
 // ── Feedback form ────────────────────────────────────────────────
-function FeedbackForm({ workout, exercises, shareToken, athleteName, onSubmit }) {
+function FeedbackForm({ exercises, shareToken, onSubmit }) {
   const [emoji, setEmoji] = useState(null)
   const [rpe, setRpe] = useState(null)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
+  const [error, setError] = useState('')
 
   async function submit() {
+    setError('')
     setSaving(true)
-    await supabase.from('workout_feedback').insert({
-      workout_id: workout.id,
-      share_token: shareToken,
-      emoji_rating: emoji,
-      rpe,
-      notes: notes.trim() || null,
-      exercises_completed: exercises.length,
-      exercises_total: exercises.length,
-      athlete_name: athleteName || null,
+    const { error } = await supabase.rpc('submit_workout_feedback', {
+      p_share_token: shareToken,
+      p_emoji_rating: emoji,
+      p_rpe: rpe,
+      p_notes: notes.trim() || null,
+      p_exercises_completed: exercises.length,
     })
     setSaving(false)
+    if (error) {
+      setError('Feedback could not be sent. Please try again.')
+      return
+    }
     setDone(true)
     onSubmit && onSubmit()
   }
@@ -199,6 +202,8 @@ function FeedbackForm({ workout, exercises, shareToken, athleteName, onSubmit })
         </div>
       </div>
 
+      {error && <p role="alert" style={{ color: '#F88080', fontSize: 12, textAlign: 'center', marginBottom: 12 }}>{error}</p>}
+
       {/* Notes */}
       <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 8 }}>Note for coach (optional)</div>
@@ -232,36 +237,20 @@ export default function AthleteView() {
   const [activeTimer, setActiveTimer] = useState(null) // exercise id
   const [restingAfter, setRestingAfter] = useState(null) // exercise id
   const [showFeedback, setShowFeedback] = useState(false)
-  const [feedbackDone, setFeedbackDone] = useState(false)
-  const [athleteName, setAthleteName] = useState('')
-  const [nameSubmitted, setNameSubmitted] = useState(false)
+  const [, setFeedbackDone] = useState(false)
 
   useEffect(() => { fetchWorkout() }, [token])
 
   async function fetchWorkout() {
-    const { data: w } = await supabase
-      .from('workouts')
-      .select('*, coaches(full_name)')
-      .eq('share_token', token)
-      .single()
+    const { data, error } = await supabase.rpc('get_shared_workout', {
+      p_share_token: token,
+    })
 
-    if (!w) { setNotFound(true); setLoading(false); return }
+    if (error || !data?.workout) { setNotFound(true); setLoading(false); return }
 
-    const { data: ex } = await supabase
-      .from('workout_exercises')
-      .select('*, exercises(*)')
-      .eq('workout_id', w.id)
-      .order('position')
-
-    const { data: pre } = await supabase
-      .from('workout_prehab')
-      .select('*, exercises(*)')
-      .eq('workout_id', w.id)
-      .order('position')
-
-    setWorkout(w)
-    setExercises(ex || [])
-    setPrehabExercises(pre || [])
+    setWorkout(data.workout)
+    setExercises(data.exercises || [])
+    setPrehabExercises(data.prehab || [])
     setLoading(false)
   }
 
@@ -297,45 +286,6 @@ export default function AthleteView() {
       <p style={{ fontSize: 13 }}>This link may be invalid or the workout was removed.</p>
     </div>
   )
-
-
-  // Name prompt screen
-  if (!nameSubmitted) {
-    return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-        <div style={{ width: '100%', maxWidth: 360 }}>
-          <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{ width: 52, height: 52, background: 'var(--ac)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, margin: '0 auto 12px' }}>🏆</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ac)', letterSpacing: '.07em', textTransform: 'uppercase', marginBottom: 8 }}>chalkup</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--tx)', marginBottom: 6 }}>{workout?.name}</div>
-            <div style={{ fontSize: 13, color: 'var(--mu)' }}>
-              {workout?.coaches?.full_name ? `From Coach ${workout.coaches.full_name.split(' ')[0]}` : 'Shared workout'}
-            </div>
-          </div>
-          <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 14, padding: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 4 }}>What's your name?</div>
-            <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 14 }}>So your coach knows who completed this workout</div>
-            <input
-              value={athleteName}
-              onChange={e => setAthleteName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && setNameSubmitted(true)}
-              placeholder="Your name..."
-              autoFocus
-              style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '11px 12px', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: 12 }}
-            />
-            <button onClick={() => setNameSubmitted(true)}
-              style={{ width: '100%', padding: 13, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-              Start workout →
-            </button>
-            <button onClick={() => { setAthleteName(''); setNameSubmitted(true) }}
-              style={{ width: '100%', padding: 10, background: 'transparent', border: 'none', color: 'var(--mu)', fontSize: 12, cursor: 'pointer', marginTop: 6 }}>
-              Skip
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   const muscleGroups = [...new Set(exercises.map(e => e.exercises?.muscle_group).filter(Boolean))]
 
@@ -513,10 +463,8 @@ export default function AthleteView() {
         {/* Feedback form */}
         {showFeedback && (
           <FeedbackForm
-            workout={workout}
             exercises={exercises}
             shareToken={token}
-            athleteName={athleteName}
             onSubmit={() => setFeedbackDone(true)}
           />
         )}

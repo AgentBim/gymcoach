@@ -295,35 +295,33 @@ export default function WorkoutBuilder() {
     if (!name.trim()) { setError('Workout name is required'); return }
     if (selected.length === 0) { setError('Add at least one exercise'); return }
     setSaving(true); setError('')
-    let workoutId = id
-    if (isEdit) {
-      await supabase.from('workouts').update({ name }).eq('id', id)
-      await supabase.from('workout_exercises').delete().eq('workout_id', id)
-      await supabase.from('workout_prehab').delete().eq('workout_id', id)
-    } else {
-      const { data: w, error: we } = await supabase.from('workouts').insert({ coach_id: user.id, name, is_ai_generated: isAiGenerated }).select().single()
-      if (we) { setError(we.message); setSaving(false); return }
-      workoutId = w.id
-    }
-    await supabase.from('workout_exercises').insert(
-      selected.map((s, i) => ({
-        workout_id: workoutId, exercise_id: s.exercise.id, position: i,
+    const exercises = selected.map((s, i) => ({
+        exercise_id: s.exercise.id, position: i,
         sets: Number(s.sets) || 3,
         reps: s.reps ? Number(s.reps) : null,
         duration_seconds: s.duration_seconds ? Number(s.duration_seconds) : null,
         rest_seconds: Number(s.rest_seconds) || 30,
       }))
-    )
-    if (prehab.length > 0) {
-      await supabase.from('workout_prehab').insert(
-        prehab.map((p, i) => ({
-          workout_id: workoutId, exercise_id: p.exercise.id, position: i,
+    const prehabRows = prehab.map((p, i) => ({
+          exercise_id: p.exercise.id, position: i,
           sets: Number(p.sets) || 2,
           reps: p.reps ? Number(p.reps) : null,
           duration_seconds: p.duration_seconds ? Number(p.duration_seconds) : null,
           rest_seconds: Number(p.rest_seconds) || 20,
         }))
-      )
+
+    const { error: saveError } = await supabase.rpc('save_workout', {
+      p_workout_id: id || null,
+      p_name: name.trim(),
+      p_is_ai_generated: isAiGenerated,
+      p_exercises: exercises,
+      p_prehab: prehabRows,
+    })
+
+    if (saveError) {
+      setError(`Workout could not be saved. ${saveError.message}`)
+      setSaving(false)
+      return
     }
     navigate('/dashboard')
   }

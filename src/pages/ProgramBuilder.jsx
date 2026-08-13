@@ -72,21 +72,9 @@ export default function ProgramBuilder() {
   async function save() {
     if (!name.trim()) { setError('Program name is required'); return }
     setSaving(true); setError('')
-    let progId = id
-
-    if (isEdit) {
-      await supabase.from('programs').update({ name, description, duration_weeks: weeks }).eq('id', id)
-      await supabase.from('program_days').delete().eq('program_id', id)
-    } else {
-      const { data: prog, error: pe } = await supabase.from('programs').insert({ coach_id: user.id, name, description, duration_weeks: weeks }).select().single()
-      if (pe) { setError(pe.message); setSaving(false); return }
-      progId = prog.id
-    }
-
     const rows = Object.entries(days).map(([key, val]) => {
       const [wPart, dPart] = key.split('d')
       return {
-        program_id: progId,
         week_number: parseInt(wPart.replace('w', '')),
         day_of_week: parseInt(dPart),
         day_type: val.day_type,
@@ -94,8 +82,18 @@ export default function ProgramBuilder() {
         notes: val.notes || null,
       }
     })
-
-    if (rows.length) await supabase.from('program_days').insert(rows)
+    const { error: saveError } = await supabase.rpc('save_program', {
+      p_program_id: id || null,
+      p_name: name,
+      p_description: description,
+      p_duration_weeks: weeks,
+      p_days: rows,
+    })
+    if (saveError) {
+      setError(saveError.message || 'Program could not be saved')
+      setSaving(false)
+      return
+    }
     navigate('/programs')
   }
 

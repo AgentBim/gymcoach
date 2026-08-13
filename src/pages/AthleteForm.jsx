@@ -36,10 +36,13 @@ export default function AthleteForm() {
     setSaving(true)
     setError('')
     const payload = { full_name: fullName.trim(), group_name: group.trim() || null, level: level || null, notes: notes.trim() || null, coach_id: user.id }
-    if (isEdit) {
-      await supabase.from('athletes').update(payload).eq('id', id)
-    } else {
-      await supabase.from('athletes').insert(payload)
+    const { error: saveError } = isEdit
+      ? await supabase.from('athletes').update(payload).eq('id', id)
+      : await supabase.from('athletes').insert(payload)
+    if (saveError) {
+      setError(saveError.message || 'Could not save athlete')
+      setSaving(false)
+      return
     }
     navigate('/roster')
   }

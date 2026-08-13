@@ -30,6 +30,7 @@ export default function AthleteProfile() {
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => { fetchData() }, [id])
 
@@ -37,7 +38,7 @@ export default function AthleteProfile() {
     const [{ data: a }, { data: assigns }] = await Promise.all([
       supabase.from('athletes').select('*').eq('id', id).single(),
       supabase.from('workout_assignments')
-        .select('*, workouts(id, name, share_token, workout_exercises(exercises(muscle_group)))')
+        .select('*, workouts(id, name, workout_exercises(exercises(muscle_group)))')
         .eq('athlete_id', id)
         .order('assigned_at', { ascending: false }),
     ])
@@ -47,8 +48,28 @@ export default function AthleteProfile() {
   }
 
   async function removeAssignment(assignId) {
-    await supabase.from('workout_assignments').delete().eq('id', assignId)
+    setError('')
+    const { error: removeError } = await supabase.from('workout_assignments').delete().eq('id', assignId)
+    if (removeError) {
+      setError(removeError.message || 'Could not remove assignment')
+      return
+    }
     setAssignments(prev => prev.filter(a => a.id !== assignId))
+  }
+
+  async function rotateLink(assignId) {
+    setError('')
+    const { data: token, error: rotateError } = await supabase.rpc('rotate_assignment_link', {
+      p_assignment_id: assignId,
+    })
+    if (rotateError) {
+      setError(rotateError.message || 'Could not rotate athlete link')
+      return
+    }
+    setAssignments(prev => prev.map(a => a.id === assignId
+      ? { ...a, assignment_token: token, expires_at: new Date(Date.now() + 180 * 86400000).toISOString() }
+      : a))
+    copyLink(token)
   }
 
   function copyLink(token) {
@@ -73,6 +94,7 @@ export default function AthleteProfile() {
   return (
     <Layout>
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '20px 16px' }}>
+        {error && <p role="alert" style={{ color: '#F88080', fontSize: 13, marginBottom: 12 }}>{error}</p>}
         {/* Back */}
         <button onClick={() => navigate('/roster')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 5 }}>
           ← Roster
@@ -128,8 +150,11 @@ export default function AthleteProfile() {
                     Assigned {new Date(a.assigned_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
                   <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', gap: 8 }}>
-                    <button onClick={() => copyLink(a.workouts?.share_token)} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === a.workouts?.share_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '10px 10px', cursor: 'pointer', minHeight: 40 }}>
-                      {copied === a.workouts?.share_token ? '✓ Copied!' : '🔗 Copy link'}
+                    <button onClick={() => copyLink(a.assignment_token)} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied === a.assignment_token ? 'var(--ac)' : 'var(--mu)', fontSize: 12, padding: '10px 10px', cursor: 'pointer', minHeight: 40 }}>
+                      {copied === a.assignment_token ? '✓ Copied!' : '🔗 Copy athlete link'}
+                    </button>
+                    <button onClick={() => rotateLink(a.id)} title="Invalidate the old link and copy a new one" style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '10px 12px', cursor: 'pointer', minHeight: 40 }}>
+                      Rotate
                     </button>
                     <button onClick={() => removeAssignment(a.id)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '10px 12px', cursor: 'pointer', minHeight: 40 }}>Remove</button>
                   </div>

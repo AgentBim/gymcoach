@@ -13,6 +13,7 @@ import History from './pages/History'
 import Programs from './pages/Programs'
 import ProgramBuilder from './pages/ProgramBuilder'
 import CustomExercise from './pages/CustomExercise'
+import UpdatePassword from './pages/UpdatePassword'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/update-password" element={<ProtectedRoute><UpdatePassword /></ProtectedRoute>} />
           <Route path="/share/:token" element={<AthleteView />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />

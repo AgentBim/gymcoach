@@ -21,14 +21,16 @@ export default function AssignModal({ workout, onClose }) {
   const [existing, setExisting] = useState([])
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
+  const [assignmentLinks, setAssignmentLinks] = useState({})
   const [copied, setCopied] = useState([])
+  const [error, setError] = useState('')
 
   useEffect(() => { fetchData() }, [])
 
   async function fetchData() {
     const [{ data: aths }, { data: assigns }] = await Promise.all([
       supabase.from('athletes').select('*').eq('coach_id', user.id).order('group_name').order('full_name'),
-      supabase.from('workout_assignments').select('athlete_id').eq('workout_id', workout.id),
+      supabase.from('workout_assignments').select('athlete_id, assignment_token').eq('workout_id', workout.id),
     ])
     setAthletes(aths || [])
     setExisting((assigns || []).map(a => a.athlete_id))
@@ -41,24 +43,37 @@ export default function AssignModal({ workout, onClose }) {
   async function assign() {
     if (selected.length === 0) return
     setSaving(true)
+    setError('')
     const rows = selected.map(athlete_id => ({
       workout_id: workout.id, athlete_id, coach_id: user.id
     }))
-    await supabase.from('workout_assignments').upsert(rows, { onConflict: 'workout_id,athlete_id' })
+    const { data: created, error: assignError } = await supabase
+      .from('workout_assignments')
+      .upsert(rows, { onConflict: 'workout_id,athlete_id' })
+      .select('athlete_id, assignment_token')
     setSaving(false)
+    if (assignError) {
+      setError(assignError.message || 'Could not assign workout')
+      return
+    }
+    setAssignmentLinks(Object.fromEntries((created || []).map(a => [a.athlete_id, a.assignment_token])))
     setDone(true)
   }
 
   function copyLink(athleteId) {
-    const url = `${window.location.origin}/share/${workout.share_token}`
+    const token = assignmentLinks[athleteId]
+    if (!token) return
+    const url = `${window.location.origin}/share/${token}`
     navigator.clipboard.writeText(url)
     setCopied(prev => [...prev, athleteId])
     setTimeout(() => setCopied(prev => prev.filter(id => id !== athleteId)), 2000)
   }
 
   function copyAll() {
-    const url = `${window.location.origin}/share/${workout.share_token}`
-    navigator.clipboard.writeText(url)
+    const lines = athletes
+      .filter(a => selected.includes(a.id) && assignmentLinks[a.id])
+      .map(a => `${a.full_name}: ${window.location.origin}/share/${assignmentLinks[a.id]}`)
+    navigator.clipboard.writeText(lines.join('\n'))
     setCopied(selected)
     setTimeout(() => setCopied([]), 2000)
   }
@@ -112,7 +127,7 @@ export default function AssignModal({ workout, onClose }) {
                 })}
               </div>
               <button onClick={copyAll} style={{ width: '100%', padding: 11, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 8 }}>
-                Copy share link (same for all)
+                Copy all athlete links
               </button>
               <button onClick={onClose} style={{ width: '100%', padding: 11, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', fontSize: 13, cursor: 'pointer' }}>Done</button>
             </div>
@@ -150,6 +165,7 @@ export default function AssignModal({ workout, onClose }) {
         {/* Footer */}
         {!done && athletes.length > 0 && (
           <div style={{ padding: '12px 18px', borderTop: '1px solid var(--br)', flexShrink: 0 }}>
+            {error && <p role="alert" style={{ color: '#F88080', fontSize: 12, marginBottom: 8 }}>{error}</p>}
             <button onClick={assign} disabled={saving || selected.length === 0}
               style={{ width: '100%', padding: 13, background: selected.length > 0 ? 'var(--ac)' : 'var(--br)', color: selected.length > 0 ? '#0C1118' : 'var(--mu)', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: selected.length > 0 ? 'pointer' : 'default', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Assigning...' : selected.length > 0 ? `Assign to ${selected.length} athlete${selected.length !== 1 ? 's' : ''}` : 'Select athletes'}
