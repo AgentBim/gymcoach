@@ -30,4 +30,8 @@ export default [
       'react-hooks/static-components': 'off',
     },
   },
+  {
+    files: ['*.config.js', 'tests/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
 ]

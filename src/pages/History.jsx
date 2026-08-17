@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import { flattenWorkoutFeedback } from '../lib/history'
 
 const EMOJI_MAP = {
   easy:     { icon: '😴', label: 'Too easy',   color: '#6BB5F5' },
@@ -52,35 +53,22 @@ export default function History() {
   async function fetchData() {
     if (!user) return
 
-    // Get all coach workouts with their feedback and assignments
-    const { data: wData } = await supabase
+    // Each response embeds only the assignment that produced it.
+    const { data: wData, error: fetchError } = await supabase
       .from('workouts')
       .select(`
-        id, name, share_token,
-        workout_feedback(id, emoji_rating, rpe, notes, exercises_completed, exercises_total, submitted_at),
-        workout_assignments(athlete_id, athletes(full_name, group_name, level))
+        id, name,
+        workout_feedback(
+          id, emoji_rating, rpe, notes, exercises_completed, exercises_total,
+          submitted_at, athlete_name,
+          workout_assignments(athletes(full_name, group_name, level))
+        )
       `)
       .eq('coach_id', user.id)
       .order('created_at', { ascending: false })
 
-    if (!wData) { setLoading(false); return }
-
-    // Flatten feedback with workout context
-    const allFeedback = []
-    wData.forEach(w => {
-      const assignedAthletes = (w.workout_assignments || []).map(a => a.athletes).filter(Boolean)
-      ;(w.workout_feedback || []).forEach(fb => {
-        allFeedback.push({
-          ...fb,
-          workout_id: w.id,
-          workout_name: w.name,
-          assigned_athletes: assignedAthletes,
-        })
-      })
-    })
-
-    // Sort by most recent
-    allFeedback.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
+    if (fetchError || !wData) { setLoading(false); return }
+    const allFeedback = flattenWorkoutFeedback(wData)
 
     setFeedback(allFeedback)
     setWorkouts(wData.filter(w => w.workout_feedback?.length > 0))
@@ -233,6 +221,12 @@ export default function History() {
                           {fb.workout_name}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--mu)' }}>{timeAgo(fb.submitted_at)}</div>
+                        {fb.athlete && (
+                          <div style={{ fontSize: 12, color: 'var(--ac)', marginTop: 4 }}>
+                            {fb.athlete.full_name}
+                            {fb.athlete.attribution === 'legacy' && <span style={{ color: 'var(--mu)' }}> · recorded name</span>}
+                          </div>
+                        )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         {em && (
@@ -271,22 +265,18 @@ export default function History() {
                           </div>
                         )}
 
-                        {/* Assigned athletes */}
-                        {fb.assigned_athletes?.length > 0 && (
+                        {/* Authoritative submitter */}
+                        {fb.athlete && (
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 8 }}>
-                              Assigned to
+                              Submitted by
                             </div>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                              {fb.assigned_athletes.map((a, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--br)', borderRadius: 20, padding: '4px 10px' }}>
-                                  <div style={{ width: 18, height: 18, background: 'rgba(168,237,82,.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: 'var(--ac)' }}>
-                                    {a.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                                  </div>
-                                  <span style={{ fontSize: 12, color: 'var(--tx)' }}>{a.full_name}</span>
-                                  {a.level && <span style={{ fontSize: 10, color: 'var(--mu)' }}>{a.level}</span>}
-                                </div>
-                              ))}
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--br)', borderRadius: 20, padding: '4px 10px' }}>
+                              <div style={{ width: 18, height: 18, background: 'rgba(168,237,82,.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: 'var(--ac)' }}>
+                                {fb.athlete.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                              </div>
+                              <span style={{ fontSize: 12, color: 'var(--tx)' }}>{fb.athlete.full_name}</span>
+                              {fb.athlete.level && <span style={{ fontSize: 10, color: 'var(--mu)' }}>{fb.athlete.level}</span>}
                             </div>
                           </div>
                         )}
@@ -299,9 +289,9 @@ export default function History() {
                     )}
 
                     {/* Expand hint */}
-                    {!isExpanded && (fb.notes || fb.assigned_athletes?.length > 0) && (
+                    {!isExpanded && (fb.notes || fb.athlete) && (
                       <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 8 }}>
-                        {[fb.notes && 'note', fb.assigned_athletes?.length > 0 && `${fb.assigned_athletes.length} athlete${fb.assigned_athletes.length !== 1 ? 's' : ''}`].filter(Boolean).join(' · ')} · tap to expand
+                        {[fb.notes && 'note', fb.athlete && 'athlete details'].filter(Boolean).join(' · ')} · tap to expand
                       </div>
                     )}
                   </div>
