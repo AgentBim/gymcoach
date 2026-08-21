@@ -21,9 +21,8 @@ supabase test db --local
 all nineteen migrations. Never add `--linked` to this command for the production
 project.
 
-`schema_fingerprint.sql` creates a deterministic fingerprint of the public
+`schema_fingerprint.sql` creates deterministic component fingerprints of the public
 schema, including relations, columns, constraints, indexes, RLS policies,
 functions, triggers, and application-role grants. CI compares the rebuilt
-database with `production_schema_fingerprint.txt`, captured from production on
+database with `production_schema_components.csv`, captured from production on
 2026-08-21.
-

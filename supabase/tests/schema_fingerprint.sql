@@ -142,19 +142,34 @@ default_privileges as (
   left join pg_catalog.pg_namespace n on n.oid = d.defaclnamespace
   where n.nspname = 'public'
 )
-select md5(jsonb_build_object(
-  'relations', relations.value,
-  'columns', columns.value,
-  'constraints', constraints.value,
-  'indexes', indexes.value,
-  'policies', policies.value,
-  'functions', functions.value,
-  'enums', enums.value,
-  'triggers', triggers.value,
-  'table_grants', table_grants.value,
-  'function_grants', function_grants.value,
-  'default_privileges', default_privileges.value
-)::text) as schema_fingerprint
-from relations, columns, constraints, indexes, policies, functions, enums,
-  triggers, table_grants, function_grants, default_privileges;
-
+select component, fingerprint
+from (
+  select 'columns' as component, md5(columns.value::text) as fingerprint from columns
+  union all select 'constraints', md5(constraints.value::text) from constraints
+  union all select 'default_privileges', md5(default_privileges.value::text) from default_privileges
+  union all select 'enums', md5(enums.value::text) from enums
+  union all select 'function_grants', md5(function_grants.value::text) from function_grants
+  union all select 'functions', md5(functions.value::text) from functions
+  union all select 'indexes', md5(indexes.value::text) from indexes
+  union all select 'policies', md5(policies.value::text) from policies
+  union all select 'relations', md5(relations.value::text) from relations
+  union all select 'table_grants', md5(table_grants.value::text) from table_grants
+  union all select 'triggers', md5(triggers.value::text) from triggers
+  union all
+  select 'schema', md5(jsonb_build_object(
+    'relations', relations.value,
+    'columns', columns.value,
+    'constraints', constraints.value,
+    'indexes', indexes.value,
+    'policies', policies.value,
+    'functions', functions.value,
+    'enums', enums.value,
+    'triggers', triggers.value,
+    'table_grants', table_grants.value,
+    'function_grants', function_grants.value,
+    'default_privileges', default_privileges.value
+  )::text)
+  from relations, columns, constraints, indexes, policies, functions, enums,
+    triggers, table_grants, function_grants, default_privileges
+) fingerprints
+order by component;

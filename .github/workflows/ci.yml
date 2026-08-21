@@ -48,12 +48,10 @@ jobs:
       - name: Compare rebuilt schema with production fingerprint
         shell: bash
         run: |
-          expected="$(tr -d '\r\n' < supabase/tests/production_schema_fingerprint.txt)"
-          actual="$(supabase db query --local --file supabase/tests/schema_fingerprint.sql --output csv | tail -n 1 | tr -d '\r\"')"
-          if [ "$actual" != "$expected" ]; then
-            echo "Schema fingerprint mismatch: expected $expected, got $actual"
-            exit 1
-          fi
+          supabase db query --local --file supabase/tests/schema_fingerprint.sql --output csv > /tmp/local-schema-components.csv
+          diff --strip-trailing-cr --unified \
+            supabase/tests/production_schema_components.csv \
+            /tmp/local-schema-components.csv
       - name: Run database privilege contract
         run: supabase db query --local --file supabase/tests/security_regression.sql
       - name: Run RLS and assignment authorization tests
