@@ -94,17 +94,13 @@ select is(
   0::bigint,
   'coach A cannot read coach B assignments'
 );
-select is(
-  (
-    with changed as (
-      update public.workouts
-      set name = 'Cross-tenant overwrite'
-      where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
-      returning id
-    )
-    select count(*) from changed
-  ),
-  0::bigint,
+select is_empty(
+  $$
+    update public.workouts
+    set name = 'Cross-tenant overwrite'
+    where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    returning id
+  $$,
   'coach A cannot update coach B workout'
 );
 select throws_ok(
@@ -217,4 +213,3 @@ select is(
 
 select * from finish();
 rollback;
-

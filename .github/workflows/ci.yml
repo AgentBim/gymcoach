@@ -59,7 +59,7 @@ jobs:
       - name: Run database privilege contract
         run: supabase db query --local --file supabase/tests/security_regression.sql
       - name: Run RLS and assignment authorization tests
-        run: supabase test db --local
+        run: supabase test db --local supabase/tests/authorization.test.sql
       - name: Stop local Supabase
         if: always()
         run: supabase stop --no-backup
