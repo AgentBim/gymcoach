@@ -3,7 +3,8 @@
 The migration directory contains the complete production history. The thirteen
 May 2026 migrations were recovered verbatim from
 `supabase_migrations.schema_migrations`; the six August 2026 migrations were
-already tracked locally.
+already tracked locally. A twentieth reconciliation migration makes two legacy
+`service_role` trigger-helper grants explicit for modern fresh stacks.
 
 ## Local verification
 
@@ -18,7 +19,7 @@ supabase test db --local
 ```
 
 `db reset --local` destroys only the local database and rebuilds it by replaying
-all nineteen migrations. Never add `--linked` to this command for the production
+all migrations. Never add `--linked` to this command for the production
 project.
 
 `schema_fingerprint.sql` creates deterministic component fingerprints of the public

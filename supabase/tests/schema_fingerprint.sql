@@ -1,5 +1,7 @@
 -- Deterministic fingerprint of the application-owned public schema.
 -- Run with: psql -Atf supabase/tests/schema_fingerprint.sql
+set search_path = pg_catalog, public, extensions;
+
 with
 relations as (
   select coalesce(jsonb_agg(jsonb_build_object(

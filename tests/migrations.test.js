@@ -24,7 +24,7 @@ describe('database migration contracts', () => {
   it('uses unique, ordered 14-digit migration versions', () => {
     const files = readdirSync(migrationDir).filter(name => name.endsWith('.sql')).sort()
     const versions = files.map(name => name.slice(0, 14))
-    expect(files).toHaveLength(19)
+    expect(files).toHaveLength(20)
     expect(versions.every(version => /^\d{14}$/.test(version))).toBe(true)
     expect(new Set(versions).size).toBe(versions.length)
   })

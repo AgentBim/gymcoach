@@ -49,9 +49,13 @@ jobs:
         shell: bash
         run: |
           supabase db query --local --file supabase/tests/schema_fingerprint.sql --output csv > /tmp/local-schema-components.csv
-          diff --strip-trailing-cr --unified \
-            supabase/tests/production_schema_components.csv \
-            /tmp/local-schema-components.csv
+          if ! diff --strip-trailing-cr --unified \
+              supabase/tests/production_schema_components.csv \
+              /tmp/local-schema-components.csv; then
+            echo "Detailed local column and function-grant metadata:"
+            supabase db query --local --file supabase/tests/schema_diagnostics.sql --output json
+            exit 1
+          fi
       - name: Run database privilege contract
         run: supabase db query --local --file supabase/tests/security_regression.sql
       - name: Run RLS and assignment authorization tests
