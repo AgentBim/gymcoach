@@ -1,0 +1,22 @@
+# Local Supabase stack used for migration replay and authorization tests.
+project_id = "chalkup"
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = false
+sql_paths = []
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:4173"
+additional_redirect_urls = ["http://127.0.0.1:4173"]
+minimum_password_length = 8
+
