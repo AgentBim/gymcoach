@@ -10,7 +10,7 @@ select jsonb_build_object(
   'not_null', a.attnotnull,
   'identity', a.attidentity,
   'generated', a.attgenerated,
-  'default', pg_catalog.pg_get_expr(d.adbin, d.adrelid)
+  'default', replace(pg_catalog.pg_get_expr(d.adbin, d.adrelid), 'extensions.', '')
 ) as detail
 from pg_catalog.pg_attribute a
 join pg_catalog.pg_class c on c.oid = a.attrelid

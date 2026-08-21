@@ -1,7 +1,5 @@
 -- Deterministic fingerprint of the application-owned public schema.
 -- Run with: psql -Atf supabase/tests/schema_fingerprint.sql
-set search_path = pg_catalog, public, extensions;
-
 with
 relations as (
   select coalesce(jsonb_agg(jsonb_build_object(
@@ -23,7 +21,7 @@ columns as (
     'not_null', a.attnotnull,
     'identity', a.attidentity,
     'generated', a.attgenerated,
-    'default', pg_catalog.pg_get_expr(d.adbin, d.adrelid)
+    'default', replace(pg_catalog.pg_get_expr(d.adbin, d.adrelid), 'extensions.', '')
   ) order by c.relname, a.attnum), '[]'::jsonb) as value
   from pg_catalog.pg_attribute a
   join pg_catalog.pg_class c on c.oid = a.attrelid
