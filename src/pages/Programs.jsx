@@ -68,7 +68,7 @@ export default function Programs() {
                 </div>
                 <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', gap: 8 }}>
                   <button onClick={() => navigate(`/programs/${p.id}`)} style={{ flex: 1, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, padding: '8px 10px', cursor: 'pointer' }}>Open</button>
-                  <button onClick={() => deleteProgram(p.id)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '8px 12px', cursor: 'pointer' }}>🗑</button>
+                  <button onClick={() => deleteProgram(p.id)} aria-label="Delete program" title="Delete program" style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '8px 12px', cursor: 'pointer' }}>🗑</button>
                 </div>
               </div>
             ))}

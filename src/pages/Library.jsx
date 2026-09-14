@@ -59,8 +59,11 @@ export default function Library() {
       .select('*')
       .or(user ? `coach_id.is.null,coach_id.eq.${user.id}` : 'coach_id.is.null')
       .order('is_custom').order('muscle_group').order('name')
-    setExercises(data || [])
+    const list = data || []
+    setExercises(list)
     setLoading(false)
+    const populated = CATEGORIES.filter(c => list.some(e => (e.category || 'strength') === c))
+    if (populated.length && !populated.includes(catTab)) setCatTab(populated[0])
   }
 
   const filtered = exercises.filter(e => {
@@ -71,6 +74,9 @@ export default function Library() {
     if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
+
+  const categoryTotal = exercises.filter(e => (e.category || 'strength') === catTab).length
+  const visibleCategories = loading ? CATEGORIES : CATEGORIES.filter(c => exercises.some(e => (e.category || 'strength') === c))
 
   const pill = (active, onClick, label) => (
     <button key={label} onClick={onClick} style={{
@@ -101,7 +107,7 @@ export default function Library() {
   // Category tabs
   const CatTabs = () => (
     <div style={{ display: 'flex', gap: 0, background: 'var(--br)', borderRadius: 10, padding: 3, marginBottom: isMobile ? 10 : 14 }}>
-      {CATEGORIES.map(c => (
+      {visibleCategories.map(c => (
         <button key={c} onClick={() => { setCatTab(c); setGroup('All'); setDiff('All') }} style={{
           flex: 1, padding: isMobile ? '7px 6px' : '7px 10px',
           borderRadius: 8, fontSize: isMobile ? 11 : 12, fontWeight: catTab === c ? 700 : 400,
@@ -149,7 +155,7 @@ export default function Library() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
               <div>
                 <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 2 }}>Exercise library</h1>
-                <p style={{ fontSize: 13, color: 'var(--mu)' }}>{filtered.length} of {exercises.length} exercises</p>
+                <p style={{ fontSize: 13, color: 'var(--mu)' }}>{filtered.length} of {categoryTotal} in {CAT_LABELS[catTab].replace(/^\S+\s/, '')}</p>
               </div>
               <button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Custom exercise</button>
             </div>

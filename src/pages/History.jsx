@@ -204,6 +204,7 @@ export default function History() {
                 <button onClick={() => setFilterEmoji('all')} style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, border: 'none', cursor: 'pointer', background: filterEmoji === 'all' ? 'var(--ac)' : 'var(--br)', color: filterEmoji === 'all' ? '#0C1118' : 'var(--mu)' }}>All</button>
                 {Object.entries(EMOJI_MAP).map(([key, e]) => (
                   <button key={key} onClick={() => setFilterEmoji(filterEmoji === key ? 'all' : key)}
+                    aria-label={e.label} title={e.label}
                     style={{ padding: '6px 10px', borderRadius: 20, fontSize: 13, border: 'none', cursor: 'pointer', background: filterEmoji === key ? 'var(--br2)' : 'var(--br)', opacity: filterEmoji !== 'all' && filterEmoji !== key ? 0.5 : 1 }}>
                     {e.icon}
                   </button>

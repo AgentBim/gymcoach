@@ -146,7 +146,7 @@ export default function Roster() {
                           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', marginBottom: 4 }}>{a.full_name}</div>
                           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
                             {a.level && <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500, background: lc.bg, color: lc.color }}>{a.level}</span>}
-                            <span style={{ fontSize: 11, color: 'var(--mu)' }}>{a.workout_assignments?.length || 0} workouts assigned</span>
+                            <span style={{ fontSize: 11, color: 'var(--mu)' }}>{a.workout_assignments?.length || 0} workout{a.workout_assignments?.length === 1 ? '' : 's'} assigned</span>
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>

@@ -130,8 +130,8 @@ export default function AssignModal({ workout, onClose }) {
                       return (
                         <div key={a.id} onClick={() => !isExisting && toggleSelect(a.id)}
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: isSelected ? 'rgba(168,237,82,.05)' : 'var(--s2)', border: `1px solid ${isSelected ? 'rgba(168,237,82,.25)' : 'var(--br)'}`, borderRadius: 10, cursor: isExisting ? 'default' : 'pointer', opacity: isExisting ? 0.5 : 1 }}>
-                          <div style={{ width: 18, height: 18, background: isSelected ? 'var(--ac)' : 'var(--br)', border: isSelected ? 'none' : '1px solid var(--br2)', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#0C1118', flexShrink: 0 }}>
-                            {isSelected ? '✓' : isExisting ? '✓' : ''}
+                          <div style={{ width: 18, height: 18, background: (isSelected || isExisting) ? 'var(--ac)' : 'var(--br)', border: (isSelected || isExisting) ? 'none' : '1px solid var(--br2)', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#0C1118', flexShrink: 0 }}>
+                            {(isSelected || isExisting) ? '✓' : ''}
                           </div>
                           <div style={{ width: 28, height: 28, background: av.bg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: av.color, flexShrink: 0 }}>{initials(a.full_name)}</div>
                           <span style={{ flex: 1, fontSize: 13, color: 'var(--tx)' }}>{a.full_name}</span>
