@@ -31,6 +31,7 @@ export default function ProgramBuilder() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [viewWeek, setViewWeek] = useState(1)
+  const [dirty, setDirty] = useState(false)
 
   useEffect(() => { fetchWorkouts() }, [user])
   useEffect(() => { if (isEdit) fetchProgram() }, [id])
@@ -62,11 +63,18 @@ export default function ProgramBuilder() {
   }
 
   function setCell(key, updates) {
+    setDirty(true)
     setDays(prev => ({ ...prev, [key]: { ...(prev[key] || { day_type: 'training', workout_id: null, notes: '' }), ...updates } }))
   }
 
   function clearCell(key) {
+    setDirty(true)
     setDays(prev => { const next = { ...prev }; delete next[key]; return next })
+  }
+
+  function goBack() {
+    if (dirty && !confirm('Discard unsaved changes?')) return
+    navigate('/programs')
   }
 
   async function save() {
@@ -220,13 +228,18 @@ export default function ProgramBuilder() {
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Header */}
         <div style={{ padding: isMobile ? '12px 16px' : '14px 20px', borderBottom: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={() => navigate('/programs')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Program name..."
-            style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
+          <button onClick={goBack} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+          <input value={name} onChange={e => { setName(e.target.value); setDirty(true); if (error) setError('') }} placeholder="Program name..."
+            style={{ flex: 1, background: 'var(--br)', border: `1px solid ${error ? '#F88080' : 'rgba(255,255,255,.07)'}`, borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
           <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
+        {error && (
+          <div style={{ padding: '8px 20px', background: 'rgba(255,82,82,.08)', borderBottom: '1px solid rgba(255,82,82,.2)' }}>
+            <span style={{ fontSize: 12, color: '#F88080' }}>{error}</span>
+          </div>
+        )}
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: isMobile ? 'column' : 'row' }}>
           {/* Left: settings */}
@@ -234,15 +247,15 @@ export default function ProgramBuilder() {
             <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 12 : 10, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
               <div style={{ flex: isMobile ? '1 1 auto' : 'auto' }}>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Description</div>
-                <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Optional..."
+                <input value={description} onChange={e => { setDescription(e.target.value); setDirty(true) }} placeholder="Optional..."
                   style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 7, color: 'var(--tx)', padding: '7px 10px', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Weeks</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => setWeeks(w => Math.max(1, w - 1))} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>−</button>
+                  <button onClick={() => { setWeeks(w => Math.max(1, w - 1)); setDirty(true) }} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>−</button>
                   <span style={{ fontSize: 16, fontWeight: 700, minWidth: 20, textAlign: 'center' }}>{weeks}</span>
-                  <button onClick={() => setWeeks(w => Math.min(12, w + 1))} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>+</button>
+                  <button onClick={() => { setWeeks(w => Math.min(12, w + 1)); setDirty(true) }} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>+</button>
                 </div>
               </div>
             </div>
@@ -313,7 +326,6 @@ export default function ProgramBuilder() {
                 })()}
               </div>
             )}
-            {error && <p style={{ fontSize: 12, color: '#F88080', marginTop: 10 }}>{error}</p>}
           </div>
         </div>
       </div>

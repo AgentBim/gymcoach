@@ -211,7 +211,7 @@ export default function Dashboard() {
                           style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>
                           ⧉ Duplicate
                         </button>
-                        <button onClick={() => deleteWorkout(w.id)}
+                        <button onClick={() => deleteWorkout(w.id)} aria-label="Delete workout" title="Delete workout"
                           style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '7px 12px', cursor: 'pointer', minHeight: 34 }}>
                           🗑
                         </button>
