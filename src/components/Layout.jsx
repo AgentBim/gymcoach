@@ -1,18 +1,15 @@
 import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
 import { useIsMobile } from '../hooks/useIsMobile'
+import './Shell.css'
 
 export default function Layout({ children }) {
   const isMobile = useIsMobile()
 
   if (isMobile) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <main style={{
-          flex: 1,
-          overflowY: 'auto',
-          paddingBottom: 'calc(60px + env(safe-area-inset-bottom))',
-        }}>
+      <div className="app-shell app-shell--mobile">
+        <main className="app-main">
           {children}
         </main>
         <BottomNav />
@@ -21,9 +18,9 @@ export default function Layout({ children }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="app-shell">
       <Sidebar />
-      <main style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
+      <main className="app-main">
         {children}
       </main>
     </div>

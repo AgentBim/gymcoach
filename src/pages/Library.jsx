@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import { Button, EmptyState } from '../components/ui'
+import './Library.css'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const DIFFICULTIES = ['All', 'Easy', 'Medium', 'Hard']
@@ -73,7 +75,7 @@ export default function Library() {
   })
 
   const pill = (active, onClick, label) => (
-    <button key={label} onClick={onClick} style={{
+    <button type="button" key={label} aria-pressed={active} onClick={onClick} style={{
       padding: isMobile ? '5px 10px' : '5px 12px',
       borderRadius: 20, fontSize: isMobile ? 11 : 12,
       fontWeight: active ? 600 : 400,
@@ -85,7 +87,7 @@ export default function Library() {
   )
 
   const prehabPill = (active, onClick, label) => (
-    <button key={label} onClick={onClick} style={{
+    <button type="button" key={label} aria-pressed={active} onClick={onClick} style={{
       padding: isMobile ? '5px 10px' : '5px 12px',
       borderRadius: 20, fontSize: isMobile ? 11 : 12,
       fontWeight: active ? 600 : 400,
@@ -102,7 +104,7 @@ export default function Library() {
   const CatTabs = () => (
     <div style={{ display: 'flex', gap: 0, background: 'var(--br)', borderRadius: 10, padding: 3, marginBottom: isMobile ? 10 : 14 }}>
       {CATEGORIES.map(c => (
-        <button key={c} onClick={() => { setCatTab(c); setGroup('All'); setDiff('All') }} style={{
+        <button type="button" key={c} aria-pressed={catTab === c} onClick={() => { setCatTab(c); setGroup('All'); setDiff('All') }} style={{
           flex: 1, padding: isMobile ? '7px 6px' : '7px 10px',
           borderRadius: 8, fontSize: isMobile ? 11 : 12, fontWeight: catTab === c ? 700 : 400,
           background: catTab === c
@@ -143,7 +145,7 @@ export default function Library() {
         </div>
       )}
 
-      <div style={{ padding: isMobile ? '12px 16px' : '20px 24px' }}>
+      <div className="library-page" style={{ padding: isMobile ? '12px 16px' : '20px 24px' }}>
         {!isMobile && (
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
@@ -156,28 +158,31 @@ export default function Library() {
           </div>
         )}
 
+        <div className={!isMobile ? 'library-layout' : undefined}>
         {!isMobile && (
-          <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: 14, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <aside className="library-filter-rail" aria-label="Exercise filters">
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
+              aria-label="Search exercises"
               style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '9px 12px', fontSize: 13, outline: 'none' }} />
             <CatTabs />
-            <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
+            <div className="library-filter-list" aria-label="Muscle group">
               {GROUPS.map(g => catPillFn(group === g, () => setGroup(g), g))}
             </div>
             {catTab !== 'prehab' && (
-              <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
+              <div className="library-filter-list" aria-label="Difficulty">
                 {DIFFICULTIES.map(d => pill(diff === d, () => setDiff(d), d))}
               </div>
             )}
-          </div>
+          </aside>
         )}
 
+        <main className="library-results">
         {loading ? (
           <div style={{ color: 'var(--mu)', padding: 40, textAlign: 'center' }}>Loading...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ color: 'var(--mu)', padding: 40, textAlign: 'center', fontSize: 14 }}>No exercises found</div>
+          <EmptyState><div><h2>No exercises found</h2><p>{catTab === 'mobility' ? 'No mobility exercises match these filters yet.' : 'Try changing your search or filters.'}</p><Button variant="secondary" onClick={() => { setSearch(''); setGroup('All'); setDiff('All') }}>Clear filters</Button></div></EmptyState>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: isMobile ? 8 : 12 }}>
+          <div className="library-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: isMobile ? 8 : 12 }}>
             {filtered.map(ex => (
               <div key={ex.id} style={{
                 background: ex.category === 'prehab' ? 'rgba(50,200,140,.04)' : 'var(--s2)',
@@ -194,10 +199,13 @@ export default function Library() {
                 <div style={{ fontSize: isMobile ? 13 : 14, fontWeight: 600, marginBottom: 4 }}>{ex.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--mu)', lineHeight: 1.6, marginBottom: 8 }}>{ex.description}</div>
                 <div style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'var(--mono)' }}>{formatDefault(ex)}</div>
+                {ex.is_custom && <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10, borderTop:'1px solid var(--br)', paddingTop:8 }}><span style={{ color:'var(--accent)', fontSize:11 }}>★ Custom</span><Button variant="ghost" onClick={() => navigate(`/library/${ex.id}/edit`)}>Edit</Button></div>}
               </div>
             ))}
           </div>
         )}
+        </main>
+        </div>
       </div>
     </Layout>
   )

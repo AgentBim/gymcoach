@@ -34,6 +34,9 @@ function ExerciseTimer({ duration, onDone }) {
   const [timeLeft, setTimeLeft] = useState(duration)
   const [running, setRunning] = useState(false)
   const intervalRef = useRef(null)
+  const onDoneRef = useRef(onDone)
+
+  useEffect(() => { onDoneRef.current = onDone }, [onDone])
 
   useEffect(() => {
     if (running) {
@@ -42,7 +45,7 @@ function ExerciseTimer({ duration, onDone }) {
           if (t <= 1) {
             clearInterval(intervalRef.current)
             setRunning(false)
-            onDone && onDone()
+            onDoneRef.current?.()
             return 0
           }
           return t - 1
@@ -100,6 +103,9 @@ function RestTimer({ seconds, onDone }) {
   const [timeLeft, setTimeLeft] = useState(seconds)
   const [running, setRunning] = useState(true)
   const intervalRef = useRef(null)
+  const onDoneRef = useRef(onDone)
+
+  useEffect(() => { onDoneRef.current = onDone }, [onDone])
 
   useEffect(() => {
     if (running) {
@@ -108,7 +114,7 @@ function RestTimer({ seconds, onDone }) {
           if (t <= 1) {
             clearInterval(intervalRef.current)
             setRunning(false)
-            onDone && onDone()
+            onDoneRef.current?.()
             return 0
           }
           return t - 1
@@ -178,10 +184,10 @@ function FeedbackForm({ exercises, shareToken, onSubmit }) {
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 12 }}>How did it feel?</div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
           {EMOJIS.map(e => (
-            <div key={e.key} onClick={() => setEmoji(e.key)} style={{ textAlign: 'center', cursor: 'pointer', opacity: emoji && emoji !== e.key ? 0.35 : 1, transition: 'opacity .15s' }}>
+            <button type="button" key={e.key} aria-pressed={emoji === e.key} onClick={() => setEmoji(e.key)} style={{ border:0, background:'transparent', textAlign: 'center', cursor: 'pointer', opacity: emoji && emoji !== e.key ? 0.35 : 1, transition: 'opacity .15s', padding:4 }}>
               <div style={{ fontSize: 28, marginBottom: 4, filter: emoji === e.key ? 'none' : 'grayscale(0.3)' }}>{e.icon}</div>
               <div style={{ fontSize: 10, color: emoji === e.key ? 'var(--ac)' : 'var(--mu)', fontWeight: emoji === e.key ? 600 : 400 }}>{e.label}</div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -348,7 +354,8 @@ export default function AthleteView() {
                   const sets = `${wp.sets} sets`
                   const reps = wp.reps ? `× ${wp.reps} reps` : wp.duration_seconds ? `× ${wp.duration_seconds}s` : ''
                   return (
-                    <div key={wp.id} onClick={() => togglePrehabCheck(wp.id)} style={{
+                    <button type="button" key={wp.id} aria-pressed={Boolean(isDone)} onClick={() => togglePrehabCheck(wp.id)} style={{
+                      width:'100%', border:0, background:'transparent', color:'inherit', textAlign:'left',
                       display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0',
                       cursor: 'pointer', opacity: isDone ? 0.55 : 1, transition: 'opacity .2s',
                     }}>
@@ -363,7 +370,7 @@ export default function AthleteView() {
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', textDecoration: isDone ? 'line-through' : 'none' }}>{ex?.name}</div>
                         <div style={{ fontSize: 11, color: 'rgba(93,217,154,.8)', marginTop: 1 }}>{[sets, reps].filter(Boolean).join(' ')}</div>
                       </div>
-                    </div>
+                    </button>
                   )
                 })}
               </div>
@@ -444,7 +451,7 @@ export default function AthleteView() {
                     </div>
 
                     {/* Checkbox */}
-                    <div onClick={() => toggleCheck(we.id)} style={{
+                    <button type="button" onClick={() => toggleCheck(we.id)} aria-label={`${isDone ? 'Mark incomplete' : 'Mark complete'}: ${ex?.name}`} aria-pressed={Boolean(isDone)} style={{
                       width: 26, height: 26, borderRadius: 8, flexShrink: 0, cursor: 'pointer',
                       background: isDone ? 'var(--ac)' : 'transparent',
                       border: `2px solid ${isDone ? 'var(--ac)' : 'var(--br2)'}`,
@@ -452,7 +459,7 @@ export default function AthleteView() {
                       fontSize: 14, color: '#0C1118', transition: 'all .15s',
                     }}>
                       {isDone ? '✓' : ''}
-                    </div>
+                    </button>
                   </div>
                 </div>
               )

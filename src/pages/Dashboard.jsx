@@ -1,23 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../hooks/useAuth'
-import { useIsMobile } from '../hooks/useIsMobile'
+import AppIcon from '../components/AppIcon'
+import AssignModal from '../components/AssignModal'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import Layout from '../components/Layout'
-import AssignModal from '../components/AssignModal'
+import { Badge, Button, Card, Chip, EmptyState, IconButton, Input, Modal, Toast } from '../components/ui'
+import { useAuth } from '../hooks/useAuth'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { supabase } from '../lib/supabase'
+import './Dashboard.css'
 
-const GROUP_COLORS = {
-  Arms: { bg: 'rgba(240,158,40,.15)', color: '#F4B455' },
-  Back: { bg: 'rgba(80,150,230,.15)', color: '#6BB5F5' },
-  Legs: { bg: 'rgba(230,70,60,.15)', color: '#F88080' },
-  Core: { bg: 'rgba(50,200,140,.15)', color: '#5DD99A' },
-  Shoulders: { bg: 'rgba(160,100,230,.15)', color: '#C084F5' },
-}
+const GROUP_OPTIONS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
+const GROUP_TONES = { Arms: 'warning', Back: 'info', Legs: 'danger', Core: 'success', Shoulders: 'violet' }
 
-function Badge({ group }) {
-  const c = GROUP_COLORS[group] || { bg: 'var(--br)', color: 'var(--mu)' }
-  return <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500, background: c.bg, color: c.color }}>{group}</span>
+function MuscleBadge({ group }) {
+  return <Badge tone={GROUP_TONES[group]}>{group}</Badge>
 }
 
 export default function Dashboard() {
@@ -29,246 +26,178 @@ export default function Dashboard() {
   const [search, setSearch] = useState('')
   const [filterGroup, setFilterGroup] = useState('All')
   const [filterOpen, setFilterOpen] = useState(false)
-  const [error, setError] = useState('')
+  const [notice, setNotice] = useState(null)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
   useEffect(() => { fetchWorkouts() }, [user])
+  useEffect(() => {
+    if (!notice) return undefined
+    const timer = window.setTimeout(() => setNotice(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [notice])
 
   async function fetchWorkouts() {
     if (!user) return
     const { data, error } = await supabase
       .from('workouts')
-      .select('*, workout_exercises(exercise_id, exercises(muscle_group))')
+      .select('*, workout_exercises(exercise_id, exercises(muscle_group)), workout_assignments(id, expires_at)')
       .eq('coach_id', user.id)
       .order('created_at', { ascending: false })
-    if (error) setError(error.message)
+    if (error) setNotice({ tone: 'error', message: error.message })
     setWorkouts(data || [])
     setLoading(false)
   }
 
   async function deleteWorkout(id) {
-    if (!confirm('Delete this workout?')) return
+    if (!window.confirm('Delete this workout? This cannot be undone.')) return
     const { error } = await supabase.from('workouts').delete().eq('id', id)
-    if (error) { setError(error.message); return }
-    setWorkouts(w => w.filter(x => x.id !== id))
+    if (error) { setNotice({ tone: 'error', message: error.message }); return }
+    setWorkouts(current => current.filter(workout => workout.id !== id))
+    setNotice({ tone: 'success', message: 'Workout deleted.' })
   }
 
-  async function duplicateWorkout(w) {
-    setError('')
-    const { error: duplicateError } = await supabase.rpc('duplicate_workout', {
-      p_workout_id: w.id,
-    })
-    if (duplicateError) {
-      setError(`Workout could not be duplicated. ${duplicateError.message}`)
+  async function duplicateWorkout(workout) {
+    const { error } = await supabase.rpc('duplicate_workout', { p_workout_id: workout.id })
+    if (error) {
+      setNotice({ tone: 'error', message: `Workout could not be duplicated. ${error.message}` })
       return
     }
-    fetchWorkouts()
+    await fetchWorkouts()
+    setNotice({ tone: 'success', message: 'Workout duplicated.' })
   }
 
   function getMuscleGroups(workout) {
-    const groups = new Set(workout.workout_exercises?.map(we => we.exercises?.muscle_group).filter(Boolean))
-    return [...groups]
+    return [...new Set(workout.workout_exercises?.map(item => item.exercises?.muscle_group).filter(Boolean))]
   }
 
-  const GROUP_OPTIONS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
-
-  const filteredWorkouts = workouts.filter(w => {
-    if (search && !w.name.toLowerCase().includes(search.toLowerCase())) return false
-    if (filterGroup !== 'All') {
-      const groups = new Set(w.workout_exercises?.map(we => we.exercises?.muscle_group).filter(Boolean))
-      if (!groups.has(filterGroup)) return false
-    }
+  const filteredWorkouts = workouts.filter(workout => {
+    if (search && !workout.name.toLowerCase().includes(search.toLowerCase())) return false
+    if (filterGroup !== 'All' && !getMuscleGroups(workout).includes(filterGroup)) return false
     return true
   })
 
-  if (loading) return <Layout><div style={{ padding: 40, color: 'var(--mu)' }}>Loading...</div></Layout>
-
-  const gridCols = isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))'
+  if (loading) return <Layout><div className="cu-container cu-page" role="status">Loading workouts…</div></Layout>
 
   return (
     <Layout>
       {isMobile && (
-        <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10, paddingTop: 'var(--sat)' }}>
-          {/* Main header row */}
-          <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ChalkUpLogo size={22} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em', flex: 1 }}>chalkup</span>
-            <button onClick={() => setFilterOpen(o => !o)} style={{ background: filterOpen || search || filterGroup !== 'All' ? 'rgba(168,237,82,.12)' : 'var(--br)', border: 'none', borderRadius: 8, color: filterOpen || search || filterGroup !== 'All' ? 'var(--ac)' : 'var(--mu)', padding: '7px 10px', fontSize: 13, cursor: 'pointer' }}>
-              {filterOpen ? '✕' : '🔍'}
-            </button>
-            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
+        <header className="dashboard-mobile-header">
+          <div className="dashboard-mobile-header__row">
+            <ChalkUpLogo size={26} />
+            <span className="dashboard-mobile-header__brand">ChalkUp</span>
+            <IconButton variant="secondary" label={filterOpen ? 'Close workout filters' : 'Search and filter workouts'} onClick={() => setFilterOpen(open => !open)}>
+              <AppIcon name={filterOpen ? 'close' : 'search'} />
+            </IconButton>
+            <Button onClick={() => navigate('/workout/new')}><AppIcon name="plus" /> New</Button>
           </div>
-          {/* Expandable search + filter */}
-          {filterOpen && (
-            <div style={{ padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workouts..." autoFocus
-                style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 11px', fontSize: 13, outline: 'none' }} />
-              <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
-                {GROUP_OPTIONS.map(g => <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 11px', borderRadius: 20, fontSize: 11, fontWeight: filterGroup === g ? 600 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--s2)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>{g}</button>)}
-              </div>
-            </div>
-          )}
-        </div>
+          {filterOpen && <WorkoutFilters search={search} setSearch={setSearch} filterGroup={filterGroup} setFilterGroup={setFilterGroup} />}
+        </header>
       )}
 
-      <div style={{ padding: isMobile ? '14px 16px' : '20px 24px' }}>
-        {!isMobile && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>My workouts</h1>
-              <p style={{ fontSize: 13, color: 'var(--mu)', marginTop: 2 }}>{filteredWorkouts.length} of {workouts.length}</p>
-            </div>
-            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', padding: '9px 16px', fontSize: 13, fontWeight: 700 }}>
-              + New workout
-            </button>
+      <div className="dashboard-content">
+        <header className="dashboard-toolbar">
+          <div>
+            <h1 className="cu-display">My workouts</h1>
+            <p className="dashboard-subtitle">{filteredWorkouts.length} of {workouts.length} workouts</p>
           </div>
-        )}
+          {!isMobile && <Button onClick={() => navigate('/workout/new')}><AppIcon name="plus" /> New workout</Button>}
+        </header>
 
-        {isMobile && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>My workouts</span>
-            <span style={{ fontSize: 12, color: 'var(--mu)' }}>{workouts.length} saved</span>
-          </div>
-        )}
+        {!isMobile && <WorkoutFilters search={search} setSearch={setSearch} filterGroup={filterGroup} setFilterGroup={setFilterGroup} />}
 
-        {!isMobile && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workouts..." style={{ background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '7px 11px', fontSize: 13, outline: 'none', width: 200 }} />
-            {GROUP_OPTIONS.map(g => <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterGroup === g ? 600 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer' }}>{g}</button>)}
-          </div>
-        )}
-        {error && <p role="alert" style={{ color: '#F88080', fontSize: 12, marginBottom: 12 }}>{error}</p>}
         {workouts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mu)' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🏋️</div>
-            <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--tx)', marginBottom: 6 }}>No workouts yet</p>
-            <p style={{ fontSize: 13, marginBottom: 20 }}>Create your first workout to get started</p>
-            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', padding: '10px 20px', fontSize: 13, fontWeight: 700 }}>
-              Create workout
-            </button>
-          </div>
+          <EmptyState>
+            <div className="dashboard-empty-copy">
+              <AppIcon name="workout" size={36} />
+              <h2>No workouts yet</h2>
+              <p>Build your first workout manually or start with the randomizer.</p>
+              <Button onClick={() => navigate('/workout/new')}>Create workout</Button>
+            </div>
+          </EmptyState>
+        ) : filteredWorkouts.length === 0 ? (
+          <EmptyState>
+            <div className="dashboard-empty-copy">
+              <AppIcon name="search" size={34} />
+              <h2>No matching workouts</h2>
+              <p>Try another search term or clear the muscle-group filter.</p>
+              <Button variant="secondary" onClick={() => { setSearch(''); setFilterGroup('All') }}>Clear filters</Button>
+            </div>
+          </EmptyState>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 14 }}>
-            {filteredWorkouts.map(w => (
-              <div key={w.id} style={{ background: 'var(--s2)', border: `1px solid ${w.is_ai_generated ? 'rgba(167,139,250,.25)' : 'var(--br)'}`, borderRadius: 12, padding: isMobile ? 14 : 16, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 7 }}>
-                  {w.name}
-                  {w.is_ai_generated && <span style={{ fontSize: 11, background: 'rgba(167,139,250,.12)', color: '#A78BFA', border: '1px solid rgba(167,139,250,.25)', borderRadius: 20, padding: '1px 7px', fontWeight: 700, flexShrink: 0 }}>✦ AI</span>}
-                </div>
-                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
-                  {getMuscleGroups(w).map(g => <Badge key={g} group={g} />)}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 12 }}>
-                  {w.workout_exercises?.length || 0} exercises
-                </div>
-                <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10 }}>
-                  {isMobile ? (
-                    /* Mobile: assignment links are athlete-specific */
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => setAssigningWorkout(w)}
-                        style={{ flex: 1, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 13, padding: '11px 10px', cursor: 'pointer', fontWeight: 600, minHeight: 44 }}>
-                        Assign & share
-                      </button>
-                      <button onClick={() => setSheetWorkout(w)}
-                        style={{ width: 44, minHeight: 44, background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--mu)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        •••
-                      </button>
-                    </div>
-                  ) : (
-                    /* Desktop: two-row layout */
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => setAssigningWorkout(w)}
-                          style={{ flex: 1, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 6, color: 'var(--ac)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', fontWeight: 500, minHeight: 36 }}>
-                          Assign & share
-                        </button>
-                      </div>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => navigate(`/workout/${w.id}/edit`)}
-                          style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>
-                          ✏️ Edit
-                        </button>
-                        <button onClick={() => duplicateWorkout(w)}
-                          style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: 'var(--mu)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>
-                          ⧉ Duplicate
-                        </button>
-                        <button onClick={() => deleteWorkout(w.id)}
-                          style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: '#F88080', fontSize: 12, padding: '7px 12px', cursor: 'pointer', minHeight: 34 }}>
-                          🗑
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div className="workout-grid">
+            {filteredWorkouts.map(workout => (
+              <WorkoutCard key={workout.id} workout={workout} isMobile={isMobile} muscleGroups={getMuscleGroups(workout)} onAssign={() => setAssigningWorkout(workout)} onMore={() => setSheetWorkout(workout)} onEdit={() => navigate(`/workout/${workout.id}/edit`)} onDuplicate={() => duplicateWorkout(workout)} onDelete={() => deleteWorkout(workout.id)} />
             ))}
             {!isMobile && (
-              <div onClick={() => navigate('/workout/new')} style={{ border: '1.5px dashed var(--br)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 160, gap: 8, cursor: 'pointer', color: 'var(--mu)' }}>
-                <div style={{ width: 36, height: 36, background: 'var(--br)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>＋</div>
-                <span style={{ fontSize: 13 }}>Create new workout</span>
-              </div>
+              <button type="button" className="create-workout-card" onClick={() => navigate('/workout/new')}>
+                <span><span className="create-workout-card__icon"><AppIcon name="plus" /></span>Create new workout</span>
+              </button>
             )}
           </div>
         )}
       </div>
-      {assigningWorkout && (
-        <AssignModal
-          workout={assigningWorkout}
-          onClose={() => setAssigningWorkout(null)}
-        />
-      )}
 
-      {/* Mobile ••• bottom sheet */}
-      {sheetWorkout && (
-        <div
-          onClick={() => setSheetWorkout(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ width: '100%', background: 'var(--s1)', borderRadius: '18px 18px 0 0', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)', overflow: 'hidden' }}>
-
-            {/* Handle */}
-            <div style={{ width: 36, height: 4, background: 'var(--br2)', borderRadius: 2, margin: '12px auto 16px' }} />
-
-            {/* Workout name */}
-            <div style={{ padding: '0 20px 14px', borderBottom: '1px solid var(--br)' }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', marginBottom: 2 }}>{sheetWorkout.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--mu)' }}>{sheetWorkout.workout_exercises?.length || 0} exercises</div>
-            </div>
-
-            {/* 2×2 action grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '14px 16px 4px' }}>
-              {[
-                { icon: '✏️', label: 'Edit', color: 'var(--tx)', action: () => { setSheetWorkout(null); navigate(`/workout/${sheetWorkout.id}/edit`) } },
-                { icon: '⧉',  label: 'Duplicate', color: 'var(--tx)', action: () => { duplicateWorkout(sheetWorkout); setSheetWorkout(null) } },
-                { icon: '🔗', label: 'Assign & share', color: 'var(--tx)', action: () => { setAssigningWorkout(sheetWorkout); setSheetWorkout(null) } },
-                { icon: '🗑', label: 'Delete', color: '#F88080', action: () => { deleteWorkout(sheetWorkout.id); setSheetWorkout(null) }, danger: true },
-              ].map(item => (
-                <button key={item.label} onClick={item.action}
-                  style={{
-                    background: item.danger ? 'rgba(248,128,128,.07)' : 'var(--s2)',
-                    border: `1px solid ${item.danger ? 'rgba(248,128,128,.2)' : 'var(--br)'}`,
-                    borderRadius: 12, padding: '16px 12px',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                    cursor: 'pointer', minHeight: 80,
-                  }}>
-                  <span style={{ fontSize: 24 }}>{item.icon}</span>
-                  <span style={{ fontSize: 13, color: item.color, fontWeight: 500 }}>{item.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Cancel */}
-            <div style={{ padding: '10px 16px 0' }}>
-              <button onClick={() => setSheetWorkout(null)}
-                style={{ width: '100%', padding: '14px', background: 'var(--br)', border: 'none', borderRadius: 12, color: 'var(--mu)', fontSize: 15, cursor: 'pointer', fontWeight: 500 }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {assigningWorkout && <AssignModal workout={assigningWorkout} onAssigned={count => setNotice({ tone: 'success', message: `Workout assigned to ${count} athlete${count === 1 ? '' : 's'}.` })} onError={message => setNotice({ tone: 'error', message })} onClose={() => { setAssigningWorkout(null); fetchWorkouts() }} />}
+      {sheetWorkout && <WorkoutActionSheet workout={sheetWorkout} onClose={() => setSheetWorkout(null)} onEdit={() => { setSheetWorkout(null); navigate(`/workout/${sheetWorkout.id}/edit`) }} onDuplicate={() => { duplicateWorkout(sheetWorkout); setSheetWorkout(null) }} onAssign={() => { setAssigningWorkout(sheetWorkout); setSheetWorkout(null) }} onDelete={() => { deleteWorkout(sheetWorkout.id); setSheetWorkout(null) }} />}
+      {notice && <Toast tone={notice.tone}>{notice.message}</Toast>}
     </Layout>
+  )
+}
+
+function WorkoutFilters({ search, setSearch, filterGroup, setFilterGroup }) {
+  return (
+    <div className="dashboard-filters" role="search" aria-label="Filter workouts">
+      <div className="dashboard-search">
+        <AppIcon name="search" size={17} />
+        <Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search workouts" aria-label="Search workouts" />
+      </div>
+      <div className="dashboard-chips" aria-label="Muscle group">
+        {GROUP_OPTIONS.map(group => <Chip key={group} selected={filterGroup === group} onClick={() => setFilterGroup(group)}>{group}</Chip>)}
+      </div>
+    </div>
+  )
+}
+
+function WorkoutCard({ workout, isMobile, muscleGroups, onAssign, onMore, onEdit, onDuplicate, onDelete }) {
+  const assignmentCount = workout.workout_assignments?.length || 0
+  return (
+    <Card className="workout-card">
+      <div className="workout-card__header">
+        <h2 className="workout-card__title">{workout.name}</h2>
+        <Badge tone={assignmentCount ? 'success' : undefined}>{assignmentCount ? `${assignmentCount} assigned` : 'Unassigned'}</Badge>
+      </div>
+      <div className="workout-card__tags">{muscleGroups.map(group => <MuscleBadge key={group} group={group} />)}</div>
+      <div className="workout-card__meta"><span><AppIcon name="workout" size={15} />{workout.workout_exercises?.length || 0} exercises</span></div>
+      <div className="workout-card__actions">
+        <Button variant="secondary" className="workout-card__assign" onClick={onAssign}><AppIcon name="share" size={17} /> Assign</Button>
+        {isMobile ? <IconButton variant="secondary" label={`More actions for ${workout.name}`} onClick={onMore}><AppIcon name="more" /></IconButton> : (
+          <div className="workout-card__desktop-actions">
+            <IconButton variant="secondary" label={`Edit ${workout.name}`} onClick={onEdit}><AppIcon name="edit" /></IconButton>
+            <IconButton variant="secondary" label={`Duplicate ${workout.name}`} onClick={onDuplicate}><AppIcon name="copy" /></IconButton>
+            <IconButton variant="danger" label={`Delete ${workout.name}`} onClick={onDelete}><AppIcon name="trash" /></IconButton>
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+function WorkoutActionSheet({ workout, onClose, onEdit, onDuplicate, onAssign, onDelete }) {
+  return (
+    <Modal labelledBy="workout-actions-title" onClose={onClose}>
+      <div className="action-sheet__handle" />
+      <div className="action-sheet__header">
+        <h2 id="workout-actions-title">{workout.name}</h2>
+        <p>{workout.workout_exercises?.length || 0} exercises</p>
+      </div>
+      <div className="action-sheet__grid">
+        <Button variant="secondary" className="action-sheet__action" onClick={onEdit}><AppIcon name="edit" />Edit</Button>
+        <Button variant="secondary" className="action-sheet__action" onClick={onDuplicate}><AppIcon name="copy" />Duplicate</Button>
+        <Button variant="secondary" className="action-sheet__action" onClick={onAssign}><AppIcon name="share" />Assign</Button>
+        <Button variant="danger" className="action-sheet__action" onClick={onDelete}><AppIcon name="trash" />Delete</Button>
+      </div>
+      <Button variant="secondary" className="action-sheet__cancel" onClick={onClose}>Cancel</Button>
+    </Modal>
   )
 }

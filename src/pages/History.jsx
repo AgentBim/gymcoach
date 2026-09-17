@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import { flattenWorkoutFeedback } from '../lib/history'
+import { Button, EmptyState, Select, StatCard } from '../components/ui'
 
 const EMOJI_MAP = {
   easy:     { icon: '😴', label: 'Too easy',   color: '#6BB5F5' },
@@ -108,7 +109,7 @@ export default function History() {
         {/* Desktop header */}
         {!isMobile && (
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Feedback history</h1>
+            <h1 className="cu-display">Feedback history</h1>
             <p style={{ fontSize: 13, color: 'var(--mu)', marginTop: 2 }}>Athlete responses from shared workouts</p>
           </div>
         )}
@@ -116,40 +117,24 @@ export default function History() {
         {loading ? (
           <div style={{ color: 'var(--mu)', padding: 40, textAlign: 'center' }}>Loading...</div>
         ) : feedback.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mu)' }}>
+          <EmptyState><div>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)', marginBottom: 6 }}>No feedback yet</p>
             <p style={{ fontSize: 13, marginBottom: 20 }}>Feedback appears here when athletes complete a shared workout</p>
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            <Button onClick={() => navigate('/dashboard')}>
               Go to dashboard
-            </button>
-          </div>
+            </Button>
+          </div></EmptyState>
         ) : (
           <>
             {/* Summary strip */}
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
-              <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 14px' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--tx)', marginBottom: 2 }}>{totalFeedback}</div>
-                <div style={{ fontSize: 11, color: 'var(--mu)' }}>Total responses</div>
-              </div>
-              <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 14px' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: avgRpe ? RPE_COLOR(Number(avgRpe)) : 'var(--mu)', marginBottom: 2 }}>
-                  {avgRpe ?? '—'}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--mu)' }}>Avg RPE</div>
-              </div>
-              <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 14px' }}>
-                <div style={{ fontSize: 22, marginBottom: 2 }}>
-                  {Object.entries(emojiCounts).sort((a, b) => b[1] - a[1])[0]
+              <StatCard label="Total responses" value={totalFeedback} />
+              <StatCard label="Avg RPE" value={avgRpe ?? '—'} />
+              <StatCard label="Most common feel" value={Object.entries(emojiCounts).sort((a, b) => b[1] - a[1])[0]
                     ? EMOJI_MAP[Object.entries(emojiCounts).sort((a, b) => b[1] - a[1])[0][0]]?.icon ?? '—'
-                    : '—'}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--mu)' }}>Most common feel</div>
-              </div>
-              <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 14px' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--tx)', marginBottom: 2 }}>{withNotes}</div>
-                <div style={{ fontSize: 11, color: 'var(--mu)' }}>With notes</div>
-              </div>
+                    : '—'} />
+              <StatCard label="With notes" value={withNotes} />
             </div>
 
             {/* Emoji breakdown bar */}
@@ -183,11 +168,10 @@ export default function History() {
 
             {/* Filters */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-              <select value={filterWorkout} onChange={e => setFilterWorkout(e.target.value)}
-                style={{ background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '7px 11px', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
+              <Select value={filterWorkout} onChange={e => setFilterWorkout(e.target.value)} aria-label="Filter by workout">
                 <option value="all">All workouts</option>
                 {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
+              </Select>
               <div style={{ display: 'flex', gap: 5 }}>
                 <button onClick={() => setFilterEmoji('all')} style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, border: 'none', cursor: 'pointer', background: filterEmoji === 'all' ? 'var(--ac)' : 'var(--br)', color: filterEmoji === 'all' ? '#0C1118' : 'var(--mu)' }}>All</button>
                 {Object.entries(EMOJI_MAP).map(([key, e]) => (
@@ -210,9 +194,9 @@ export default function History() {
                 const em = fb.emoji_rating ? EMOJI_MAP[fb.emoji_rating] : null
                 const isExpanded = expandedId === fb.id
                 return (
-                  <div key={fb.id}
+                  <button type="button" key={fb.id} aria-expanded={isExpanded}
                     onClick={() => setExpandedId(isExpanded ? null : fb.id)}
-                    style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: '13px 14px', cursor: 'pointer', transition: 'border-color .15s', borderColor: isExpanded ? 'var(--br2)' : 'var(--br)' }}>
+                    style={{ width:'100%', color:'inherit', textAlign:'left', background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: '13px 14px', cursor: 'pointer', transition: 'border-color .15s', borderColor: isExpanded ? 'var(--br2)' : 'var(--br)' }}>
 
                     {/* Top row */}
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
@@ -294,7 +278,7 @@ export default function History() {
                         {[fb.notes && 'note', fb.athlete && 'athlete details'].filter(Boolean).join(' · ')} · tap to expand
                       </div>
                     )}
-                  </div>
+                  </button>
                 )
               })}
             </div>

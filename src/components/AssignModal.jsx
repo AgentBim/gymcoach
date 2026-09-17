@@ -14,7 +14,7 @@ const AV_COLORS = [
   { bg: 'rgba(230,70,60,.15)', color: '#F88080' },
 ]
 
-export default function AssignModal({ workout, onClose }) {
+export default function AssignModal({ workout, onClose, onAssigned, onError }) {
   const { user } = useAuth()
   const [athletes, setAthletes] = useState([])
   const [selected, setSelected] = useState([])
@@ -53,50 +53,53 @@ export default function AssignModal({ workout, onClose }) {
       .select('athlete_id, assignment_token')
     setSaving(false)
     if (assignError) {
-      setError(assignError.message || 'Could not assign workout')
+      const message = assignError.message || 'Could not assign workout'
+      setError(message)
+      onError?.(message)
       return
     }
     setAssignmentLinks(Object.fromEntries((created || []).map(a => [a.athlete_id, a.assignment_token])))
     setDone(true)
+    onAssigned?.(selected.length)
   }
 
-  function copyLink(athleteId) {
+  async function copyLink(athleteId) {
     const token = assignmentLinks[athleteId]
     if (!token) return
     const url = `${window.location.origin}/share/${token}`
-    navigator.clipboard.writeText(url)
-    setCopied(prev => [...prev, athleteId])
-    setTimeout(() => setCopied(prev => prev.filter(id => id !== athleteId)), 2000)
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(prev => [...prev, athleteId])
+      setTimeout(() => setCopied(prev => prev.filter(id => id !== athleteId)), 2000)
+    } catch { setError('Could not copy the athlete link. Check clipboard permissions and try again.') }
   }
 
-  function copyAll() {
+  async function copyAll() {
     const lines = athletes
       .filter(a => selected.includes(a.id) && assignmentLinks[a.id])
       .map(a => `${a.full_name}: ${window.location.origin}/share/${assignmentLinks[a.id]}`)
-    navigator.clipboard.writeText(lines.join('\n'))
-    setCopied(selected)
-    setTimeout(() => setCopied([]), 2000)
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'))
+      setCopied(selected)
+      setTimeout(() => setCopied([]), 2000)
+    } catch { setError('Could not copy the athlete links. Check clipboard permissions and try again.') }
   }
 
-  const groups = [...new Set(athletes.map(a => a.group_name).filter(Boolean))]
-  const grouped = athletes.reduce((acc, a) => {
-    const g = a.group_name || 'Ungrouped'
-    if (!acc[g]) acc[g] = []
-    acc[g].push(a)
-    return acc
-  }, {})
+  const availableCount = athletes.filter(a => !existing.includes(a.id)).length
+  const availableAthletes = athletes.filter(a => !existing.includes(a.id))
+  const assignedAthletes = athletes.filter(a => existing.includes(a.id))
 
   const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }
   const sheet = { background: 'var(--s1)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }
 
   return (
     <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={sheet}>
+      <div style={sheet} role="dialog" aria-modal="true" aria-labelledby="assign-modal-title">
         {/* Header */}
         <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--br)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)' }}>Assign workout</span>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 0 }}>✕</button>
+            <span id="assign-modal-title" style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)' }}>Assign workout</span>
+            <button onClick={onClose} aria-label="Close assignment dialog" style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 10 }}>✕</button>
           </div>
           <div style={{ fontSize: 13, color: 'var(--mu)' }}>{workout.name}</div>
         </div>
@@ -133,31 +136,9 @@ export default function AssignModal({ workout, onClose }) {
             </div>
           ) : (
             <>
-              <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 10 }}>Select athletes to assign this workout to</div>
-              {Object.entries(grouped).map(([group, members]) => (
-                <div key={group} style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 7 }}>{group}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {members.map(a => {
-                      const av = AV_COLORS[a.full_name.charCodeAt(0) % AV_COLORS.length]
-                      const isSelected = selected.includes(a.id)
-                      const isExisting = existing.includes(a.id)
-                      return (
-                        <div key={a.id} onClick={() => !isExisting && toggleSelect(a.id)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: isSelected ? 'rgba(168,237,82,.05)' : 'var(--s2)', border: `1px solid ${isSelected ? 'rgba(168,237,82,.25)' : 'var(--br)'}`, borderRadius: 10, cursor: isExisting ? 'default' : 'pointer', opacity: isExisting ? 0.5 : 1 }}>
-                          <div style={{ width: 18, height: 18, background: isSelected ? 'var(--ac)' : 'var(--br)', border: isSelected ? 'none' : '1px solid var(--br2)', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#0C1118', flexShrink: 0 }}>
-                            {isSelected ? '✓' : isExisting ? '✓' : ''}
-                          </div>
-                          <div style={{ width: 28, height: 28, background: av.bg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: av.color, flexShrink: 0 }}>{initials(a.full_name)}</div>
-                          <span style={{ flex: 1, fontSize: 13, color: 'var(--tx)' }}>{a.full_name}</span>
-                          {a.level && <span style={{ fontSize: 11, color: 'var(--mu)' }}>{a.level}</span>}
-                          {isExisting && <span style={{ fontSize: 10, color: 'var(--ac)', background: 'rgba(168,237,82,.1)', padding: '2px 7px', borderRadius: 20 }}>already assigned</span>}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
+              <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 10 }}>{availableCount === 0 ? 'Every athlete is already assigned to this workout.' : 'Select athletes to assign this workout to. Existing assignments cannot be selected again.'}</div>
+              {availableAthletes.length > 0 && <AthleteSection title="Add more athletes" athletes={availableAthletes} selected={selected} onToggle={toggleSelect} />}
+              {assignedAthletes.length > 0 && <AthleteSection title="Already assigned" athletes={assignedAthletes} selected={selected} onToggle={toggleSelect} disabled />}
             </>
           )}
         </div>
@@ -172,7 +153,34 @@ export default function AssignModal({ workout, onClose }) {
             </button>
           </div>
         )}
+        {done && error && <p role="alert" style={{ color: '#F88080', fontSize: 12, padding:'0 18px 12px' }}>{error}</p>}
       </div>
     </div>
   )
+}
+
+function AthleteSection({ title, athletes, selected, onToggle, disabled = false }) {
+  const groups = athletes.reduce((result, athlete) => {
+    const group = athlete.group_name || 'Ungrouped'
+    result[group] ||= []
+    result[group].push(athlete)
+    return result
+  }, {})
+  return <section style={{ marginBottom:18 }} aria-labelledby={`assignment-${title.replace(/\W/g, '-').toLowerCase()}`}>
+    <h3 id={`assignment-${title.replace(/\W/g, '-').toLowerCase()}`} style={{ margin:'0 0 10px', fontSize:12, color:disabled ? 'var(--chalk-faint)' : 'var(--chalk)', textTransform:'uppercase', letterSpacing:'.06em' }}>{title}</h3>
+    {Object.entries(groups).map(([group, members]) => <div key={group} style={{ marginBottom:12 }}>
+      <div style={{ fontSize:10, color:'var(--mu)', marginBottom:6 }}>{group}</div>
+      <div style={{ display:'grid', gap:6 }}>{members.map(athlete => {
+        const avatar = AV_COLORS[athlete.full_name.charCodeAt(0) % AV_COLORS.length]
+        const isSelected = selected.includes(athlete.id)
+        return <button type="button" key={athlete.id} onClick={() => onToggle(athlete.id)} disabled={disabled} aria-pressed={isSelected} style={{ width:'100%', minHeight:48, display:'flex', alignItems:'center', gap:10, padding:'9px 12px', background:isSelected ? 'rgba(199,228,92,.08)' : 'var(--s2)', border:`1px solid ${isSelected ? 'rgba(199,228,92,.35)' : 'var(--br)'}`, borderRadius:10, color:'inherit', opacity:disabled ? .65 : 1, textAlign:'left' }}>
+          <span aria-hidden="true" style={{ width:18, height:18, display:'grid', placeItems:'center', borderRadius:5, background:isSelected || disabled ? 'var(--ac)' : 'var(--br)', color:'var(--accent-ink)' }}>{isSelected || disabled ? '✓' : ''}</span>
+          <span aria-hidden="true" style={{ width:28, height:28, display:'grid', placeItems:'center', borderRadius:'50%', background:avatar.bg, color:avatar.color, fontSize:11 }}>{initials(athlete.full_name)}</span>
+          <span style={{ flex:1 }}>{athlete.full_name}</span>
+          {athlete.level && <span style={{ fontSize:11, color:'var(--mu)' }}>{athlete.level}</span>}
+          {disabled && <span style={{ fontSize:10, color:'var(--ac)' }}>Assigned</span>}
+        </button>
+      })}</div>
+    </div>)}
+  </section>
 }

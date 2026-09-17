@@ -17,6 +17,7 @@ export default defineConfig({
     env: {
       VITE_SUPABASE_URL: 'https://example.supabase.co',
       VITE_SUPABASE_ANON_KEY: 'ci-public-placeholder-key',
+      VITE_E2E_AUTH_BYPASS: 'true',
     },
   },
 })

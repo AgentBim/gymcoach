@@ -1,0 +1,12 @@
+.library-page { max-width: 1240px; margin-inline: auto; }
+.library-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); align-items: start; gap: var(--space-5); }
+.library-filter-rail { position: sticky; top: var(--space-5); min-width: 0; display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); background: var(--surface); }
+.library-filter-rail > div { margin-bottom: 0 !important; }
+.library-filter-list { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.library-filter-list button { min-height: 36px; }
+.library-results { min-width: 0; }
+
+@media (max-width: 900px) and (min-width: 768px) {
+  .library-layout { grid-template-columns: 250px minmax(0, 1fr); gap: var(--space-4); }
+  .library-grid { grid-template-columns: 1fr !important; }
+}

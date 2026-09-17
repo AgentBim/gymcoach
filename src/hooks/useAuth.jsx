@@ -4,11 +4,13 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [coach, setCoach] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const e2eBypass = import.meta.env.DEV && import.meta.env.VITE_E2E_AUTH_BYPASS === 'true' && window.localStorage.getItem('chalkup-e2e-auth') === 'true'
+  const [user, setUser] = useState(e2eBypass ? { id: 'e2e-coach', email: 'coach@example.test' } : null)
+  const [coach, setCoach] = useState(e2eBypass ? { id: 'e2e-coach', full_name: 'Test Coach' } : null)
+  const [loading, setLoading] = useState(!e2eBypass)
 
   useEffect(() => {
+    if (e2eBypass) return undefined
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) fetchCoach(session.user.id)
@@ -22,7 +24,7 @@ export function AuthProvider({ children }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [e2eBypass])
 
   async function fetchCoach(id) {
     const { data } = await supabase.from('coaches').select('*').eq('id', id).single()

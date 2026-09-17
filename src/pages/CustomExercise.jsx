@@ -95,7 +95,7 @@ export default function CustomExercise() {
     <Layout>
       <div style={{ maxWidth: 540, margin: '0 auto', padding: '24px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <button onClick={() => navigate('/library')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+          <button aria-label="Back to exercise library" onClick={() => navigate('/library')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700 }}>{isEdit ? 'Edit exercise' : 'Create custom exercise'}</h1>
             <p style={{ fontSize: 12, color: 'var(--mu)', marginTop: 2 }}>Visible only to your account · marked ★ in the library</p>
@@ -114,6 +114,18 @@ export default function CustomExercise() {
               placeholder="Describe the movement, cues, and what to focus on..."
               style={{ ...inp, height: 80, resize: 'none', lineHeight: 1.5 }} />
           </div>
+
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Category</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {CATEGORIES.map(item => <button type="button" key={item.value} aria-pressed={category === item.value} onClick={() => setCategory(item.value)} style={{ padding:'8px 14px', borderRadius:20, border:'1px solid var(--br)', background:category === item.value ? 'rgba(199,228,92,.12)' : 'var(--br)', color:category === item.value ? 'var(--ac)' : 'var(--mu)' }}>{item.label}</button>)}
+            </div>
+          </div>
+
+          {category === 'prehab' && <div>
+            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Prehab focus</div>
+            <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>{PREHAB_FOCUSES.map(item => <button type="button" key={item.value} aria-pressed={prehabFocus === item.value} onClick={() => setPrehabFocus(item.value)} style={{ padding:'8px 14px', borderRadius:20, border:'1px solid var(--br)', background:prehabFocus === item.value ? 'rgba(79,184,138,.15)' : 'var(--br)', color:prehabFocus === item.value ? 'var(--teal)' : 'var(--mu)' }}>{item.label}</button>)}</div>
+          </div>}
 
           <div>
             <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Muscle group *</div>

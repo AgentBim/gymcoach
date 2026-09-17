@@ -1,0 +1,45 @@
+.dashboard-mobile-header { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--border-soft); padding-top: var(--sat); background: rgb(30 36 38 / 96%); backdrop-filter: blur(14px); }
+.dashboard-mobile-header__row { display: flex; align-items: center; gap: var(--space-3); min-height: 58px; padding: var(--space-2) var(--space-4); }
+.dashboard-mobile-header__brand { flex: 1; font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; }
+.dashboard-mobile-filters { display: grid; gap: var(--space-3); padding: 0 var(--space-4) var(--space-3); }
+.dashboard-content { padding: var(--space-6); }
+.dashboard-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
+.dashboard-subtitle { margin: var(--space-1) 0 0; color: var(--chalk-dim); }
+.dashboard-filters { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+.dashboard-search { position: relative; width: min(100%, 260px); }
+.dashboard-search svg { position: absolute; top: 50%; left: var(--space-3); color: var(--chalk-faint); transform: translateY(-50%); }
+.dashboard-search .cu-input { padding-left: 2.45rem; }
+.dashboard-chips { display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: thin; }
+.workout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(285px, 1fr)); gap: var(--space-4); }
+.workout-card { display: flex; min-height: 225px; flex-direction: column; padding: var(--space-4); transition: border-color var(--motion-fast), transform var(--motion-fast); }
+.workout-card:hover { border-color: var(--border); transform: translateY(-2px); }
+.workout-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.workout-card__title { margin: 0; overflow-wrap: anywhere; font-size: 1rem; line-height: 1.35; }
+.workout-card__tags { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-3); }
+.workout-card__meta { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-3) 0 var(--space-4); color: var(--chalk-dim); font-family: var(--mono); font-size: .72rem; }
+.workout-card__meta span { display: inline-flex; align-items: center; gap: var(--space-1); }
+.workout-card__actions { display: flex; gap: var(--space-2); margin-top: auto; border-top: 1px solid var(--border-soft); padding-top: var(--space-3); }
+.workout-card__assign { flex: 1; }
+.workout-card__desktop-actions { display: flex; gap: var(--space-1); }
+.create-workout-card { display: grid; min-height: 225px; place-items: center; border: 1px dashed var(--border); border-radius: var(--radius-lg); background: transparent; color: var(--chalk-dim); text-align: center; }
+.create-workout-card:hover { border-color: var(--accent); color: var(--accent); }
+.create-workout-card__icon { display: grid; width: 44px; height: 44px; place-items: center; margin: 0 auto var(--space-2); border-radius: var(--radius-md); background: var(--surface-2); }
+.dashboard-empty-copy { max-width: 420px; }
+.dashboard-empty-copy h2 { margin: 0 0 var(--space-2); color: var(--chalk); font-size: 1.1rem; }
+.dashboard-empty-copy p { margin: 0 0 var(--space-4); }
+.action-sheet { align-self: end; width: 100%; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding-bottom: calc(var(--space-4) + var(--sab)); }
+.action-sheet__handle { width: 38px; height: 4px; margin: var(--space-3) auto var(--space-4); border-radius: var(--radius-pill); background: var(--border); }
+.action-sheet__header { border-bottom: 1px solid var(--border-soft); padding: 0 var(--space-5) var(--space-4); }
+.action-sheet__header h2 { margin: 0; font-size: 1rem; }
+.action-sheet__header p { margin: var(--space-1) 0 0; color: var(--chalk-dim); font-size: .8rem; }
+.action-sheet__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); padding: var(--space-4); }
+.action-sheet__action { min-height: 76px; flex-direction: column; }
+.action-sheet__cancel { width: calc(100% - 2rem); margin: 0 var(--space-4); }
+@media (max-width: 768px) {
+  .dashboard-content { padding: var(--space-4); }
+  .dashboard-toolbar { margin-bottom: var(--space-3); }
+  .dashboard-toolbar .cu-display { font-size: 1.45rem; }
+  .workout-grid { grid-template-columns: 1fr; gap: var(--space-3); }
+  .workout-card { min-height: 0; }
+  .dashboard-search { width: 100%; }
+}

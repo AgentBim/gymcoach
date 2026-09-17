@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
+import { Alert, Button, Card, Field, Input } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
+import './Login.css'
 
 export default function Login() {
   const [tab, setTab] = useState('login')
@@ -41,62 +43,55 @@ export default function Login() {
     else setError('Check your email for a password reset link.')
   }
 
-  const inp = { width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '10px 12px', fontSize: 14, outline: 'none' }
-
   return (
-    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 16 }}>
-      <div style={{ width: 340 }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <div style={{ width: 36, height: 36, background: 'var(--ac)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🏆</div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--tx)', margin: 0 }}>chalkup</h1>
+    <main className="auth-page">
+      <div className="auth-shell">
+        <header className="auth-brand">
+          <div className="auth-brand__lockup">
+            <ChalkUpLogo size={42} />
+            <h1>ChalkUp</h1>
           </div>
-          <p style={{ fontSize: 13, color: 'var(--mu)' }}>Gymnastics workout planning for coaches</p>
-        </div>
+          <p>Gymnastics workout planning for coaches</p>
+        </header>
 
-        <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 14, padding: 24 }}>
-          <div role="tablist" aria-label="Authentication mode" style={{ display: 'flex', background: 'var(--br)', borderRadius: 'var(--r)', padding: 3, marginBottom: 22 }}>
+        <Card padded className="auth-card">
+          <div role="tablist" aria-label="Authentication mode" className="auth-tabs">
             {['login', 'signup'].map(t => (
-              <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => { setTab(t); setShowReset(false); setError('') }}
-                style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 500, background: tab === t ? 'var(--s2)' : 'transparent', color: tab === t ? 'var(--tx)' : 'var(--mu)', transition: 'all .15s' }}>
+              <button key={t} id={`${t}-tab`} type="button" role="tab" aria-selected={tab === t} aria-controls="authentication-panel" onClick={() => { setTab(t); setShowReset(false); setError('') }}
+                className="auth-tab">
                 {t === 'login' ? 'Log in' : 'Sign up'}
               </button>
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form id="authentication-panel" role="tabpanel" aria-labelledby={`${tab}-tab`} onSubmit={handleSubmit} className="auth-form">
             {tab === 'signup' && (
-              <div>
-                <label htmlFor="full-name" style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 5 }}>Full name</label>
-                <input id="full-name" name="name" autoComplete="name" style={inp} type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Jelani Edwards" required />
-              </div>
+              <Field label="Full name" htmlFor="full-name">
+                <Input id="full-name" name="name" autoComplete="name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Jelani Edwards" required aria-invalid={Boolean(error && !name.trim())} />
+              </Field>
             )}
-            <div>
-              <label htmlFor="email" style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 5 }}>Email</label>
-              <input id="email" name="email" autoComplete="email" style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
-            </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                <label htmlFor="password" style={{ fontSize: 11, color: 'var(--mu)' }}>Password</label>
-                {tab === 'login' && <button type="button" onClick={() => setShowReset(true)} style={{ background: 'none', border: 0, color: 'var(--ac)', fontSize: 11, padding: 0 }}>Forgot password?</button>}
-              </div>
-              <input id="password" name="password" autoComplete={tab === 'login' ? 'current-password' : 'new-password'} style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
-            </div>
+            <Field label="Email" htmlFor="email">
+              <Input id="email" name="email" autoComplete="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required aria-describedby={error ? 'auth-message' : undefined} />
+            </Field>
+            <Field label="Password" htmlFor="password" className="auth-password-field">
+              {tab === 'login' && <button type="button" onClick={() => setShowReset(true)} className="auth-forgot">Forgot password?</button>}
+              <Input id="password" name="password" autoComplete={tab === 'login' ? 'current-password' : 'new-password'} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} aria-describedby={error ? 'auth-message' : tab === 'signup' ? 'signup-password-guidance' : undefined} />
+            </Field>
 
-            {error && <p style={{ fontSize: 12, color: error.includes('Check your') ? 'var(--ac)' : '#F88080', textAlign: 'center' }}>{error}</p>}
+            {tab === 'signup' && <p id="signup-password-guidance" className="auth-guidance">Use at least six characters. This reflects the current application policy.</p>}
 
-            <button type="submit" disabled={loading}
-              style={{ width: '100%', padding: 12, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: loading ? 0.7 : 1, marginTop: 4 }}>
+            {error && <Alert id="auth-message" tone={error.includes('Check your') ? 'success' : 'error'}>{error}</Alert>}
+
+            <Button type="submit" disabled={loading} className="auth-submit">
               {loading ? 'Please wait...' : tab === 'login' ? 'Log in →' : 'Create account →'}
-            </button>
+            </Button>
             {showReset && tab === 'login' && (
-              <button type="button" disabled={loading} onClick={handlePasswordReset}
-                style={{ width: '100%', padding: 10, background: 'transparent', color: 'var(--ac)', border: '1px solid var(--br2)', borderRadius: 'var(--r)', fontSize: 13 }}>
+              <Button variant="secondary" disabled={loading} onClick={handlePasswordReset}>
                 Email reset link
-              </button>
+              </Button>
             )}
           </form>
-        </div>
+        </Card>
       </div>
     </main>
   )

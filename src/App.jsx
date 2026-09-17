@@ -1,25 +1,27 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './hooks/useAuth'
 import ProtectedRoute from './components/ProtectedRoute'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Library from './pages/Library'
-import WorkoutBuilder from './pages/WorkoutBuilder'
-import AthleteView from './pages/AthleteView'
-import Roster from './pages/Roster'
-import AthleteForm from './pages/AthleteForm'
-import AthleteProfile from './pages/AthleteProfile'
-import History from './pages/History'
-import Programs from './pages/Programs'
-import ProgramBuilder from './pages/ProgramBuilder'
-import CustomExercise from './pages/CustomExercise'
-import UpdatePassword from './pages/UpdatePassword'
+
+const Login = lazy(() => import('./pages/Login'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Library = lazy(() => import('./pages/Library'))
+const WorkoutBuilder = lazy(() => import('./pages/WorkoutBuilder'))
+const AthleteView = lazy(() => import('./pages/AthleteView'))
+const Roster = lazy(() => import('./pages/Roster'))
+const AthleteForm = lazy(() => import('./pages/AthleteForm'))
+const AthleteProfile = lazy(() => import('./pages/AthleteProfile'))
+const History = lazy(() => import('./pages/History'))
+const Programs = lazy(() => import('./pages/Programs'))
+const ProgramBuilder = lazy(() => import('./pages/ProgramBuilder'))
+const CustomExercise = lazy(() => import('./pages/CustomExercise'))
+const UpdatePassword = lazy(() => import('./pages/UpdatePassword'))
 
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
+        <Suspense fallback={<div className="cu-container cu-page" role="status">Loading page…</div>}><Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/update-password" element={<ProtectedRoute><UpdatePassword /></ProtectedRoute>} />
           <Route path="/share/:token" element={<AthleteView />} />
@@ -38,7 +40,7 @@ export default function App() {
           <Route path="/library/new" element={<ProtectedRoute><CustomExercise /></ProtectedRoute>} />
           <Route path="/library/:id/edit" element={<ProtectedRoute><CustomExercise /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+        </Routes></Suspense>
       </BrowserRouter>
     </AuthProvider>
   )

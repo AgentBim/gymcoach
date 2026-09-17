@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
-import AIGeneratorModal from '../components/AIGeneratorModal'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const MUSCLE_GROUPS = ['Arms', 'Back', 'Legs', 'Core', 'Shoulders']
@@ -79,7 +77,6 @@ function weightedRandomize(allExercises, randGroups, randBias, randDiff, randCou
 export default function WorkoutBuilder() {
   const { id } = useParams()
   const isEdit = Boolean(id)
-  const { user } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -99,7 +96,6 @@ export default function WorkoutBuilder() {
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [showAIGenerator, setShowAIGenerator] = useState(false)
   const [isAiGenerated, setIsAiGenerated] = useState(false)
 
   // Randomizer
@@ -116,9 +112,26 @@ export default function WorkoutBuilder() {
   const [prehabSearch, setPrehabSearch] = useState('')
   const [prehabGroup, setPrehabGroup] = useState('All')
   const [suggestDismissed, setSuggestDismissed] = useState(false)
+  const [initialSignature, setInitialSignature] = useState(JSON.stringify({ name: '', selected: [], prehab: [] }))
+
+  const editorSignature = JSON.stringify({
+    name,
+    selected: selected.map(item => [item.exercise?.id, item.sets, item.reps, item.duration_seconds, item.rest_seconds]),
+    prehab: prehab.map(item => [item.exercise?.id, item.sets, item.reps, item.duration_seconds, item.rest_seconds]),
+  })
+  const isDirty = editorSignature !== initialSignature
 
   useEffect(() => { fetchExercises() }, [])
   useEffect(() => { if (isEdit) fetchWorkout() }, [id])
+  useEffect(() => {
+    function warnBeforeUnload(event) {
+      if (!isDirty) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warnBeforeUnload)
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload)
+  }, [isDirty])
 
   async function fetchExercises() {
     const { data } = await supabase.from('exercises').select('*').order('muscle_group').order('name')
@@ -132,6 +145,7 @@ export default function WorkoutBuilder() {
       .eq('id', id).single()
     if (data) {
       setName(data.name)
+      setIsAiGenerated(Boolean(data.is_ai_generated))
       const items = (data.workout_exercises || [])
         .sort((a, b) => a.position - b.position)
         .map(we => ({
@@ -151,6 +165,11 @@ export default function WorkoutBuilder() {
           duration_seconds: wp.duration_seconds || '',
           rest_seconds: wp.rest_seconds,
         }))
+      setInitialSignature(JSON.stringify({
+        name: data.name,
+        selected: items.map(item => [item.exercise?.id, item.sets, item.reps, item.duration_seconds, item.rest_seconds]),
+        prehab: prehabItems.map(item => [item.exercise?.id, item.sets, item.reps, item.duration_seconds, item.rest_seconds]),
+      }))
       setPrehab(prehabItems)
     }
   }
@@ -323,6 +342,12 @@ export default function WorkoutBuilder() {
       setSaving(false)
       return
     }
+    setInitialSignature(editorSignature)
+    navigate('/dashboard')
+  }
+
+  function leaveEditor() {
+    if (isDirty && !window.confirm('Discard your unsaved workout changes?')) return
     navigate('/dashboard')
   }
 
@@ -479,9 +504,9 @@ export default function WorkoutBuilder() {
                 <GroupBadge group={item.exercise.muscle_group} />
               </div>
               <div style={{ display: 'flex', gap: 4 }}>
-                <button onClick={() => moveUp(i)} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '3px 7px', cursor: 'pointer' }}>↑</button>
-                <button onClick={() => moveDown(i)} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '3px 7px', cursor: 'pointer' }}>↓</button>
-                <button onClick={() => removeExercise(i)} style={{ background: 'transparent', border: 'none', color: '#F88080', fontSize: 15, cursor: 'pointer', padding: '0 4px' }}>✕</button>
+                <button onClick={() => moveUp(i)} disabled={i === 0} aria-label={`Move ${item.exercise.name} up`} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '6px 9px', cursor: 'pointer' }}>↑</button>
+                <button onClick={() => moveDown(i)} disabled={i === selected.length - 1} aria-label={`Move ${item.exercise.name} down`} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '6px 9px', cursor: 'pointer' }}>↓</button>
+                <button onClick={() => removeExercise(i)} aria-label={`Remove ${item.exercise.name}`} style={{ background: 'transparent', border: 'none', color: '#F88080', fontSize: 15, cursor: 'pointer', padding: '6px 9px' }}>✕</button>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -586,13 +611,13 @@ export default function WorkoutBuilder() {
         </div>
 
         <button onClick={randomize} style={{ width: '100%', padding: 14, background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, color: 'var(--tx)', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}>
-          🎲 Generate workout
+          🎲 Randomize workout
         </button>
 
         {randResult.length > 0 && (
           <div style={{ background: 'var(--s2)', border: '1px solid rgba(168,237,82,.25)', borderRadius: 12, padding: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{randResult.length} exercises generated</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{randResult.length} randomized exercises</div>
               <button onClick={useRandomResult} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 Use this →
               </button>
@@ -615,11 +640,11 @@ export default function WorkoutBuilder() {
                 {randPrehabSuggestions.map(ex => {
                   const selected = randPrehabSelected.has(ex.id)
                   return (
-                    <div key={ex.id} onClick={() => setRandPrehabSelected(prev => {
+                    <button type="button" key={ex.id} aria-pressed={selected} onClick={() => setRandPrehabSelected(prev => {
                       const next = new Set(prev)
                       next.has(ex.id) ? next.delete(ex.id) : next.add(ex.id)
                       return next
-                    })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderBottom: '1px solid rgba(48,232,200,.07)', cursor: 'pointer', opacity: selected ? 1 : 0.75, transition: 'opacity .15s' }}>
+                    })} style={{ width:'100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border:0, borderBottom: '1px solid rgba(48,232,200,.07)', cursor: 'pointer', opacity: selected ? 1 : 0.75, transition: 'opacity .15s', background:'transparent', textAlign:'left' }}>
                       <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${selected ? 'rgba(48,232,200,.7)' : 'rgba(48,232,200,.3)'}`, background: selected ? 'rgba(48,232,200,.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, color: '#30E8C8' }}>
                         {selected ? '✓' : ''}
                       </div>
@@ -629,7 +654,7 @@ export default function WorkoutBuilder() {
                           {ex.muscle_group}{ex.prehab_focus ? ` · ${ex.prehab_focus}` : ''} · {ex.default_sets} × {ex.default_reps ? `${ex.default_reps} reps` : `${ex.default_duration_seconds}s`}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   )
                 })}
                 {randPrehabSelected.size > 0 && (
@@ -645,15 +670,6 @@ export default function WorkoutBuilder() {
     )
   }
 
-  function handleAIResult({ name: aiName, exercises: aiExercises, prehab: aiPrehab }) {
-    if (aiName) setName(aiName)
-    setSelected(aiExercises)
-    setPrehab(aiPrehab)
-    setIsAiGenerated(true)
-    setMobileTab('build')
-    setDesktopTab('manual')
-  }
-
   // ── MOBILE LAYOUT ────────────────────────────────────────────
   if (isMobile) {
     return (
@@ -662,7 +678,7 @@ export default function WorkoutBuilder() {
         {/* Sticky header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--s1)', borderBottom: '1px solid var(--br)', paddingTop: 'var(--sat)' }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+            <button onClick={leaveEditor} aria-label="Back to dashboard" style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 8, lineHeight: 1 }}>←</button>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Workout name..."
               style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 14, fontWeight: 600, outline: 'none' }} />
           </div>
@@ -693,24 +709,6 @@ export default function WorkoutBuilder() {
 
         {/* Tab content */}
         <div style={{ padding: '12px 16px', paddingBottom: pendingPick.size > 0 ? 100 : 16 }}>
-
-          {/* AI Generator entry button — shown on prehab + build tabs */}
-          {(mobileTab === 'prehab' || mobileTab === 'build') && (
-            <button onClick={() => setShowAIGenerator(true)} style={{
-              width: '100%', marginBottom: 12, padding: '12px 14px',
-              background: 'linear-gradient(135deg,rgba(167,139,250,.1),rgba(79,158,255,.07))',
-              border: '1px solid rgba(167,139,250,.3)', borderRadius: 14,
-              display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-              textAlign: 'left',
-            }}>
-              <span style={{ fontSize: 20 }}>✦</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#A78BFA', marginBottom: 2 }}>Generate with AI</div>
-                <div style={{ fontSize: 11, color: 'var(--mu2)' }}>Describe the session — AI picks from your library</div>
-              </div>
-              <span style={{ color: '#A78BFA', fontSize: 16 }}>›</span>
-            </button>
-          )}
 
           {/* PREHAB TAB */}
           {mobileTab === 'prehab' && <PrehabPanel />}
@@ -755,8 +753,9 @@ export default function WorkoutBuilder() {
                   const committed = committedIds.has(ex.id)
                   const pending = pendingPick.has(ex.id)
                   return (
-                    <div key={ex.id} onClick={() => togglePending(ex)}
+                    <button type="button" key={ex.id} onClick={() => togglePending(ex)} disabled={committed} aria-pressed={pending}
                       style={{
+                        width:'100%', color:'inherit', textAlign:'left',
                         padding: '11px 12px',
                         background: committed ? 'rgba(168,237,82,.04)' : pending ? 'rgba(168,237,82,.08)' : 'var(--s2)',
                         border: `1px solid ${committed ? 'rgba(168,237,82,.15)' : pending ? 'rgba(168,237,82,.4)' : 'var(--br)'}`,
@@ -778,7 +777,7 @@ export default function WorkoutBuilder() {
                       }}>
                         {committed ? '✓' : pending ? '✓' : '+'}
                       </div>
-                    </div>
+                    </button>
                   )
                 })}
               </div>
@@ -791,7 +790,7 @@ export default function WorkoutBuilder() {
               <BuildList />
               {error && <p style={{ fontSize: 12, color: '#F88080', marginTop: 12, textAlign: 'center' }}>{error}</p>}
               <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-                <button onClick={() => navigate('/dashboard')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer' }}>
+                <button onClick={leaveEditor} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer' }}>
                   Cancel
                 </button>
                 <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
@@ -826,13 +825,6 @@ export default function WorkoutBuilder() {
           </div>
         )}
       </Layout>
-      {showAIGenerator && (
-        <AIGeneratorModal
-          allExercises={allExercises}
-          onClose={() => setShowAIGenerator(false)}
-          onResult={handleAIResult}
-        />
-      )}
     </>
     )
   }
@@ -901,22 +893,7 @@ export default function WorkoutBuilder() {
 
           <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
             {desktopTab === 'prehab' ? (
-              <>
-                <button onClick={() => setShowAIGenerator(true)} style={{
-                  width: '100%', marginBottom: 14, padding: '11px 14px',
-                  background: 'linear-gradient(135deg,rgba(167,139,250,.1),rgba(79,158,255,.07))',
-                  border: '1px solid rgba(167,139,250,.3)', borderRadius: 12,
-                  display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left',
-                }}>
-                  <span style={{ fontSize: 18 }}>✦</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#A78BFA', marginBottom: 1 }}>Generate with AI</div>
-                    <div style={{ fontSize: 11, color: 'var(--mu2)' }}>Describe the session — AI picks from your library</div>
-                  </div>
-                  <span style={{ color: '#A78BFA', fontSize: 15 }}>›</span>
-                </button>
-                <PrehabPanel />
-              </>
+              <PrehabPanel />
             ) : desktopTab === 'manual' ? (
               <>
                 <input value={name} onChange={e => setName(e.target.value)} placeholder="Workout name..."
@@ -929,7 +906,7 @@ export default function WorkoutBuilder() {
           <div style={{ padding: '12px 20px', borderTop: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', gap: 10, alignItems: 'center' }}>
             {error && <span style={{ fontSize: 12, color: '#F88080' }}>{error}</span>}
             <div style={{ flex: 1 }} />
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 'var(--r)', color: 'var(--mu)', padding: '9px 16px', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+            <button onClick={leaveEditor} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 'var(--r)', color: 'var(--mu)', padding: '9px 16px', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
             <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', padding: '9px 20px', fontSize: 13, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
               {saving ? 'Saving...' : isEdit ? 'Update workout' : 'Save workout'}
             </button>
@@ -937,13 +914,6 @@ export default function WorkoutBuilder() {
         </div>
       </div>
     </Layout>
-    {showAIGenerator && (
-      <AIGeneratorModal
-        allExercises={allExercises}
-        onClose={() => setShowAIGenerator(false)}
-        onResult={handleAIResult}
-      />
-    )}
     </>
   )
 }

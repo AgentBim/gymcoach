@@ -17,3 +17,18 @@ test('invalid assignment links fail closed', async ({ page }) => {
   await page.goto('/share/not-a-valid-assignment-token')
   await expect(page.getByText('Workout not found')).toBeVisible()
 })
+
+test('authentication remains usable at the mobile reference width', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/login')
+  await page.getByRole('tab', { name: 'Sign up' }).click()
+  await expect(page.getByLabel('Full name')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Create account →' })).toBeVisible()
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
+  expect(overflow).toBe(false)
+})
+
+test('removed AI generation is not exposed on public entry points', async ({ page }) => {
+  await page.goto('/login')
+  await expect(page.getByText(/anthropic|ai generator|generate with ai/i)).toHaveCount(0)
+})

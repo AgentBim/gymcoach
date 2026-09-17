@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import { Drawer } from '../components/ui'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const DAY_TYPES = [
@@ -113,13 +114,13 @@ export default function ProgramBuilder() {
           const workout = cell?.workout_id ? workouts.find(w => w.id === cell.workout_id) : null
           const isActive = activeCell === key
           return (
-            <div key={di} onClick={() => setActiveCell(isActive ? null : key)}
+            <button type="button" key={di} aria-pressed={isActive} aria-label={`${day}, week ${week}${cell ? `: ${dt.label}${workout ? `, ${workout.name}` : ''}` : ': empty'}`} onClick={() => setActiveCell(isActive ? null : key)}
               style={{
                 background: cell ? dt.bg : 'var(--br)',
                 border: `1px solid ${isActive ? 'var(--ac)' : cell ? 'rgba(255,255,255,.08)' : 'transparent'}`,
                 borderRadius: 8, padding: '10px 6px', cursor: 'pointer', textAlign: 'center', minHeight: 72,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
-                transition: 'all .15s',
+                transition: 'all .15s', color:'inherit',
               }}>
               <div style={{ fontSize: 10, color: 'var(--mu)', fontWeight: 500 }}>{day}</div>
               {cell ? (
@@ -131,7 +132,7 @@ export default function ProgramBuilder() {
               ) : (
                 <div style={{ fontSize: 16, color: 'var(--br2)' }}>+</div>
               )}
-            </div>
+            </button>
           )
         })}
       </div>
@@ -149,8 +150,9 @@ export default function ProgramBuilder() {
         const isActive = activeCell === key
         return (
           <div key={di}>
-            <div onClick={() => setActiveCell(isActive ? null : key)}
+            <button type="button" aria-expanded={isActive} onClick={() => setActiveCell(isActive ? null : key)}
               style={{
+                width:'100%', background:'transparent', border:0, color:'inherit', textAlign:'left',
                 display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
                 borderBottom: '1px solid var(--br)', cursor: 'pointer',
               }}>
@@ -175,7 +177,7 @@ export default function ProgramBuilder() {
                 </div>
                 {cell && <div style={{ fontSize: 18, color: 'var(--mu)' }}>›</div>}
               </div>
-            </div>
+            </button>
             {/* Inline cell editor on mobile */}
             {isActive && (
               <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 10, padding: 14, margin: '8px 0 4px' }}>
@@ -218,7 +220,7 @@ export default function ProgramBuilder() {
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Header */}
         <div style={{ padding: isMobile ? '12px 16px' : '14px 20px', borderBottom: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={() => navigate('/programs')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+          <button aria-label="Back to programs" onClick={() => navigate('/programs')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Program name..."
             style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
           <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
@@ -238,9 +240,9 @@ export default function ProgramBuilder() {
               <div>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Weeks</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => setWeeks(w => Math.max(1, w - 1))} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>−</button>
+                  <button onClick={() => setWeeks(w => Math.max(1, w - 1))} aria-label="Remove a week" disabled={weeks === 1} style={{ width: 44, height: 44, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>−</button>
                   <span style={{ fontSize: 16, fontWeight: 700, minWidth: 20, textAlign: 'center' }}>{weeks}</span>
-                  <button onClick={() => setWeeks(w => Math.min(12, w + 1))} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>+</button>
+                  <button onClick={() => setWeeks(w => Math.min(104, w + 1))} aria-label="Add a week" style={{ width: 44, height: 44, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>+</button>
                 </div>
               </div>
             </div>
@@ -264,18 +266,17 @@ export default function ProgramBuilder() {
 
             {/* Cell editor panel — desktop only */}
             {!isMobile && activeCell && (
-              <div style={{ marginTop: 16, background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 14 }}>
+              <Drawer labelledBy="program-day-editor-title" onClose={() => setActiveCell(null)}>
                 {(() => {
                   const [wPart, dPart] = activeCell.split('d')
                   const week = parseInt(wPart.replace('w', ''))
                   const dayIdx = parseInt(dPart)
                   const cell = days[activeCell] || { day_type: 'training', workout_id: null, notes: '' }
-                  const dt = getDayType(cell.day_type)
                   return (
                     <>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 12 }}>
+                      <h2 id="program-day-editor-title" style={{ fontSize: 18, fontWeight: 600, color: 'var(--tx)', marginBottom: 18 }}>
                         Week {week} · {DAYS[dayIdx]}
-                      </div>
+                      </h2>
                       <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 7 }}>Day type</div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                         {DAY_TYPES.map(t => (
@@ -309,7 +310,7 @@ export default function ProgramBuilder() {
                     </>
                   )
                 })()}
-              </div>
+              </Drawer>
             )}
             {error && <p style={{ fontSize: 12, color: '#F88080', marginTop: 10 }}>{error}</p>}
           </div>
