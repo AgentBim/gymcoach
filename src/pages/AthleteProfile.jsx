@@ -60,7 +60,7 @@ export default function AthleteProfile() {
     const [{ data: a }, { data: assigns }, { data: progs }] = await Promise.all([
       supabase.from('athletes').select('*').eq('id', id).single(),
       supabase.from('workout_assignments')
-        .select('*, workouts(id, name, share_token, workout_exercises(exercises(muscle_group)))')
+        .select('*, workouts(id, name, workout_exercises(exercises(muscle_group)))')
         .eq('athlete_id', id)
         .order('assigned_at', { ascending: false }),
       supabase.from('programs').select('id, name, duration_weeks').eq('coach_id', user.id).order('name'),
@@ -271,9 +271,9 @@ export default function AthleteProfile() {
                         Assigned {new Date(a.assigned_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </div>
                       <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', gap: 7 }}>
-                        <button onClick={() => copyLink(a.workouts?.share_token)}
-                          style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: copied === a.workouts?.share_token ? 'var(--ac)' : 'var(--mu2)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', minHeight: 38 }}>
-                          {copied === a.workouts?.share_token ? '✓ Copied!' : '🔗 Copy link'}
+                        <button onClick={() => copyLink(a.assignment_token)}
+                          style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: copied === a.assignment_token ? 'var(--ac)' : 'var(--mu2)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', minHeight: 38 }}>
+                          {copied === a.assignment_token ? '✓ Copied!' : '🔗 Copy link'}
                         </button>
                         <button onClick={() => removeAssignment(a.id)}
                           style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#F88080', fontSize: 12, padding: '9px 12px', cursor: 'pointer', minHeight: 38 }}>Remove</button>

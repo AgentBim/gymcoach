@@ -69,7 +69,7 @@ export default function Dashboard() {
     if (!user) return
     const [wRes, aRes, fbRes] = await Promise.all([
       supabase.from('workouts')
-        .select('*, workout_exercises(exercise_id, exercises(muscle_group)), workout_assignments(id, athlete_id, athletes(full_name))')
+        .select('*, workout_exercises(exercise_id, exercises(muscle_group)), workout_assignments(id, athlete_id, assignment_token, athletes(full_name))')
         .eq('coach_id', user.id)
         .order('created_at', { ascending: false }),
       supabase.from('athletes').select('id, full_name').eq('coach_id', user.id),
@@ -90,19 +90,21 @@ export default function Dashboard() {
   }
 
   async function duplicateWorkout(w) {
-    const { data: newW } = await supabase.from('workouts')
-      .insert({ coach_id: user.id, name: `${w.name} (copy)` }).select().single()
-    if (!newW) return
-    const { data: ex } = await supabase.from('workout_exercises').select('*').eq('workout_id', w.id)
-    if (ex?.length) await supabase.from('workout_exercises').insert(
-      ex.map(e => ({ workout_id: newW.id, exercise_id: e.exercise_id, position: e.position, sets: e.sets, reps: e.reps, duration_seconds: e.duration_seconds, rest_seconds: e.rest_seconds }))
-    )
+    const { error } = await supabase.rpc('duplicate_workout', { p_workout_id: w.id })
+    if (error) { console.error(error); return }
     fetchAll()
   }
 
-  function copyShareLink(token) {
-    navigator.clipboard.writeText(`${window.location.origin}/share/${token}`)
-    setCopied(token)
+  // Each athlete assigned to a workout has their own assignment-scoped link
+  // (workout_assignments.assignment_token) — there's no single shared link
+  // per workout. With exactly one assignee we can copy directly; otherwise
+  // fall back to the assign sheet, which lists each athlete's own link.
+  function copyWorkoutLink(w) {
+    const assigned = w.workout_assignments || []
+    if (assigned.length !== 1) { setAssigningWorkout(w); return }
+    const [assignment] = assigned
+    navigator.clipboard.writeText(`${window.location.origin}/share/${assignment.assignment_token}`)
+    setCopied(assignment.id)
     setTimeout(() => setCopied(null), 2000)
   }
 
@@ -185,9 +187,9 @@ export default function Dashboard() {
         <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, paddingLeft: 2 }}>
           {isMobile ? (
             <div style={{ display: 'flex', gap: 7 }}>
-              <button onClick={() => copyShareLink(w.share_token)}
-                style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 9, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu2)', fontSize: 12, padding: '10px 8px', cursor: 'pointer', minHeight: 40, fontWeight: 500 }}>
-                {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
+              <button onClick={() => copyWorkoutLink(w)}
+                style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 9, color: copied === w.workout_assignments?.[0]?.id && w.workout_assignments?.length === 1 ? 'var(--ac)' : 'var(--mu2)', fontSize: 12, padding: '10px 8px', cursor: 'pointer', minHeight: 40, fontWeight: 500 }}>
+                {copied === w.workout_assignments?.[0]?.id && w.workout_assignments?.length === 1 ? '✓ Copied!' : '🔗 Share'}
               </button>
               <button onClick={() => setAssigningWorkout(w)}
                 style={{ flex: 1, background: 'rgba(168,237,82,.07)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 9, color: 'var(--ac)', fontSize: 12, padding: '10px 8px', cursor: 'pointer', fontWeight: 600, minHeight: 40 }}>
@@ -197,9 +199,9 @@ export default function Dashboard() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => copyShareLink(w.share_token)}
-                  style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: copied === w.share_token ? 'var(--ac)' : 'var(--mu2)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', minHeight: 36 }}>
-                  {copied === w.share_token ? '✓ Copied!' : '🔗 Share'}
+                <button onClick={() => copyWorkoutLink(w)}
+                  style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: copied === w.workout_assignments?.[0]?.id && w.workout_assignments?.length === 1 ? 'var(--ac)' : 'var(--mu2)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', minHeight: 36 }}>
+                  {copied === w.workout_assignments?.[0]?.id && w.workout_assignments?.length === 1 ? '✓ Copied!' : '🔗 Share'}
                 </button>
                 <button onClick={() => setAssigningWorkout(w)}
                   style={{ flex: 1, background: 'rgba(168,237,82,.07)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', fontWeight: 500, minHeight: 36 }}>
@@ -355,7 +357,7 @@ export default function Dashboard() {
               {[
                 { icon: '✏️', label: 'Edit',       action: () => { setSheetWorkout(null); navigate(`/workout/${sheetWorkout.id}/edit`) } },
                 { icon: '⧉',  label: 'Duplicate',  action: () => { duplicateWorkout(sheetWorkout); setSheetWorkout(null) } },
-                { icon: '🔗', label: 'Copy link',  action: () => { copyShareLink(sheetWorkout.share_token); setSheetWorkout(null) } },
+                { icon: '🔗', label: 'Copy link',  action: () => { copyWorkoutLink(sheetWorkout); setSheetWorkout(null) } },
                 { icon: '🗑', label: 'Delete', danger: true, action: () => { deleteWorkout(sheetWorkout.id); setSheetWorkout(null) } },
               ].map(item => (
                 <button key={item.label} onClick={item.action}

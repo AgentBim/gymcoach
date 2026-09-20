@@ -52,13 +52,15 @@ export default function AthleteToday() {
   }
 
   async function submitFeedback(payload) {
-    await supabase.from('workout_feedback').insert({
-      workout_id: effectiveWorkoutId,
-      athlete_id: athlete.id,
-      athlete_name: athlete.full_name,
-      completed_date: todayLocal(),
-      ...payload,
+    const { error } = await supabase.rpc('submit_athlete_workout_feedback', {
+      p_workout_id: effectiveWorkoutId,
+      p_emoji_rating: payload.emoji_rating,
+      p_rpe: payload.rpe,
+      p_notes: payload.notes,
+      p_exercises_completed: payload.exercises_completed,
+      p_completed_date: todayLocal(),
     })
+    if (error) throw error
   }
 
   if (streakLoading) return <div style={{ color: 'var(--mu)', textAlign: 'center', padding: 40 }}>Loading...</div>

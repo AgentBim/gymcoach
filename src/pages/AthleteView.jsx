@@ -3,58 +3,49 @@ import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import { WorkoutRunner } from '../components/WorkoutRunner'
-import { todayLocal } from '../lib/streaks'
 
 // ── Main page ────────────────────────────────────────────────────
+// Anonymous, no-account flow: the URL token is a per-assignment
+// workout_assignments.assignment_token, resolved through the
+// get_shared_workout/submit_workout_feedback RPCs (RLS has no anon table
+// access at all here — those RPCs are the only sanctioned way in). This
+// path doesn't count toward streaks, which require an authenticated
+// athlete account (see the /athlete portal).
 export default function AthleteView() {
   const { token } = useParams()
   const [workout, setWorkout] = useState(null)
+  const [athleteName, setAthleteName] = useState('')
   const [exercises, setExercises] = useState([])
   const [prehabExercises, setPrehabExercises] = useState([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
-  const [athleteName, setAthleteName] = useState('')
-  const [nameSubmitted, setNameSubmitted] = useState(false)
+  const [ready, setReady] = useState(false)
   const [feedbackDone, setFeedbackDone] = useState(false)
 
   useEffect(() => { fetchWorkout() }, [token])
 
   async function fetchWorkout() {
-    const { data: w } = await supabase
-      .from('workouts')
-      .select('*, coaches(full_name)')
-      .eq('share_token', token)
-      .single()
+    const { data, error } = await supabase.rpc('get_shared_workout', { p_share_token: token })
 
-    if (!w) { setNotFound(true); setLoading(false); return }
+    if (error || !data?.workout) { setNotFound(true); setLoading(false); return }
 
-    const { data: ex } = await supabase
-      .from('workout_exercises')
-      .select('*, exercises(*)')
-      .eq('workout_id', w.id)
-      .order('position')
-
-    const { data: pre } = await supabase
-      .from('workout_prehab')
-      .select('*, exercises(*)')
-      .eq('workout_id', w.id)
-      .order('position')
-
-    setWorkout(w)
-    setExercises(ex || [])
-    setPrehabExercises(pre || [])
+    setWorkout(data.workout)
+    setAthleteName(data.workout.athlete_name || '')
+    setExercises(data.exercises || [])
+    setPrehabExercises(data.prehab || [])
     setLoading(false)
   }
 
   async function submitFeedback(payload) {
-    await supabase.from('workout_feedback').insert({
-      workout_id: workout.id,
-      share_token: token,
-      athlete_name: athleteName || null,
-      completed_date: todayLocal(),
-      ...payload,
+    const { error } = await supabase.rpc('submit_workout_feedback', {
+      p_share_token: token,
+      p_emoji_rating: payload.emoji_rating,
+      p_rpe: payload.rpe,
+      p_notes: payload.notes,
+      p_exercises_completed: payload.exercises_completed,
     })
+    if (error) throw error
   }
 
   if (loading) return (
@@ -67,12 +58,13 @@ export default function AthleteView() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--mu)', textAlign: 'center', padding: 20 }}>
       <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
       <p style={{ fontSize: 16, fontWeight: 500, color: 'var(--tx)', marginBottom: 6 }}>Workout not found</p>
-      <p style={{ fontSize: 13 }}>This link may be invalid or the workout was removed.</p>
+      <p style={{ fontSize: 13 }}>This link may be invalid, expired, or revoked.</p>
     </div>
   )
 
-  // Name prompt screen
-  if (!nameSubmitted) {
+  // Welcome screen — the assignment link already identifies the athlete,
+  // no name prompt needed.
+  if (!ready) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={{ width: '100%', maxWidth: 360 }}>
@@ -84,24 +76,13 @@ export default function AthleteView() {
               {workout?.coaches?.full_name ? `From Coach ${workout.coaches.full_name.split(' ')[0]}` : 'Shared workout'}
             </div>
           </div>
-          <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 14, padding: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 4 }}>What's your name?</div>
-            <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 14 }}>So your coach knows who completed this workout</div>
-            <input
-              value={athleteName}
-              onChange={e => setAthleteName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && setNameSubmitted(true)}
-              placeholder="Your name..."
-              autoFocus
-              style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '11px 12px', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: 12 }}
-            />
-            <button onClick={() => setNameSubmitted(true)}
+          <div style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 14, padding: 20, textAlign: 'center' }}>
+            {athleteName && (
+              <div style={{ fontSize: 13, color: 'var(--tx)', marginBottom: 14 }}>Hey {athleteName.split(' ')[0]}, ready to go?</div>
+            )}
+            <button onClick={() => setReady(true)}
               style={{ width: '100%', padding: 13, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
               Start workout →
-            </button>
-            <button onClick={() => { setAthleteName(''); setNameSubmitted(true) }}
-              style={{ width: '100%', padding: 10, background: 'transparent', border: 'none', color: 'var(--mu)', fontSize: 12, cursor: 'pointer', marginTop: 6 }}>
-              Skip
             </button>
           </div>
         </div>

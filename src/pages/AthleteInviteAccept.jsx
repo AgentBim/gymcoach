@@ -36,7 +36,10 @@ export default function AthleteInviteAccept() {
     setError('')
     setSubmitting(true)
 
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { role: 'athlete' } },
+    })
     if (signUpError) {
       setError(signUpError.message)
       setSubmitting(false)

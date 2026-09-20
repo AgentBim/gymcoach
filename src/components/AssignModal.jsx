@@ -22,6 +22,7 @@ export default function AssignModal({ workout, onClose }) {
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [copied, setCopied] = useState([])
+  const [tokensByAthlete, setTokensByAthlete] = useState({})
 
   useEffect(() => { fetchData() }, [])
 
@@ -44,23 +45,26 @@ export default function AssignModal({ workout, onClose }) {
     const rows = selected.map(athlete_id => ({
       workout_id: workout.id, athlete_id, coach_id: user.id
     }))
-    await supabase.from('workout_assignments').upsert(rows, { onConflict: 'workout_id,athlete_id' })
+    const { data } = await supabase.from('workout_assignments')
+      .upsert(rows, { onConflict: 'workout_id,athlete_id' })
+      .select('athlete_id, assignment_token')
+    const map = {}
+    ;(data || []).forEach(r => { map[r.athlete_id] = r.assignment_token })
+    setTokensByAthlete(map)
     setSaving(false)
     setDone(true)
   }
 
+  // Each athlete gets their own assignment-scoped link — there's no single
+  // shared link per workout anymore (the backend locked that down; see
+  // workout_assignments.assignment_token).
   function copyLink(athleteId) {
-    const url = `${window.location.origin}/share/${workout.share_token}`
+    const token = tokensByAthlete[athleteId]
+    if (!token) return
+    const url = `${window.location.origin}/share/${token}`
     navigator.clipboard.writeText(url)
     setCopied(prev => [...prev, athleteId])
     setTimeout(() => setCopied(prev => prev.filter(id => id !== athleteId)), 2000)
-  }
-
-  function copyAll() {
-    const url = `${window.location.origin}/share/${workout.share_token}`
-    navigator.clipboard.writeText(url)
-    setCopied(selected)
-    setTimeout(() => setCopied([]), 2000)
   }
 
   const groups = [...new Set(athletes.map(a => a.group_name).filter(Boolean))]
@@ -111,10 +115,7 @@ export default function AssignModal({ workout, onClose }) {
                   )
                 })}
               </div>
-              <button onClick={copyAll} style={{ width: '100%', padding: 11, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 8 }}>
-                Copy share link (same for all)
-              </button>
-              <button onClick={onClose} style={{ width: '100%', padding: 11, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', fontSize: 13, cursor: 'pointer' }}>Done</button>
+              <button onClick={onClose} style={{ width: '100%', padding: 11, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Done</button>
             </div>
           ) : (
             <>
