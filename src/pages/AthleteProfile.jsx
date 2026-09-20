@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import { StreakFlame } from '../components/StreakFlame'
+import { useAthleteStreak } from '../hooks/useAthleteStreak'
+import { todayLocal } from '../lib/streaks'
 
 const GROUP_COLORS = {
   Arms:      { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
@@ -42,21 +45,29 @@ export default function AthleteProfile() {
   const isMobile = useIsMobile()
   const [athlete, setAthlete]       = useState(null)
   const [assignments, setAssignments] = useState([])
+  const [programs, setPrograms]     = useState([])
   const [loading, setLoading]       = useState(true)
   const [copied, setCopied]         = useState(null)
+  const [savingProgram, setSavingProgram] = useState(false)
+  const [invitingLink, setInvitingLink]   = useState(false)
+  const [inviteCopied, setInviteCopied]   = useState(false)
+
+  const { streak, loading: streakLoading } = useAthleteStreak(id)
 
   useEffect(() => { fetchData() }, [id])
 
   async function fetchData() {
-    const [{ data: a }, { data: assigns }] = await Promise.all([
+    const [{ data: a }, { data: assigns }, { data: progs }] = await Promise.all([
       supabase.from('athletes').select('*').eq('id', id).single(),
       supabase.from('workout_assignments')
         .select('*, workouts(id, name, share_token, workout_exercises(exercises(muscle_group)))')
         .eq('athlete_id', id)
         .order('assigned_at', { ascending: false }),
+      supabase.from('programs').select('id, name, duration_weeks').eq('coach_id', user.id).order('name'),
     ])
     setAthlete(a)
     setAssignments(assigns || [])
+    setPrograms(progs || [])
     setLoading(false)
   }
 
@@ -69,6 +80,39 @@ export default function AthleteProfile() {
     navigator.clipboard.writeText(`${window.location.origin}/share/${token}`)
     setCopied(token)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  async function setActiveProgram(programId) {
+    setSavingProgram(true)
+    const payload = programId
+      ? { active_program_id: programId, program_started_on: athlete.program_started_on || todayLocal() }
+      : { active_program_id: null, program_started_on: null }
+    const { data } = await supabase.from('athletes').update(payload).eq('id', id).select().single()
+    if (data) setAthlete(data)
+    setSavingProgram(false)
+  }
+
+  async function setProgramStartedOn(dateStr) {
+    setSavingProgram(true)
+    const { data } = await supabase.from('athletes').update({ program_started_on: dateStr }).eq('id', id).select().single()
+    if (data) setAthlete(data)
+    setSavingProgram(false)
+  }
+
+  async function generateInvite() {
+    setInvitingLink(true)
+    const token = crypto.randomUUID()
+    const { data } = await supabase.from('athletes')
+      .update({ invite_token: token, invite_sent_at: new Date().toISOString() })
+      .eq('id', id).select().single()
+    if (data) setAthlete(data)
+    setInvitingLink(false)
+  }
+
+  function copyInviteLink() {
+    navigator.clipboard.writeText(`${window.location.origin}/athlete/invite/${athlete.invite_token}`)
+    setInviteCopied(true)
+    setTimeout(() => setInviteCopied(false), 2000)
   }
 
   if (loading) return <Layout><div style={{ padding: 40, color: 'var(--mu)' }}>Loading…</div></Layout>
@@ -114,6 +158,11 @@ export default function AthleteProfile() {
               <div style={{ fontSize: 20, fontWeight: 800, color: '#4F9EFF', lineHeight: 1, fontFamily: 'var(--font-head,sans-serif)' }}>{Object.keys(groupCounts).length}</div>
               <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 3 }}>Muscle groups</div>
             </div>
+            <div style={{ width: 1, background: 'var(--br)' }} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#FFA94D', lineHeight: 1, fontFamily: 'var(--font-head,sans-serif)' }}>{streakLoading ? '—' : streak}</div>
+              <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 3 }}>Day streak</div>
+            </div>
             {athlete.notes && <><div style={{ width: 1, background: 'var(--br)' }} />
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 20, lineHeight: 1 }}>📝</div>
@@ -130,6 +179,44 @@ export default function AthleteProfile() {
               <div style={{ fontSize: 13, color: 'var(--tx)', lineHeight: 1.6 }}>{athlete.notes}</div>
             </div>
           )}
+
+          {/* ── ACTIVE PROGRAM ── */}
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Active program</div>
+              {streak > 0 && <StreakFlame streak={streak} size="sm" />}
+            </div>
+            <select value={athlete.active_program_id || ''} disabled={savingProgram}
+              onChange={e => setActiveProgram(e.target.value || null)}
+              style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '9px 10px', fontSize: 13, outline: 'none', marginBottom: athlete.active_program_id ? 10 : 0 }}>
+              <option value="">No active program — plain daily streak</option>
+              {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {athlete.active_program_id && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 11, color: 'var(--mu)' }}>Started on</span>
+                <input type="date" value={athlete.program_started_on || ''} disabled={savingProgram}
+                  onChange={e => setProgramStartedOn(e.target.value)}
+                  style={{ background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '6px 8px', fontSize: 12, outline: 'none' }} />
+              </div>
+            )}
+          </div>
+
+          {/* ── PORTAL ACCESS ── */}
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Athlete portal</div>
+            {athlete.user_id ? (
+              <div style={{ fontSize: 13, color: 'var(--ac)' }}>✓ Linked{athlete.email ? ` · ${athlete.email}` : ''}</div>
+            ) : athlete.invite_token ? (
+              <button onClick={copyInviteLink} style={{ width: '100%', padding: 10, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: inviteCopied ? 'var(--ac)' : 'var(--mu2)', fontSize: 12, cursor: 'pointer' }}>
+                {inviteCopied ? '✓ Copied!' : '🔗 Copy invite link'}
+              </button>
+            ) : (
+              <button onClick={generateInvite} disabled={invitingLink} style={{ width: '100%', padding: 10, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: invitingLink ? 0.7 : 1 }}>
+                {invitingLink ? 'Generating...' : 'Invite to portal'}
+              </button>
+            )}
+          </div>
 
           {/* ── MUSCLE GROUP BREAKDOWN ── */}
           {Object.keys(groupCounts).length > 0 && (

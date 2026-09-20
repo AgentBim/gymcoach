@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import { StreakFlame } from '../components/StreakFlame'
+import { batchComputeStreaks } from '../lib/streakData'
 
 const LEVEL_COLORS = {
   'Level 1': { bg: 'rgba(80,150,230,.15)',  color: '#6BB5F5' },
@@ -40,6 +42,7 @@ export default function Roster() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const [athletes, setAthletes] = useState([])
+  const [streaks, setStreaks]   = useState(new Map())
   const [loading, setLoading]   = useState(true)
   const [filterGroup, setFilterGroup] = useState('All')
   const [search, setSearch]           = useState('')
@@ -50,11 +53,18 @@ export default function Roster() {
     if (!user) return
     const { data } = await supabase
       .from('athletes')
-      .select('*, workout_assignments(id)')
+      .select('*, workout_assignments(id), programs:active_program_id(id, duration_weeks)')
       .eq('coach_id', user.id)
       .order('group_name').order('full_name')
     setAthletes(data || [])
     setLoading(false)
+
+    if (data?.length) {
+      const programsById = new Map()
+      data.forEach(a => { if (a.programs) programsById.set(a.programs.id, a.programs) })
+      const result = await batchComputeStreaks(data, programsById)
+      setStreaks(result)
+    }
   }
 
   async function deleteAthlete(id) {
@@ -152,9 +162,10 @@ export default function Roster() {
                     const av = avatarPalette(a.full_name)
                     const lc = LEVEL_COLORS[a.level] || { bg: 'var(--br)', color: 'var(--mu2)' }
                     const workoutCount = a.workout_assignments?.length || 0
+                    const streak = streaks.get(a.id)?.streak || 0
                     return (
-                      <div key={a.id} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}
-                        onClick={() => navigate(`/roster/${a.id}`)} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                      <div key={a.id} onClick={() => navigate(`/roster/${a.id}`)}
+                        style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
 
                         {/* Avatar */}
                         <div style={{ width: 42, height: 42, background: av.bg, borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: av.color, flexShrink: 0, fontFamily: 'var(--font-head,sans-serif)' }}>
@@ -169,6 +180,7 @@ export default function Roster() {
                             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#5DD99A', flexShrink: 0 }} />
                             {a.level && <span style={{ padding: '1px 7px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: lc.bg, color: lc.color }}>{a.level}</span>}
                             {workoutCount > 0 && <span style={{ padding: '1px 7px', borderRadius: 20, fontSize: 10, fontWeight: 500, background: 'var(--br)', color: 'var(--mu2)' }}>{workoutCount} workout{workoutCount !== 1 ? 's' : ''}</span>}
+                            <StreakFlame streak={streak} size="sm" showTooltip={false} />
                           </div>
                         </div>
 
