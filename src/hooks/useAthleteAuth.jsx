@@ -36,8 +36,17 @@ export function AthleteAuthProvider({ children }) {
   }
 
   async function signIn(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error }
+
+    // Mirror useAuth's coach check: verify role at login itself, not just
+    // via route guards, so a coach account's session never lingers here.
+    const { data: athleteRow } = await supabase.from('athletes').select('id').eq('user_id', data.user.id).single()
+    if (!athleteRow) {
+      await supabase.auth.signOut()
+      return { error: { message: 'This is a coach account. Log in at the coach dashboard instead.' } }
+    }
+    return { error: null }
   }
 
   async function signOut() {

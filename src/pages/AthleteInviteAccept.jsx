@@ -40,13 +40,38 @@ export default function AthleteInviteAccept() {
       email, password,
       options: { data: { role: 'athlete' } },
     })
-    if (signUpError) {
+
+    // If a previous attempt got as far as creating the auth user but failed
+    // before claim_athlete_invite ran (dropped connection, closed tab), this
+    // email is now "already registered" and a plain signUp can't get them
+    // back in — without this fallback they'd be stuck unable to re-run the
+    // invite at all. Supabase signals this either as an explicit error, or
+    // (with email-confirmation anti-enumeration behavior) as a successful-
+    // looking response whose user has no identities attached. Either way,
+    // retry as a sign-in with the password they just entered: if that's the
+    // same password they picked the first time, it recovers cleanly.
+    const alreadyRegistered = /already registered/i.test(signUpError?.message || '')
+      || (data?.user && data.user.identities?.length === 0)
+
+    if (signUpError && !alreadyRegistered) {
       setError(signUpError.message)
       setSubmitting(false)
       return
     }
 
-    if (data.session) {
+    let session = data?.session
+
+    if (alreadyRegistered) {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) {
+        setError('An account already exists for this email — likely from an earlier attempt. If this is yours, double-check the password, or ask your coach for a new invite link.')
+        setSubmitting(false)
+        return
+      }
+      session = signInData.session
+    }
+
+    if (session) {
       const { error: claimError } = await supabase.rpc('claim_athlete_invite', { p_invite_token: token, p_email: email })
       if (claimError) {
         setError(claimError.message)

@@ -39,8 +39,18 @@ export function AuthProvider({ children }) {
   }
 
   async function signIn(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error }
+
+    // The coach and athlete portals share one Supabase auth pool. Check
+    // role at the point of login, not just via route guards, so an athlete
+    // account's session never lingers even briefly after signing in here.
+    const { data: coachRow } = await supabase.from('coaches').select('id').eq('id', data.user.id).single()
+    if (!coachRow) {
+      await supabase.auth.signOut()
+      return { error: { message: 'This is an athlete account. Log in at the athlete portal instead.' } }
+    }
+    return { error: null }
   }
 
   async function signOut() {
