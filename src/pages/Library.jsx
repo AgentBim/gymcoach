@@ -4,30 +4,12 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import { MUSCLE_COLORS as GROUP_COLORS, DIFF_COLORS, FOCUS_COLORS } from '../lib/theme'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const DIFFICULTIES = ['All', 'Easy', 'Medium', 'Hard']
 const CATEGORIES = ['strength', 'prehab', 'mobility']
 const CAT_LABELS = { strength: '💪 Strength', prehab: '🛡 Prehab', mobility: '🧘 Mobility' }
-
-const GROUP_COLORS = {
-  Arms:      { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
-  Back:      { bg: 'rgba(80,150,230,.15)',  color: '#6BB5F5' },
-  Legs:      { bg: 'rgba(230,70,60,.15)',   color: '#F88080' },
-  Core:      { bg: 'rgba(50,200,140,.15)',  color: '#5DD99A' },
-  Shoulders: { bg: 'rgba(160,100,230,.15)', color: '#C084F5' },
-}
-const DIFF_COLORS = {
-  Easy:   { bg: 'rgba(50,200,140,.15)',  color: '#5DD99A' },
-  Medium: { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
-  Hard:   { bg: 'rgba(230,70,60,.15)',   color: '#F88080' },
-}
-const FOCUS_COLORS = {
-  activation: { bg: 'rgba(168,237,82,.12)',  color: '#A8ED52' },
-  stability:  { bg: 'rgba(80,150,230,.12)',  color: '#6BB5F5' },
-  mobility:   { bg: 'rgba(160,100,230,.12)', color: '#C084F5' },
-  strength:   { bg: 'rgba(240,158,40,.12)',  color: '#F4B455' },
-}
 
 function Badge({ label, colors }) {
   return <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500, ...colors }}>{label}</span>
@@ -78,7 +60,7 @@ export default function Library() {
       borderRadius: 20, fontSize: isMobile ? 11 : 12,
       fontWeight: active ? 600 : 400,
       background: active ? 'var(--ac)' : 'var(--br)',
-      color: active ? '#0C1118' : 'var(--mu)',
+      color: active ? 'var(--ac-ink)' : 'var(--mu)',
       border: 'none', cursor: 'pointer', transition: 'all .15s',
       whiteSpace: 'nowrap',
     }}>{label}</button>
@@ -89,9 +71,9 @@ export default function Library() {
       padding: isMobile ? '5px 10px' : '5px 12px',
       borderRadius: 20, fontSize: isMobile ? 11 : 12,
       fontWeight: active ? 600 : 400,
-      background: active ? 'rgba(168,237,82,.2)' : 'var(--br)',
-      color: active ? '#A8ED52' : 'var(--mu)',
-      border: active ? '1px solid rgba(168,237,82,.4)' : '1px solid transparent',
+      background: active ? 'rgba(199,228,92,.2)' : 'var(--br)',
+      color: active ? '#C7E45C' : 'var(--mu)',
+      border: active ? '1px solid rgba(199,228,92,.4)' : '1px solid transparent',
       cursor: 'pointer', transition: 'all .15s', whiteSpace: 'nowrap',
     }}>{label}</button>
   )
@@ -106,12 +88,12 @@ export default function Library() {
           flex: 1, padding: isMobile ? '7px 6px' : '7px 10px',
           borderRadius: 8, fontSize: isMobile ? 11 : 12, fontWeight: catTab === c ? 700 : 400,
           background: catTab === c
-            ? c === 'prehab' ? 'rgba(168,237,82,.18)' : 'var(--s2)'
+            ? c === 'prehab' ? 'rgba(199,228,92,.18)' : 'var(--s2)'
             : 'transparent',
           color: catTab === c
-            ? c === 'prehab' ? '#A8ED52' : 'var(--tx)'
+            ? c === 'prehab' ? '#C7E45C' : 'var(--tx)'
             : 'var(--mu)',
-          border: catTab === c && c === 'prehab' ? '1px solid rgba(168,237,82,.35)' : '1px solid transparent',
+          border: catTab === c && c === 'prehab' ? '1px solid rgba(199,228,92,.35)' : '1px solid transparent',
           cursor: 'pointer', transition: 'all .15s', whiteSpace: 'nowrap',
         }}>{CAT_LABELS[c]}</button>
       ))}
@@ -125,7 +107,7 @@ export default function Library() {
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--tx)', flex: 1 }}>Exercise Library</span>
             <span style={{ fontSize: 12, color: 'var(--mu)' }}>{filtered.length}</span>
-            <button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 7, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', minHeight: 32, whiteSpace: 'nowrap' }}>+ Custom</button>
+            <button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 7, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', minHeight: 32, whiteSpace: 'nowrap' }}>+ Custom</button>
           </div>
           <div style={{ padding: '0 16px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
@@ -151,7 +133,7 @@ export default function Library() {
                 <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 2 }}>Exercise library</h1>
                 <p style={{ fontSize: 13, color: 'var(--mu)' }}>{filtered.length} of {exercises.length} exercises</p>
               </div>
-              <button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Custom exercise</button>
+              <button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Custom exercise</button>
             </div>
           </div>
         )}

@@ -4,14 +4,10 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import { DAY_TYPE_COLORS } from '../lib/theme'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const DAY_TYPES = [
-  { key: 'training',    icon: '💪', label: 'Training',   color: '#A8ED52', bg: 'rgba(168,237,82,.1)' },
-  { key: 'rest',        icon: '😴', label: 'Rest',        color: '#6B7A96', bg: 'var(--br)' },
-  { key: 'recovery',   icon: '🚶', label: 'Recovery',    color: '#6BB5F5', bg: 'rgba(80,150,230,.1)' },
-  { key: 'competition',icon: '🏟', label: 'Competition', color: '#5DD99A', bg: 'rgba(50,200,140,.1)' },
-]
+const DAY_TYPES = ['training', 'rest', 'recovery', 'competition'].map(key => ({ key, ...DAY_TYPE_COLORS[key] }))
 
 function getDayType(key) { return DAY_TYPES.find(d => d.key === key) || DAY_TYPES[0] }
 
@@ -204,8 +200,8 @@ export default function ProgramBuilder() {
                   </>
                 )}
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setActiveCell(null)} style={{ flex: 1, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Done</button>
-                  {cell && <button onClick={() => { clearCell(key); setActiveCell(null) }} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#F88080', padding: '9px 14px', fontSize: 13, cursor: 'pointer' }}>Clear</button>}
+                  <button onClick={() => setActiveCell(null)} style={{ flex: 1, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Done</button>
+                  {cell && <button onClick={() => { clearCell(key); setActiveCell(null) }} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#E2695A', padding: '9px 14px', fontSize: 13, cursor: 'pointer' }}>Clear</button>}
                 </div>
               </div>
             )}
@@ -223,7 +219,7 @@ export default function ProgramBuilder() {
           <button onClick={() => navigate('/programs')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Program name..."
             style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
-          <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+          <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
@@ -305,15 +301,15 @@ export default function ProgramBuilder() {
                         placeholder="Optional note for this day..."
                         style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 10px', fontSize: 13, outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => setActiveCell(null)} style={{ flex: 1, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Done</button>
-                        {days[activeCell] && <button onClick={() => { clearCell(activeCell); setActiveCell(null) }} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#F88080', padding: '9px 14px', fontSize: 13, cursor: 'pointer' }}>Clear</button>}
+                        <button onClick={() => setActiveCell(null)} style={{ flex: 1, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Done</button>
+                        {days[activeCell] && <button onClick={() => { clearCell(activeCell); setActiveCell(null) }} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#E2695A', padding: '9px 14px', fontSize: 13, cursor: 'pointer' }}>Clear</button>}
                       </div>
                     </>
                   )
                 })()}
               </div>
             )}
-            {error && <p style={{ fontSize: 12, color: '#F88080', marginTop: 10 }}>{error}</p>}
+            {error && <p style={{ fontSize: 12, color: '#E2695A', marginTop: 10 }}>{error}</p>}
           </div>
         </div>
       </div>

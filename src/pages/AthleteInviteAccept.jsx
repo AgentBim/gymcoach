@@ -108,7 +108,7 @@ export default function AthleteInviteAccept() {
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <ChalkUpLogo size={36} />
-            <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--tx)' }}>chalkup</span>
+            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--tx)', fontFamily: 'var(--font-head)' }}>chalkup</span>
           </div>
           <p style={{ fontSize: 13, color: 'var(--mu)' }}>Welcome, {athlete.full_name.split(' ')[0]} — set up your portal login</p>
         </div>
@@ -120,7 +120,7 @@ export default function AthleteInviteAccept() {
               <p style={{ fontSize: 13, color: 'var(--tx)', marginBottom: 6 }}>Check your email to confirm your account.</p>
               <p style={{ fontSize: 12, color: 'var(--mu)' }}>Then come back and log in to finish setup.</p>
               <button onClick={() => navigate('/athlete/login')}
-                style={{ marginTop: 16, width: '100%', padding: 12, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700 }}>
+                style={{ marginTop: 16, width: '100%', padding: 12, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700 }}>
                 Go to login →
               </button>
             </div>
@@ -135,10 +135,10 @@ export default function AthleteInviteAccept() {
                 <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
               </div>
 
-              {error && <p style={{ fontSize: 12, color: '#F88080', textAlign: 'center' }}>{error}</p>}
+              {error && <p style={{ fontSize: 12, color: '#E2695A', textAlign: 'center' }}>{error}</p>}
 
               <button type="submit" disabled={submitting}
-                style={{ width: '100%', padding: 12, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: submitting ? 0.7 : 1, marginTop: 4 }}>
+                style={{ width: '100%', padding: 12, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: submitting ? 0.7 : 1, marginTop: 4 }}>
                 {submitting ? 'Setting up...' : 'Create my login →'}
               </button>
             </form>

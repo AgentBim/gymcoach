@@ -6,33 +6,9 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import Layout from '../components/Layout'
 import AssignModal from '../components/AssignModal'
+import { MUSCLE_COLORS as GROUP_COLORS, avatarColor as avatarPalette, initials } from '../lib/theme'
 
-const ACCENT_COLORS = ['var(--ac)', '#4F9EFF', '#C084F5', '#30E8C8', '#FFB830', '#F88080']
-
-const GROUP_COLORS = {
-  Arms:      { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
-  Back:      { bg: 'rgba(80,150,230,.15)',  color: '#6BB5F5' },
-  Legs:      { bg: 'rgba(230,70,60,.15)',   color: '#F88080' },
-  Core:      { bg: 'rgba(50,200,140,.15)',  color: '#5DD99A' },
-  Shoulders: { bg: 'rgba(160,100,230,.15)', color: '#C084F5' },
-}
-
-const AVATAR_PALETTE = [
-  { bg: 'rgba(200,255,80,.12)',  color: '#C8FF50' },
-  { bg: 'rgba(79,158,255,.12)',  color: '#4F9EFF' },
-  { bg: 'rgba(192,132,245,.12)', color: '#C084F5' },
-  { bg: 'rgba(48,232,200,.12)',  color: '#30E8C8' },
-  { bg: 'rgba(255,184,48,.12)',  color: '#FFB830' },
-  { bg: 'rgba(248,128,128,.12)', color: '#F88080' },
-]
-
-function initials(name) {
-  return (name || '').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-}
-
-function avatarPalette(name) {
-  return AVATAR_PALETTE[(name || '').charCodeAt(0) % AVATAR_PALETTE.length]
-}
+const ACCENT_COLORS = ['var(--ac)', '#6BA9DE', '#A184E3', '#4FB88A', '#E7A23E', '#E2695A']
 
 function getMuscleGroups(workout) {
   const groups = new Set(workout.workout_exercises?.map(we => we.exercises?.muscle_group).filter(Boolean))
@@ -143,7 +119,7 @@ export default function Dashboard() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: 'var(--tx)', display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginBottom: 4 }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</span>
-              {w.is_ai_generated && <span style={{ fontSize: 10, background: 'rgba(167,139,250,.12)', color: '#A78BFA', border: '1px solid rgba(167,139,250,.25)', borderRadius: 20, padding: '1px 7px', fontWeight: 700, flexShrink: 0 }}>✦ AI</span>}
+              {w.is_ai_generated && <span style={{ fontSize: 10, background: 'rgba(167,139,250,.12)', color: '#A184E3', border: '1px solid rgba(167,139,250,.25)', borderRadius: 20, padding: '1px 7px', fontWeight: 700, flexShrink: 0 }}>✦ AI</span>}
             </div>
             <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, color: 'var(--mu2)' }}>{exCount} exercise{exCount !== 1 ? 's' : ''}</span>
@@ -192,7 +168,7 @@ export default function Dashboard() {
                 {copied === w.workout_assignments?.[0]?.id && w.workout_assignments?.length === 1 ? '✓ Copied!' : '🔗 Share'}
               </button>
               <button onClick={() => setAssigningWorkout(w)}
-                style={{ flex: 1, background: 'rgba(168,237,82,.07)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 9, color: 'var(--ac)', fontSize: 12, padding: '10px 8px', cursor: 'pointer', fontWeight: 600, minHeight: 40 }}>
+                style={{ flex: 1, background: 'rgba(199,228,92,.07)', border: '1px solid rgba(199,228,92,.2)', borderRadius: 9, color: 'var(--ac)', fontSize: 12, padding: '10px 8px', cursor: 'pointer', fontWeight: 600, minHeight: 40 }}>
                 Assign
               </button>
             </div>
@@ -204,7 +180,7 @@ export default function Dashboard() {
                   {copied === w.workout_assignments?.[0]?.id && w.workout_assignments?.length === 1 ? '✓ Copied!' : '🔗 Share'}
                 </button>
                 <button onClick={() => setAssigningWorkout(w)}
-                  style={{ flex: 1, background: 'rgba(168,237,82,.07)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', fontWeight: 500, minHeight: 36 }}>
+                  style={{ flex: 1, background: 'rgba(199,228,92,.07)', border: '1px solid rgba(199,228,92,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', fontWeight: 500, minHeight: 36 }}>
                   Assign
                 </button>
               </div>
@@ -214,7 +190,7 @@ export default function Dashboard() {
                 <button onClick={() => duplicateWorkout(w)}
                   style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 32 }}>⧉ Copy</button>
                 <button onClick={() => deleteWorkout(w.id)}
-                  style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#F88080', fontSize: 12, padding: '7px 12px', cursor: 'pointer', minHeight: 32 }}>🗑</button>
+                  style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#E2695A', fontSize: 12, padding: '7px 12px', cursor: 'pointer', minHeight: 32 }}>🗑</button>
               </div>
             </div>
           )}
@@ -232,11 +208,11 @@ export default function Dashboard() {
         <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10, paddingTop: 'var(--sat)' }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <ChalkUpLogo size={22} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em', flex: 1 }}>chalkup</span>
-            <button onClick={() => setFilterOpen(o => !o)} style={{ background: filterOpen || search || filterGroup !== 'All' ? 'rgba(168,237,82,.12)' : 'var(--br)', border: 'none', borderRadius: 8, color: filterOpen || search || filterGroup !== 'All' ? 'var(--ac)' : 'var(--mu)', padding: '7px 10px', fontSize: 13, cursor: 'pointer' }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ac)', fontFamily: 'var(--font-head)', flex: 1 }}>chalkup</span>
+            <button onClick={() => setFilterOpen(o => !o)} style={{ background: filterOpen || search || filterGroup !== 'All' ? 'rgba(199,228,92,.12)' : 'var(--br)', border: 'none', borderRadius: 8, color: filterOpen || search || filterGroup !== 'All' ? 'var(--ac)' : 'var(--mu)', padding: '7px 10px', fontSize: 13, cursor: 'pointer' }}>
               {filterOpen ? '✕' : '🔍'}
             </button>
-            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '7px 13px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
+            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '7px 13px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
           </div>
           {filterOpen && (
             <div style={{ padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -244,7 +220,7 @@ export default function Dashboard() {
                 style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 11px', fontSize: 13, outline: 'none' }} />
               <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
                 {GROUP_OPTIONS.map(g => (
-                  <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 11px', borderRadius: 20, fontSize: 11, fontWeight: filterGroup === g ? 700 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--s2)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>{g}</button>
+                  <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 11px', borderRadius: 20, fontSize: 11, fontWeight: filterGroup === g ? 700 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--s2)', color: filterGroup === g ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>{g}</button>
                 ))}
               </div>
             </div>
@@ -264,8 +240,8 @@ export default function Dashboard() {
             <div style={{ display: 'flex', gap: 8 }}>
               {[
                 { val: workouts.length, lbl: 'Workouts', col: 'var(--ac)' },
-                { val: athletes.length, lbl: 'Athletes',  col: '#4F9EFF' },
-                { val: completionCount, lbl: 'Completions', col: '#FFB830' },
+                { val: athletes.length, lbl: 'Athletes',  col: '#6BA9DE' },
+                { val: completionCount, lbl: 'Completions', col: '#E7A23E' },
               ].map(({ val, lbl, col }) => (
                 <div key={lbl} style={{ flex: 1, background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: '11px 10px', textAlign: 'center' }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: col, lineHeight: 1, marginBottom: 4, fontFamily: 'var(--font-head,sans-serif)' }}>{val}</div>
@@ -288,15 +264,15 @@ export default function Dashboard() {
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               {[
                 { val: workouts.length, lbl: 'Workouts', col: 'var(--ac)' },
-                { val: athletes.length, lbl: 'Athletes',  col: '#4F9EFF' },
-                { val: completionCount, lbl: 'Completions', col: '#FFB830' },
+                { val: athletes.length, lbl: 'Athletes',  col: '#6BA9DE' },
+                { val: completionCount, lbl: 'Completions', col: '#E7A23E' },
               ].map(({ val, lbl, col }) => (
                 <div key={lbl} style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: '10px 16px', textAlign: 'center', minWidth: 80 }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: col, lineHeight: 1, marginBottom: 3, fontFamily: 'var(--font-head,sans-serif)' }}>{val}</div>
                   <div style={{ fontSize: 10, color: 'var(--mu)', fontWeight: 500 }}>{lbl}</div>
                 </div>
               ))}
-              <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New workout</button>
+              <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New workout</button>
             </div>
           </div>
         )}
@@ -307,7 +283,7 @@ export default function Dashboard() {
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workouts…"
               style={{ background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '7px 11px', fontSize: 13, outline: 'none', width: 200 }} />
             {GROUP_OPTIONS.map(g => (
-              <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterGroup === g ? 700 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer' }}>{g}</button>
+              <button key={g} onClick={() => setFilterGroup(g)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterGroup === g ? 700 : 400, background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', cursor: 'pointer' }}>{g}</button>
             ))}
           </div>
         )}
@@ -318,7 +294,7 @@ export default function Dashboard() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏋️</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)', marginBottom: 6 }}>No workouts yet</p>
             <p style={{ fontSize: 13, marginBottom: 20 }}>Create your first workout to get started</p>
-            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Create workout</button>
+            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Create workout</button>
           </div>
         ) : (
           <div style={{ padding: isMobile ? '4px 16px 16px' : 0 }}>
@@ -363,7 +339,7 @@ export default function Dashboard() {
                 <button key={item.label} onClick={item.action}
                   style={{ background: item.danger ? 'rgba(248,128,128,.07)' : 'var(--s2)', border: `1px solid ${item.danger ? 'rgba(248,128,128,.2)' : 'var(--br)'}`, borderRadius: 14, padding: '16px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', minHeight: 80 }}>
                   <span style={{ fontSize: 24 }}>{item.icon}</span>
-                  <span style={{ fontSize: 13, color: item.danger ? '#F88080' : 'var(--tx)', fontWeight: 500 }}>{item.label}</span>
+                  <span style={{ fontSize: 13, color: item.danger ? '#E2695A' : 'var(--tx)', fontWeight: 500 }}>{item.label}</span>
                 </button>
               ))}
             </div>

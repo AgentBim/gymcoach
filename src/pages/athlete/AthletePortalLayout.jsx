@@ -14,8 +14,8 @@ export default function AthletePortalLayout() {
     navigate('/athlete/login')
   }
 
-  const tab = (to, label) => (
-    <NavLink to={to} end
+  const tab = (to, label, exact = true) => (
+    <NavLink to={to} end={exact}
       style={({ isActive }) => ({
         flex: 1, textAlign: 'center', padding: '10px 4px', textDecoration: 'none',
         fontSize: 12, fontWeight: isActive ? 700 : 500,
@@ -36,7 +36,7 @@ export default function AthletePortalLayout() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <ChalkUpLogo size={24} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>chalkup</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ac)', fontFamily: 'var(--font-head)' }}>chalkup</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {!loading && <StreakFlame streak={streak} />}
@@ -47,7 +47,7 @@ export default function AthletePortalLayout() {
       <div style={{ display: 'flex', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 'calc(var(--sat) + 51px)', zIndex: 9 }}>
         {tab('/athlete', 'Today')}
         {tab('/athlete/history', 'History')}
-        {tab('/athlete/program', 'Program')}
+        {tab('/athlete/program', 'Program', false)}
       </div>
 
       <div style={{ flex: 1, maxWidth: 600, width: '100%', margin: '0 auto', padding: '20px 16px', boxSizing: 'border-box' }}>

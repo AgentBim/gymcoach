@@ -4,15 +4,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import { EMOJI_MAP, avatarColor as avPal, initials } from '../lib/theme'
 
-const EMOJI_MAP = {
-  easy:     { icon: '😴', label: 'Too easy',   color: '#6BB5F5' },
-  good:     { icon: '😊', label: 'Good',        color: '#5DD99A' },
-  hard:     { icon: '💪', label: 'Challenging', color: '#F4B455' },
-  veryhard: { icon: '🔥', label: 'Very hard',   color: '#F88080' },
-}
-
-const RPE_COLOR = r => r <= 3 ? '#6BB5F5' : r <= 5 ? '#5DD99A' : r <= 7 ? '#F4B455' : '#F88080'
+const RPE_COLOR = r => r <= 3 ? '#6BA9DE' : r <= 5 ? '#4FB88A' : r <= 7 ? '#E7A23E' : '#E2695A'
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -28,16 +22,6 @@ function timeAgo(dateStr) {
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
-
-const AVATAR_PALETTE = [
-  { bg: 'rgba(200,255,80,.14)', color: '#C8FF50' },
-  { bg: 'rgba(79,158,255,.14)', color: '#4F9EFF' },
-  { bg: 'rgba(192,132,245,.14)', color: '#C084F5' },
-  { bg: 'rgba(48,232,200,.14)', color: '#30E8C8' },
-  { bg: 'rgba(255,184,48,.14)', color: '#FFB830' },
-]
-function initials(name) { return (name||'').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2) }
-function avPal(name) { return AVATAR_PALETTE[(name||'').charCodeAt(0) % AVATAR_PALETTE.length] }
 
 export default function History() {
   const { user } = useAuth()
@@ -96,9 +80,9 @@ export default function History() {
           </div>
           {workouts.length > 1 && (
             <div style={{ display: 'flex', gap: 5, overflowX: 'auto', padding: '0 16px 10px' }}>
-              <button onClick={() => setFilterWorkout('all')} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: filterWorkout === 'all' ? 700 : 400, background: filterWorkout === 'all' ? 'var(--ac)' : 'var(--s2)', color: filterWorkout === 'all' ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>All</button>
+              <button onClick={() => setFilterWorkout('all')} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: filterWorkout === 'all' ? 700 : 400, background: filterWorkout === 'all' ? 'var(--ac)' : 'var(--s2)', color: filterWorkout === 'all' ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>All</button>
               {workouts.map(w => (
-                <button key={w.id} onClick={() => setFilterWorkout(w.id)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: filterWorkout === w.id ? 700 : 400, background: filterWorkout === w.id ? 'var(--ac)' : 'var(--s2)', color: filterWorkout === w.id ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.name}</button>
+                <button key={w.id} onClick={() => setFilterWorkout(w.id)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: filterWorkout === w.id ? 700 : 400, background: filterWorkout === w.id ? 'var(--ac)' : 'var(--s2)', color: filterWorkout === w.id ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.name}</button>
               ))}
             </div>
           )}
@@ -121,7 +105,7 @@ export default function History() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)', marginBottom: 6 }}>No feedback yet</p>
             <p style={{ fontSize: 13, marginBottom: 20 }}>Feedback appears here when athletes complete a shared workout</p>
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Go to dashboard</button>
+            <button onClick={() => navigate('/dashboard')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Go to dashboard</button>
           </div>
         ) : (
           <>
@@ -131,7 +115,7 @@ export default function History() {
                 { val: totalFeedback, lbl: 'Responses',     col: 'var(--ac)' },
                 { val: avgRpe ?? '—', lbl: 'Avg RPE',       col: avgRpe ? RPE_COLOR(Number(avgRpe)) : 'var(--mu)' },
                 { val: Object.entries(emojiCounts).sort((a,b)=>b[1]-a[1])[0] ? EMOJI_MAP[Object.entries(emojiCounts).sort((a,b)=>b[1]-a[1])[0][0]]?.icon ?? '—' : '—', lbl: 'Top feel', col: 'var(--tx)' },
-                { val: withNotes,     lbl: 'With notes',    col: '#4F9EFF' },
+                { val: withNotes,     lbl: 'With notes',    col: '#6BA9DE' },
               ].map(({ val, lbl, col }) => (
                 <div key={lbl} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 14px' }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: col, marginBottom: 2, lineHeight: 1, fontFamily: 'var(--font-head,sans-serif)' }}>{val}</div>
@@ -171,9 +155,9 @@ export default function History() {
             {/* ── DESKTOP WORKOUT FILTER ── */}
             {!isMobile && workouts.length > 1 && (
               <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-                <button onClick={() => setFilterWorkout('all')} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterWorkout === 'all' ? 700 : 400, background: filterWorkout === 'all' ? 'var(--ac)' : 'var(--br)', color: filterWorkout === 'all' ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer' }}>All</button>
+                <button onClick={() => setFilterWorkout('all')} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterWorkout === 'all' ? 700 : 400, background: filterWorkout === 'all' ? 'var(--ac)' : 'var(--br)', color: filterWorkout === 'all' ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', cursor: 'pointer' }}>All</button>
                 {workouts.map(w => (
-                  <button key={w.id} onClick={() => setFilterWorkout(w.id)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterWorkout === w.id ? 700 : 400, background: filterWorkout === w.id ? 'var(--ac)' : 'var(--br)', color: filterWorkout === w.id ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</button>
+                  <button key={w.id} onClick={() => setFilterWorkout(w.id)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: filterWorkout === w.id ? 700 : 400, background: filterWorkout === w.id ? 'var(--ac)' : 'var(--br)', color: filterWorkout === w.id ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', cursor: 'pointer', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</button>
                 ))}
               </div>
             )}
@@ -213,7 +197,7 @@ export default function History() {
                     {/* Progress bar */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isExpanded ? 12 : 0 }}>
                       <div style={{ flex: 1, height: 4, background: 'var(--br)', borderRadius: 2, overflow: 'hidden' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#5DD99A' : 'var(--ac)', borderRadius: 2 }} />
+                        <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#4FB88A' : 'var(--ac)', borderRadius: 2 }} />
                       </div>
                       <span style={{ fontSize: 10, color: 'var(--mu)', flexShrink: 0 }}>{fb.exercises_completed}/{fb.exercises_total}</span>
                     </div>

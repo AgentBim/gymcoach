@@ -44,7 +44,7 @@ export default function AthleteLogin() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <ChalkUpLogo size={36} />
-            <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--tx)' }}>chalkup</span>
+            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--tx)', fontFamily: 'var(--font-head)' }}>chalkup</span>
           </div>
           <p style={{ fontSize: 13, color: 'var(--mu)' }}>Your training portal</p>
         </div>
@@ -60,10 +60,10 @@ export default function AthleteLogin() {
               <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
             </div>
 
-            {error && <p style={{ fontSize: 12, color: '#F88080', textAlign: 'center' }}>{error}</p>}
+            {error && <p style={{ fontSize: 12, color: '#E2695A', textAlign: 'center' }}>{error}</p>}
 
             <button type="submit" disabled={loading}
-              style={{ width: '100%', padding: 12, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: loading ? 0.7 : 1, marginTop: 4 }}>
+              style={{ width: '100%', padding: 12, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: loading ? 0.7 : 1, marginTop: 4 }}>
               {loading ? 'Please wait...' : 'Log in →'}
             </button>
           </form>

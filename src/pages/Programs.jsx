@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 
-const ACCENTS = ['var(--ac)', '#4F9EFF', '#C084F5', '#30E8C8', '#FFB830']
+const ACCENTS = ['var(--ac)', '#6BA9DE', '#A184E3', '#4FB88A', '#E7A23E']
 
 export default function Programs() {
   const { user } = useAuth()
@@ -43,7 +43,7 @@ export default function Programs() {
               <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-.02em', fontFamily: 'var(--font-head,sans-serif)' }}>Programs</div>
               <div style={{ fontSize: 11, color: 'var(--mu2)', marginTop: 1 }}>Multi-week training plans</div>
             </div>
-            <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
+            <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
           </div>
         </div>
       )}
@@ -56,7 +56,7 @@ export default function Programs() {
               <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', fontFamily: 'var(--font-head,sans-serif)' }}>Training programs</h1>
               <p style={{ fontSize: 13, color: 'var(--mu)', marginTop: 2 }}>Multi-week plans built from your workouts</p>
             </div>
-            <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New program</button>
+            <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New program</button>
           </div>
         )}
 
@@ -67,7 +67,7 @@ export default function Programs() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)', marginBottom: 6 }}>No programs yet</p>
             <p style={{ fontSize: 13, marginBottom: 20 }}>Build a multi-week plan from your saved workouts</p>
-            <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Create program</button>
+            <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Create program</button>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(290px, 1fr))', gap: isMobile ? 10 : 14 }}>
@@ -97,7 +97,7 @@ export default function Programs() {
                         Open
                       </button>
                       <button onClick={() => deleteProgram(p.id)}
-                        style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 9, color: '#F88080', fontSize: 13, padding: '9px 12px', cursor: 'pointer' }}>🗑</button>
+                        style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 9, color: '#E2695A', fontSize: 13, padding: '9px 12px', cursor: 'pointer' }}>🗑</button>
                     </div>
                   </div>
                 </div>

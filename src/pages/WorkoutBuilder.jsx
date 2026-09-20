@@ -5,16 +5,10 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import AIGeneratorModal from '../components/AIGeneratorModal'
+import { MUSCLE_COLORS as GROUP_COLORS, FOCUS_COLORS } from '../lib/theme'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const MUSCLE_GROUPS = ['Arms', 'Back', 'Legs', 'Core', 'Shoulders']
-const GROUP_COLORS = {
-  Arms:      { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
-  Back:      { bg: 'rgba(80,150,230,.15)',  color: '#6BB5F5' },
-  Legs:      { bg: 'rgba(230,70,60,.15)',   color: '#F88080' },
-  Core:      { bg: 'rgba(50,200,140,.15)',  color: '#5DD99A' },
-  Shoulders: { bg: 'rgba(160,100,230,.15)', color: '#C084F5' },
-}
 
 function GroupBadge({ group }) {
   const c = GROUP_COLORS[group] || { bg: 'var(--br)', color: 'var(--mu)' }
@@ -347,13 +341,6 @@ export default function WorkoutBuilder() {
     setPrehab(prev => prev.map((p, i) => i === idx ? { ...p, [field]: val } : p))
   }
 
-  const FOCUS_COLORS = {
-    activation: { bg: 'rgba(168,237,82,.12)', color: '#A8ED52' },
-    stability:  { bg: 'rgba(80,150,230,.12)', color: '#6BB5F5' },
-    mobility:   { bg: 'rgba(160,100,230,.12)', color: '#C084F5' },
-    strength:   { bg: 'rgba(240,158,40,.12)',  color: '#F4B455' },
-  }
-
   function FocusBadge({ focus }) {
     if (!focus) return null
     const c = FOCUS_COLORS[focus] || { bg: 'var(--br)', color: 'var(--mu)' }
@@ -396,7 +383,7 @@ export default function WorkoutBuilder() {
         {showSuggestions && (
           <div style={{ background: 'rgba(50,200,140,.06)', border: '1px solid rgba(50,200,140,.25)', borderRadius: 10, padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#5DD99A' }}>🤖 Suggested prehab</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#4FB88A' }}>🤖 Suggested prehab</span>
               <button onClick={() => setSuggestDismissed(true)} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 12, cursor: 'pointer', padding: 0 }}>Dismiss</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -406,7 +393,7 @@ export default function WorkoutBuilder() {
                     <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
                     <FocusBadge focus={ex.prehab_focus} />
                   </div>
-                  <button onClick={() => addPrehab(ex)} style={{ background: 'rgba(50,200,140,.15)', border: '1px solid rgba(50,200,140,.3)', borderRadius: 6, color: '#5DD99A', fontSize: 12, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
+                  <button onClick={() => addPrehab(ex)} style={{ background: 'rgba(50,200,140,.15)', border: '1px solid rgba(50,200,140,.3)', borderRadius: 6, color: '#4FB88A', fontSize: 12, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
                 </div>
               ))}
             </div>
@@ -423,7 +410,7 @@ export default function WorkoutBuilder() {
                 padding: '3px 8px', borderRadius: 20, fontSize: 11,
                 fontWeight: prehabGroup === g ? 600 : 400,
                 background: prehabGroup === g ? 'rgba(50,200,140,.15)' : 'var(--br)',
-                color: prehabGroup === g ? '#5DD99A' : 'var(--mu)',
+                color: prehabGroup === g ? '#4FB88A' : 'var(--mu)',
                 border: prehabGroup === g ? '1px solid rgba(50,200,140,.3)' : '1px solid transparent',
                 cursor: 'pointer',
               }}>{g}</button>
@@ -483,7 +470,7 @@ export default function WorkoutBuilder() {
               <div style={{ display: 'flex', gap: 4 }}>
                 <button onClick={() => moveUp(i)} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '3px 7px', cursor: 'pointer' }}>↑</button>
                 <button onClick={() => moveDown(i)} style={{ background: 'var(--br)', border: 'none', borderRadius: 5, color: 'var(--mu)', fontSize: 11, padding: '3px 7px', cursor: 'pointer' }}>↓</button>
-                <button onClick={() => removeExercise(i)} style={{ background: 'transparent', border: 'none', color: '#F88080', fontSize: 15, cursor: 'pointer', padding: '0 4px' }}>✕</button>
+                <button onClick={() => removeExercise(i)} style={{ background: 'transparent', border: 'none', color: '#E2695A', fontSize: 15, cursor: 'pointer', padding: '0 4px' }}>✕</button>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -575,7 +562,7 @@ export default function WorkoutBuilder() {
             {['Easy', 'Medium', 'Hard', 'All'].map(d => (
               <button key={d} onClick={() => setRandDiff(d)} style={{
                 flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer',
-                background: randDiff === d ? 'var(--ac)' : 'var(--br)', color: randDiff === d ? '#0C1118' : 'var(--mu)',
+                background: randDiff === d ? 'var(--ac)' : 'var(--br)', color: randDiff === d ? 'var(--ac-ink)' : 'var(--mu)',
               }}>{d}</button>
             ))}
           </div>
@@ -592,16 +579,16 @@ export default function WorkoutBuilder() {
         </button>
 
         {randResult.length > 0 && (
-          <div style={{ background: 'var(--s2)', border: '1px solid rgba(168,237,82,.25)', borderRadius: 12, padding: 14 }}>
+          <div style={{ background: 'var(--s2)', border: '1px solid rgba(199,228,92,.25)', borderRadius: 12, padding: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{randResult.length} exercises generated</div>
-              <button onClick={useRandomResult} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={useRandomResult} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 Use this →
               </button>
             </div>
             {randResult.map((ex, i) => (
               <div key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--br)', borderRadius: 8, marginBottom: 5 }}>
-                <span style={{ width: 22, height: 22, background: 'rgba(80,200,140,.15)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#5DD99A', flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ width: 22, height: 22, background: 'rgba(80,200,140,.15)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#4FB88A', flexShrink: 0 }}>{i + 1}</span>
                 <span style={{ flex: 1, fontSize: 13 }}>{ex.name}</span>
                 <GroupBadge group={ex.muscle_group} />
               </div>
@@ -611,7 +598,7 @@ export default function WorkoutBuilder() {
             {randPrehabSuggestions.length > 0 && (
               <div style={{ marginTop: 12, background: 'rgba(48,232,200,.05)', border: '1px solid rgba(48,232,200,.2)', borderRadius: 10, overflow: 'hidden' }}>
                 <div style={{ padding: '9px 12px', background: 'rgba(48,232,200,.07)', borderBottom: '1px solid rgba(48,232,200,.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#30E8C8', textTransform: 'uppercase', letterSpacing: '.05em' }}>🛡 Suggested prehab</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#4FB88A', textTransform: 'uppercase', letterSpacing: '.05em' }}>🛡 Suggested prehab</span>
                   <span style={{ fontSize: 10, color: 'rgba(48,232,200,.7)' }}>{randPrehabSelected.size} selected</span>
                 </div>
                 {randPrehabSuggestions.map(ex => {
@@ -622,7 +609,7 @@ export default function WorkoutBuilder() {
                       next.has(ex.id) ? next.delete(ex.id) : next.add(ex.id)
                       return next
                     })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderBottom: '1px solid rgba(48,232,200,.07)', cursor: 'pointer', opacity: selected ? 1 : 0.75, transition: 'opacity .15s' }}>
-                      <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${selected ? 'rgba(48,232,200,.7)' : 'rgba(48,232,200,.3)'}`, background: selected ? 'rgba(48,232,200,.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, color: '#30E8C8' }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${selected ? 'rgba(48,232,200,.7)' : 'rgba(48,232,200,.3)'}`, background: selected ? 'rgba(48,232,200,.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, color: '#4FB88A' }}>
                         {selected ? '✓' : ''}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -684,7 +671,7 @@ export default function WorkoutBuilder() {
               }}>
                 {t.label}
                 {t.badge ? (
-                  <span style={{ width: 18, height: 18, background: 'var(--ac)', color: '#0C1118', borderRadius: '50%', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ width: 18, height: 18, background: 'var(--ac)', color: 'var(--ac-ink)', borderRadius: '50%', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {t.badge}
                   </span>
                 ) : null}
@@ -707,10 +694,10 @@ export default function WorkoutBuilder() {
             }}>
               <span style={{ fontSize: 20 }}>✦</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#A78BFA', marginBottom: 2 }}>Generate with AI</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#A184E3', marginBottom: 2 }}>Generate with AI</div>
                 <div style={{ fontSize: 11, color: 'var(--mu2)' }}>Describe the session — AI picks from your library</div>
               </div>
-              <span style={{ color: '#A78BFA', fontSize: 16 }}>›</span>
+              <span style={{ color: '#A184E3', fontSize: 16 }}>›</span>
             </button>
           )}
 
@@ -729,7 +716,7 @@ export default function WorkoutBuilder() {
                 {GROUPS.map(g => (
                   <button key={g} onClick={() => setFilterGroup(g)} style={{
                     padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: filterGroup === g ? 600 : 400, whiteSpace: 'nowrap',
-                    background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer',
+                    background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', cursor: 'pointer',
                   }}>{g}</button>
                 ))}
               </div>
@@ -760,8 +747,8 @@ export default function WorkoutBuilder() {
                     <div key={ex.id} onClick={() => togglePending(ex)}
                       style={{
                         padding: '11px 12px',
-                        background: committed ? 'rgba(168,237,82,.04)' : pending ? 'rgba(168,237,82,.08)' : 'var(--s2)',
-                        border: `1px solid ${committed ? 'rgba(168,237,82,.15)' : pending ? 'rgba(168,237,82,.4)' : 'var(--br)'}`,
+                        background: committed ? 'rgba(199,228,92,.04)' : pending ? 'rgba(199,228,92,.08)' : 'var(--s2)',
+                        border: `1px solid ${committed ? 'rgba(199,228,92,.15)' : pending ? 'rgba(199,228,92,.4)' : 'var(--br)'}`,
                         borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10,
                         cursor: committed ? 'default' : 'pointer',
                         transition: 'all .1s',
@@ -772,10 +759,10 @@ export default function WorkoutBuilder() {
                       </div>
                       <div style={{
                         width: 28, height: 28, flexShrink: 0, borderRadius: 8,
-                        background: committed ? 'rgba(168,237,82,.1)' : pending ? 'var(--ac)' : 'var(--br)',
+                        background: committed ? 'rgba(199,228,92,.1)' : pending ? 'var(--ac)' : 'var(--br)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: pending ? 16 : 14,
-                        color: committed ? 'var(--ac)' : pending ? '#0C1118' : 'var(--mu)',
+                        color: committed ? 'var(--ac)' : pending ? 'var(--ac-ink)' : 'var(--mu)',
                         transition: 'all .1s',
                       }}>
                         {committed ? '✓' : pending ? '✓' : '+'}
@@ -791,12 +778,12 @@ export default function WorkoutBuilder() {
           {mobileTab === 'build' && (
             <>
               <BuildList />
-              {error && <p style={{ fontSize: 12, color: '#F88080', marginTop: 12, textAlign: 'center' }}>{error}</p>}
+              {error && <p style={{ fontSize: 12, color: '#E2695A', marginTop: 12, textAlign: 'center' }}>{error}</p>}
               <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
                 <button onClick={() => navigate('/dashboard')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer' }}>
                   Cancel
                 </button>
-                <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
+                <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
                   {saving ? 'Saving...' : isEdit ? 'Update' : 'Save workout'}
                 </button>
               </div>
@@ -819,9 +806,9 @@ export default function WorkoutBuilder() {
               color: 'var(--mu)', padding: '13px 16px', fontSize: 13, cursor: 'pointer',
             }}>✕</button>
             <button onClick={commitPending} style={{
-              flex: 1, background: 'var(--ac)', color: '#0C1118', border: 'none',
+              flex: 1, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none',
               borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(168,237,82,.3)',
+              boxShadow: '0 4px 20px rgba(199,228,92,.3)',
             }}>
               Add {pendingPick.size} exercise{pendingPick.size !== 1 ? 's' : ''} to workout →
             </button>
@@ -854,7 +841,7 @@ export default function WorkoutBuilder() {
               {GROUPS.map(g => (
                 <button key={g} onClick={() => setFilterGroup(g)} style={{
                   padding: '3px 8px', borderRadius: 20, fontSize: 11, fontWeight: filterGroup === g ? 600 : 400,
-                  background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? '#0C1118' : 'var(--mu)', border: 'none', cursor: 'pointer'
+                  background: filterGroup === g ? 'var(--ac)' : 'var(--br)', color: filterGroup === g ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', cursor: 'pointer'
                 }}>{g}</button>
               ))}
             </div>
@@ -896,7 +883,7 @@ export default function WorkoutBuilder() {
                 display: 'flex', alignItems: 'center', gap: 5,
               }}>
                 {t.label}
-                {t.badge ? <span style={{ width: 18, height: 18, background: 'var(--ac)', color: '#0C1118', borderRadius: '50%', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.badge}</span> : null}
+                {t.badge ? <span style={{ width: 18, height: 18, background: 'var(--ac)', color: 'var(--ac-ink)', borderRadius: '50%', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.badge}</span> : null}
               </button>
             ))}
           </div>
@@ -912,10 +899,10 @@ export default function WorkoutBuilder() {
                 }}>
                   <span style={{ fontSize: 18 }}>✦</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#A78BFA', marginBottom: 1 }}>Generate with AI</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#A184E3', marginBottom: 1 }}>Generate with AI</div>
                     <div style={{ fontSize: 11, color: 'var(--mu2)' }}>Describe the session — AI picks from your library</div>
                   </div>
-                  <span style={{ color: '#A78BFA', fontSize: 15 }}>›</span>
+                  <span style={{ color: '#A184E3', fontSize: 15 }}>›</span>
                 </button>
                 <PrehabPanel />
               </>
@@ -929,10 +916,10 @@ export default function WorkoutBuilder() {
           </div>
 
           <div style={{ padding: '12px 20px', borderTop: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', gap: 10, alignItems: 'center' }}>
-            {error && <span style={{ fontSize: 12, color: '#F88080' }}>{error}</span>}
+            {error && <span style={{ fontSize: 12, color: '#E2695A' }}>{error}</span>}
             <div style={{ flex: 1 }} />
             <button onClick={() => navigate('/dashboard')} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 'var(--r)', color: 'var(--mu)', padding: '9px 16px', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-            <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 'var(--r)', padding: '9px 20px', fontSize: 13, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
+            <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', padding: '9px 20px', fontSize: 13, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
               {saving ? 'Saving...' : isEdit ? 'Update workout' : 'Save workout'}
             </button>
           </div>

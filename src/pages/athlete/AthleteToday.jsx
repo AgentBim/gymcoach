@@ -70,7 +70,7 @@ export default function AthleteToday() {
       <div style={{ textAlign: 'center', padding: '50px 20px' }}>
         <div style={{ fontSize: 44, marginBottom: 14 }}>😴</div>
         <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--tx)', marginBottom: 6 }}>Rest day</div>
-        <p style={{ fontSize: 13, color: 'var(--mu)' }}>Nothing's due today — your streak is safe.</p>
+        <p style={{ fontSize: 13, color: 'var(--mu)' }}>Nothing's due today — your streak is safe. Back tomorrow.</p>
       </div>
     )
   }

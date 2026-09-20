@@ -1,18 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-
-const GROUP_COLORS = {
-  Arms:      { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
-  Back:      { bg: 'rgba(80,150,230,.15)',  color: '#6BB5F5' },
-  Legs:      { bg: 'rgba(230,70,60,.15)',   color: '#F88080' },
-  Core:      { bg: 'rgba(50,200,140,.15)',  color: '#5DD99A' },
-  Shoulders: { bg: 'rgba(160,100,230,.15)', color: '#C084F5' },
-}
+import { MUSCLE_COLORS, EMOJI_MAP } from '../lib/theme'
 
 const EMOJIS = [
-  { key: 'easy',      icon: '😴', label: 'Too easy' },
-  { key: 'good',      icon: '😊', label: 'Good' },
-  { key: 'hard',      icon: '💪', label: 'Challenging' },
-  { key: 'veryhard',  icon: '🔥', label: 'Very hard' },
+  { key: 'easy',      icon: EMOJI_MAP.easy.icon,     label: EMOJI_MAP.easy.label },
+  { key: 'good',      icon: EMOJI_MAP.good.icon,     label: EMOJI_MAP.good.label },
+  { key: 'hard',      icon: EMOJI_MAP.hard.icon,     label: EMOJI_MAP.hard.label },
+  { key: 'veryhard',  icon: EMOJI_MAP.veryhard.icon, label: EMOJI_MAP.veryhard.label },
 ]
 
 function formatWork(we) {
@@ -75,7 +68,7 @@ function ExerciseTimer({ duration, onDone }) {
       <div style={{ display: 'flex', gap: 10 }}>
         <button onClick={toggle} style={{
           width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          background: running ? 'var(--br)' : 'var(--ac)', color: running ? 'var(--mu)' : '#0C1118',
+          background: running ? 'var(--br)' : 'var(--ac)', color: running ? 'var(--mu)' : 'var(--ac-ink)',
           fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {running ? '⏸' : timeLeft === 0 ? '↺' : '▶'}
@@ -114,7 +107,7 @@ function RestTimer({ seconds, onDone }) {
   }, [running])
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, padding: '8px 10px', background: 'rgba(168,237,82,.06)', border: '1px solid rgba(168,237,82,.15)', borderRadius: 8 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, padding: '8px 10px', background: 'rgba(199,228,92,.06)', border: '1px solid rgba(199,228,92,.15)', borderRadius: 8 }}>
       <span style={{ fontSize: 12, color: 'var(--mu)' }}>Rest — {timeLeft}s remaining</span>
       <div style={{ width: 80, height: 4, background: 'var(--br)', borderRadius: 4, overflow: 'hidden' }}>
         <div style={{ width: `${(timeLeft / seconds) * 100}%`, height: '100%', background: 'var(--ac)', borderRadius: 4, transition: 'width 1s linear' }} />
@@ -180,7 +173,7 @@ function FeedbackForm({ exercises, onSubmit }) {
             <button key={n} onClick={() => setRpe(n)} style={{
               width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
               background: rpe === n ? 'var(--ac)' : 'var(--br)',
-              color: rpe === n ? '#0C1118' : 'var(--mu)',
+              color: rpe === n ? 'var(--ac-ink)' : 'var(--mu)',
               transition: 'all .1s',
             }}>{n}</button>
           ))}
@@ -198,7 +191,7 @@ function FeedbackForm({ exercises, onSubmit }) {
       </div>
 
       <button onClick={submit} disabled={saving || (!emoji && !rpe)}
-        style={{ width: '100%', padding: 14, background: emoji || rpe ? 'var(--ac)' : 'var(--br)', color: emoji || rpe ? '#0C1118' : 'var(--mu)', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: emoji || rpe ? 'pointer' : 'default', opacity: saving ? 0.7 : 1 }}>
+        style={{ width: '100%', padding: 14, background: emoji || rpe ? 'var(--ac)' : 'var(--br)', color: emoji || rpe ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: emoji || rpe ? 'pointer' : 'default', opacity: saving ? 0.7 : 1 }}>
         {saving ? 'Sending...' : 'Send feedback to coach'}
       </button>
     </div>
@@ -224,6 +217,8 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
   const checkedCount = Object.values(checked).filter(Boolean).length
   const prehabTotal = prehabExercises.length
   const prehabCheckedCount = Object.values(prehabChecked).filter(Boolean).length
+  const prehabComplete = prehabTotal === 0 || prehabCheckedCount === prehabTotal
+  const mainLocked = prehabTotal > 0 && !prehabComplete
   const allDone = totalCount > 0 && checkedCount === totalCount
   const progress = totalCount > 0 ? (checkedCount / totalCount) * 100 : 0
 
@@ -232,6 +227,7 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
   }
 
   function toggleCheck(id) {
+    if (mainLocked) return
     const nowChecked = !checked[id]
     setChecked(prev => ({ ...prev, [id]: nowChecked }))
     if (nowChecked && checkedCount + 1 === totalCount) {
@@ -248,7 +244,7 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
         <p style={{ fontSize: 13, color: 'var(--mu)', marginBottom: 12 }}>{exercises.length} exercises</p>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
           {muscleGroups.map(g => {
-            const c = GROUP_COLORS[g] || { bg: 'var(--br)', color: 'var(--mu)' }
+            const c = MUSCLE_COLORS[g] || { bg: 'var(--br)', color: 'var(--mu)' }
             return <span key={g} style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: c.bg, color: c.color }}>{g}</span>
           })}
         </div>
@@ -268,10 +264,10 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
           <div style={{ background: 'rgba(50,200,140,.08)', border: '1px solid rgba(50,200,140,.25)', borderRadius: 14, overflow: 'hidden' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(50,200,140,.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#5DD99A' }}>🛡 Prehab first</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#4FB88A' }}>🛡 Prehab first</div>
                 <div style={{ fontSize: 11, color: 'rgba(93,217,154,.7)', marginTop: 2 }}>Complete before your main workout</div>
               </div>
-              <span style={{ fontSize: 11, color: '#5DD99A', background: 'rgba(50,200,140,.15)', padding: '3px 8px', borderRadius: 20, fontWeight: 600 }}>
+              <span style={{ fontSize: 11, color: '#4FB88A', background: 'rgba(50,200,140,.15)', padding: '3px 8px', borderRadius: 20, fontWeight: 600 }}>
                 {prehabCheckedCount}/{prehabTotal}
               </span>
             </div>
@@ -291,7 +287,7 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
                       background: isDone ? 'rgba(50,200,140,.3)' : 'rgba(50,200,140,.1)',
                       border: `1.5px solid ${isDone ? 'rgba(50,200,140,.6)' : 'rgba(50,200,140,.3)'}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 12, color: '#5DD99A',
+                      fontSize: 12, color: '#4FB88A',
                     }}>{isDone ? '✓' : ''}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', textDecoration: isDone ? 'line-through' : 'none' }}>{ex?.name}</div>
@@ -305,11 +301,24 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
         </div>
       )}
 
+      {!showFeedback && prehabTotal > 0 && prehabComplete && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(50,200,140,.08)', border: '1px solid rgba(50,200,140,.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 12.5, color: '#4FB88A', fontWeight: 600 }}>
+          <span>✓ Prehab complete</span>
+          <span style={{ fontFamily: 'var(--mono)', fontWeight: 400, color: 'var(--mu)' }}>{prehabCheckedCount}/{prehabTotal}</span>
+        </div>
+      )}
+
+      {!showFeedback && mainLocked && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: 'var(--mu)', padding: '2px 2px 15px' }}>
+          🔒 Finish prehab above to unlock the rest of the workout
+        </div>
+      )}
+
       {!showFeedback && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {exercises.map((we, i) => {
             const ex = we.exercises
-            const c = GROUP_COLORS[ex?.muscle_group] || { bg: 'var(--br)', color: 'var(--mu)' }
+            const c = MUSCLE_COLORS[ex?.muscle_group] || { bg: 'var(--br)', color: 'var(--mu)' }
             const isDone = checked[we.id]
             const isTimed = !!we.duration_seconds
             const timerActive = activeTimer === we.id
@@ -317,14 +326,14 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
 
             return (
               <div key={we.id} style={{
-                background: isDone ? 'rgba(168,237,82,.04)' : 'var(--s2)',
-                border: `1px solid ${isDone ? 'rgba(168,237,82,.2)' : 'var(--br)'}`,
+                background: isDone ? 'rgba(199,228,92,.04)' : 'var(--s2)',
+                border: `1px solid ${isDone ? 'rgba(199,228,92,.2)' : 'var(--br)'}`,
                 borderRadius: 14, padding: 16,
                 transition: 'all .2s',
-                opacity: isDone ? 0.75 : 1,
+                opacity: mainLocked ? 0.42 : isDone ? 0.75 : 1,
               }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                  <div style={{ width: 26, height: 26, background: isDone ? 'rgba(168,237,82,.15)' : 'rgba(168,237,82,.08)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--ac)', flexShrink: 0, marginTop: 1 }}>
+                  <div style={{ width: 26, height: 26, background: isDone ? 'rgba(199,228,92,.15)' : 'rgba(199,228,92,.08)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--ac)', flexShrink: 0, marginTop: 1 }}>
                     {isDone ? '✓' : i + 1}
                   </div>
 
@@ -338,11 +347,11 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
                       {formatWork(we)}
                     </div>
 
-                    <div style={{ fontSize: 13, color: 'var(--mu)', lineHeight: 1.6, marginBottom: isTimed && !isDone ? 10 : 0 }}>
+                    <div style={{ fontSize: 13, color: 'var(--mu)', lineHeight: 1.6, marginBottom: isTimed && !isDone && !mainLocked ? 10 : 0 }}>
                       {ex?.description}
                     </div>
 
-                    {isTimed && !isDone && (
+                    {isTimed && !isDone && !mainLocked && (
                       <>
                         {timerActive ? (
                           <ExerciseTimer
@@ -354,7 +363,7 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
                           />
                         ) : (
                           <button onClick={() => setActiveTimer(we.id)} style={{
-                            marginTop: 8, padding: '8px 16px', background: 'rgba(168,237,82,.1)', border: '1px solid rgba(168,237,82,.25)', borderRadius: 8, color: 'var(--ac)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            marginTop: 8, padding: '8px 16px', background: 'rgba(199,228,92,.1)', border: '1px solid rgba(199,228,92,.25)', borderRadius: 8, color: 'var(--ac)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                           }}>
                             ▶ Start {we.duration_seconds}s timer
                           </button>
@@ -370,15 +379,19 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
                     )}
                   </div>
 
-                  <div onClick={() => toggleCheck(we.id)} style={{
-                    width: 26, height: 26, borderRadius: 8, flexShrink: 0, cursor: 'pointer',
-                    background: isDone ? 'var(--ac)' : 'transparent',
-                    border: `2px solid ${isDone ? 'var(--ac)' : 'var(--br2)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 14, color: '#0C1118', transition: 'all .15s',
-                  }}>
-                    {isDone ? '✓' : ''}
-                  </div>
+                  {mainLocked ? (
+                    <div style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--br)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, color: 'var(--mu)' }}>🔒</div>
+                  ) : (
+                    <div onClick={() => toggleCheck(we.id)} style={{
+                      width: 26, height: 26, borderRadius: 8, flexShrink: 0, cursor: 'pointer',
+                      background: isDone ? 'var(--ac)' : 'transparent',
+                      border: `2px solid ${isDone ? 'var(--ac)' : 'var(--br2)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, color: 'var(--ac-ink)', transition: 'all .15s',
+                    }}>
+                      {isDone ? '✓' : ''}
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -399,4 +412,3 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
   )
 }
 
-export { GROUP_COLORS }

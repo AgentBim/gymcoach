@@ -4,10 +4,10 @@ import { useAthleteStreak } from '../../hooks/useAthleteStreak'
 import { supabase } from '../../lib/supabase'
 
 const EMOJI_MAP = {
-  easy:     { icon: '😴', label: 'Too easy',   color: '#6BB5F5' },
-  good:     { icon: '😊', label: 'Good',        color: '#5DD99A' },
-  hard:     { icon: '💪', label: 'Challenging', color: '#F4B455' },
-  veryhard: { icon: '🔥', label: 'Very hard',   color: '#F88080' },
+  easy:     { icon: '😴', label: 'Too easy',   color: '#6BA9DE' },
+  good:     { icon: '😊', label: 'Good',        color: '#4FB88A' },
+  hard:     { icon: '💪', label: 'Challenging', color: '#E7A23E' },
+  veryhard: { icon: '🔥', label: 'Very hard',   color: '#E2695A' },
 }
 
 function formatDate(dateStr) {
@@ -40,8 +40,8 @@ export default function AthleteHistory() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
         {[
           { val: logs.length, lbl: 'Workouts', col: 'var(--ac)' },
-          { val: avgRpe ?? '—', lbl: 'Avg RPE', col: '#4F9EFF' },
-          { val: streakLoading ? '—' : streak, lbl: 'Day streak', col: '#FFA94D' },
+          { val: avgRpe ?? '—', lbl: 'Avg RPE', col: '#6BA9DE' },
+          { val: streakLoading ? '—' : streak, lbl: 'Day streak', col: 'var(--ac)' },
         ].map(({ val, lbl, col }) => (
           <div key={lbl} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: col, marginBottom: 2 }}>{val}</div>

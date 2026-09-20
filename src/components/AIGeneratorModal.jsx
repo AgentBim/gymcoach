@@ -1,22 +1,8 @@
 import { useState } from 'react'
+import { MUSCLE_COLORS, FOCUS_COLORS } from '../lib/theme'
 
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard', 'Mixed']
 const GROUPS = ['Arms', 'Back', 'Legs', 'Core', 'Shoulders']
-
-const FOCUS_COLORS = {
-  activation: { bg: 'rgba(168,237,82,.12)',  color: '#A8ED52' },
-  stability:  { bg: 'rgba(80,150,230,.12)',  color: '#6BB5F5' },
-  mobility:   { bg: 'rgba(160,100,230,.12)', color: '#C084F5' },
-  strength:   { bg: 'rgba(240,158,40,.12)',  color: '#F4B455' },
-}
-
-const GROUP_COLORS = {
-  Arms:      { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
-  Back:      { bg: 'rgba(80,150,230,.15)',  color: '#6BB5F5' },
-  Legs:      { bg: 'rgba(230,70,60,.15)',   color: '#F88080' },
-  Core:      { bg: 'rgba(50,200,140,.15)',  color: '#5DD99A' },
-  Shoulders: { bg: 'rgba(160,100,230,.15)', color: '#C084F5' },
-}
 
 const GROUP_EMOJI = {
   Arms: '💪', Back: '🔙', Legs: '🦵', Core: '🎯', Shoulders: '🔄',
@@ -132,7 +118,7 @@ Rules: 5–9 strength exercises. ${includePrehab ? '2–4 prehab matching muscle
 
   const chipBtn = (active, label, onClick, variant = 'default') => {
     const bg    = active ? (variant === 'purple' ? 'rgba(167,139,250,.18)' : variant === 'teal' ? 'rgba(48,232,200,.12)' : 'var(--ac)') : 'var(--br)'
-    const color = active ? (variant === 'purple' ? '#A78BFA' : variant === 'teal' ? '#30E8C8' : '#0C1118') : 'var(--mu2)'
+    const color = active ? (variant === 'purple' ? '#A184E3' : variant === 'teal' ? '#4FB88A' : 'var(--ac-ink)') : 'var(--mu2)'
     const border = active ? (variant === 'purple' ? '1px solid rgba(167,139,250,.4)' : variant === 'teal' ? '1px solid rgba(48,232,200,.3)' : '1px solid transparent') : '1px solid transparent'
     return <button key={label} onClick={onClick} style={{ padding: '6px 13px', borderRadius: 20, fontSize: 12, fontWeight: active ? 700 : 500, background: bg, color, border, cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
   }
@@ -160,9 +146,9 @@ Rules: 5–9 strength exercises. ${includePrehab ? '2–4 prehab matching muscle
             {step === 'prompt' && <div style={{ fontSize: 11, color: 'var(--mu2)', marginTop: 2 }}>Describe the session — AI builds from your library</div>}
             {step === 'result' && result && (
               <div style={{ display: 'flex', gap: 5, marginTop: 4, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 10, background: 'rgba(168,237,82,.12)', color: 'var(--ac)', padding: '2px 7px', borderRadius: 20, fontWeight: 600 }}>{result.exercises.length} exercises</span>
-                {result.prehab.length > 0 && <span style={{ fontSize: 10, background: 'rgba(48,232,200,.1)', color: '#30E8C8', padding: '2px 7px', borderRadius: 20, fontWeight: 600 }}>{result.prehab.length} prehab</span>}
-                <span style={{ fontSize: 10, background: 'rgba(167,139,250,.1)', color: '#A78BFA', padding: '2px 7px', borderRadius: 20, fontWeight: 700 }}>✦ AI</span>
+                <span style={{ fontSize: 10, background: 'rgba(199,228,92,.12)', color: 'var(--ac)', padding: '2px 7px', borderRadius: 20, fontWeight: 600 }}>{result.exercises.length} exercises</span>
+                {result.prehab.length > 0 && <span style={{ fontSize: 10, background: 'rgba(48,232,200,.1)', color: '#4FB88A', padding: '2px 7px', borderRadius: 20, fontWeight: 600 }}>{result.prehab.length} prehab</span>}
+                <span style={{ fontSize: 10, background: 'rgba(167,139,250,.1)', color: '#A184E3', padding: '2px 7px', borderRadius: 20, fontWeight: 700 }}>✦ AI</span>
               </div>
             )}
           </div>
@@ -213,17 +199,17 @@ Rules: 5–9 strength exercises. ${includePrehab ? '2–4 prehab matching muscle
                   <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 3 }}>Strength</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: '#30E8C8', lineHeight: 1 }}>{prehabCount}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#4FB88A', lineHeight: 1 }}>{prehabCount}</div>
                   <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 3 }}>Prehab</div>
                 </div>
                 <div style={{ flex: 1, fontSize: 11, color: 'var(--mu)', lineHeight: 1.5 }}>AI picks from your own library only</div>
               </div>
 
-              {error && <div style={{ fontSize: 12, color: '#F88080', background: 'rgba(255,82,82,.08)', border: '1px solid rgba(255,82,82,.2)', borderRadius: 10, padding: '9px 12px' }}>{error}</div>}
+              {error && <div style={{ fontSize: 12, color: '#E2695A', background: 'rgba(255,82,82,.08)', border: '1px solid rgba(255,82,82,.2)', borderRadius: 10, padding: '9px 12px' }}>{error}</div>}
             </div>
 
             <div style={{ padding: '10px 16px 28px', borderTop: '1px solid var(--br)', flexShrink: 0 }}>
-              <button onClick={generate} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg,#A78BFA,#7C5CFC)', borderRadius: 14, border: 'none', fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: '-.01em', cursor: 'pointer', boxShadow: '0 6px 20px rgba(124,92,252,.35)' }}>
+              <button onClick={generate} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg,#A184E3,#A184E3)', borderRadius: 14, border: 'none', fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: '-.01em', cursor: 'pointer', boxShadow: '0 6px 20px rgba(124,92,252,.35)' }}>
                 ✦ &nbsp;Generate workout
               </button>
             </div>
@@ -233,13 +219,13 @@ Rules: 5–9 strength exercises. ${includePrehab ? '2–4 prehab matching muscle
         {/* ══ GENERATING SCREEN ══ */}
         {step === 'generating' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 24px' }}>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'radial-gradient(circle at 40% 40%,#A78BFA,#4F9EFF,rgba(48,232,200,.5))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, marginBottom: 18, boxShadow: '0 0 40px rgba(167,139,250,.4)' }}>✦</div>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'radial-gradient(circle at 40% 40%,#A184E3,#6BA9DE,rgba(48,232,200,.5))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, marginBottom: 18, boxShadow: '0 0 40px rgba(167,139,250,.4)' }}>✦</div>
             <div style={{ fontFamily: 'var(--font-head,sans-serif)', fontSize: 17, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 6 }}>Building your workout</div>
             <div style={{ fontSize: 12, color: 'var(--mu2)', marginBottom: 24, textAlign: 'center', lineHeight: 1.6 }}>Selecting from your library…</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7, width: '100%' }}>
               {genSteps.map((s, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: 'var(--s1)', border: `1px solid ${s.status === 'done' ? 'rgba(168,237,82,.18)' : s.status === 'doing' ? 'rgba(167,139,250,.3)' : 'var(--br)'}`, borderRadius: 10, opacity: s.status === 'todo' ? 0.4 : 1, transition: 'all .3s' }}>
-                  <div style={{ width: 22, height: 22, borderRadius: 7, background: s.status === 'done' ? 'rgba(168,237,82,.12)' : s.status === 'doing' ? 'rgba(167,139,250,.15)' : 'var(--br)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: 'var(--s1)', border: `1px solid ${s.status === 'done' ? 'rgba(199,228,92,.18)' : s.status === 'doing' ? 'rgba(167,139,250,.3)' : 'var(--br)'}`, borderRadius: 10, opacity: s.status === 'todo' ? 0.4 : 1, transition: 'all .3s' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 7, background: s.status === 'done' ? 'rgba(199,228,92,.12)' : s.status === 'doing' ? 'rgba(167,139,250,.15)' : 'var(--br)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>
                     {s.status === 'done' ? '✓' : s.status === 'doing' ? <span className="ai-spin">⚙</span> : '·'}
                   </div>
                   <span style={{ fontSize: 12, flex: 1 }}>{s.label}</span>
@@ -256,13 +242,13 @@ Rules: 5–9 strength exercises. ${includePrehab ? '2–4 prehab matching muscle
             <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
               <div style={{ background: 'linear-gradient(135deg,rgba(167,139,250,.08),rgba(79,158,255,.05))', border: '1px solid rgba(167,139,250,.2)', borderRadius: 12, padding: '10px 13px', fontSize: 12, color: 'var(--mu2)', lineHeight: 1.6 }}>
-                <span style={{ color: '#A78BFA', fontWeight: 700 }}>✦ AI reasoning: </span>{result.reasoning}
+                <span style={{ color: '#A184E3', fontWeight: 700 }}>✦ AI reasoning: </span>{result.reasoning}
               </div>
 
               {result.prehab.length > 0 && (
                 <div style={{ background: 'rgba(48,232,200,.05)', border: '1px solid rgba(48,232,200,.2)', borderRadius: 14, overflow: 'hidden' }}>
                   <div style={{ padding: '10px 13px', background: 'rgba(48,232,200,.07)', borderBottom: '1px solid rgba(48,232,200,.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#30E8C8', textTransform: 'uppercase', letterSpacing: '.05em' }}>🛡 Prehab — {result.prehab.length} exercises</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#4FB88A', textTransform: 'uppercase', letterSpacing: '.05em' }}>🛡 Prehab — {result.prehab.length} exercises</span>
                     <span style={{ fontSize: 10, color: 'rgba(48,232,200,.7)' }}>Do first</span>
                   </div>
                   {result.prehab.map((p, idx) => (
@@ -274,7 +260,7 @@ Rules: 5–9 strength exercises. ${includePrehab ? '2–4 prehab matching muscle
                           <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, fontWeight: 600, ...FOCUS_COLORS[p.exercise.prehab_focus] }}>{p.exercise.prehab_focus}</span>
                         )}
                       </div>
-                      <span style={{ fontSize: 10, color: '#30E8C8', flexShrink: 0 }}>{p.sets} × {p.reps || `${p.duration_seconds}s`}</span>
+                      <span style={{ fontSize: 10, color: '#4FB88A', flexShrink: 0 }}>{p.sets} × {p.reps || `${p.duration_seconds}s`}</span>
                       <button onClick={() => removePrehab(idx)} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 15, cursor: 'pointer', padding: '0 0 0 4px', lineHeight: 1 }}>×</button>
                     </div>
                   ))}
@@ -287,7 +273,7 @@ Rules: 5–9 strength exercises. ${includePrehab ? '2–4 prehab matching muscle
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {result.exercises.map((item, idx) => {
-                    const gc = GROUP_COLORS[item.exercise.muscle_group] || { bg: 'var(--br)', color: 'var(--mu2)' }
+                    const gc = MUSCLE_COLORS[item.exercise.muscle_group] || { bg: 'var(--br)', color: 'var(--mu2)' }
                     return (
                       <div key={item.exercise.id} style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: '10px 12px', display: 'flex', gap: 9, alignItems: 'center' }}>
                         <div style={{ width: 36, height: 36, borderRadius: 11, background: gc.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>
@@ -299,7 +285,7 @@ Rules: 5–9 strength exercises. ${includePrehab ? '2–4 prehab matching muscle
                             {[`${item.sets} sets`, item.reps ? `${item.reps} reps` : `${item.duration_seconds}s`, `Rest ${item.rest_seconds}s`].map(c => (
                               <span key={c} style={{ background: 'var(--br)', borderRadius: 5, padding: '2px 6px', fontSize: 10, color: 'var(--mu2)', fontFamily: 'monospace' }}>{c}</span>
                             ))}
-                            <span style={{ background: 'rgba(167,139,250,.1)', color: '#A78BFA', borderRadius: 5, padding: '2px 6px', fontSize: 10 }}>✦ AI</span>
+                            <span style={{ background: 'rgba(167,139,250,.1)', color: '#A184E3', borderRadius: 5, padding: '2px 6px', fontSize: 10 }}>✦ AI</span>
                           </div>
                         </div>
                         <button onClick={() => removeExercise(idx)} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 16, cursor: 'pointer', padding: '0 0 0 4px', lineHeight: 1 }}>×</button>
@@ -311,11 +297,11 @@ Rules: 5–9 strength exercises. ${includePrehab ? '2–4 prehab matching muscle
             </div>
 
             <div style={{ padding: '10px 16px 28px', borderTop: '1px solid var(--br)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button onClick={accept} style={{ width: '100%', padding: '13px', background: 'var(--ac)', color: '#0C1118', borderRadius: 13, border: 'none', fontSize: 14, fontWeight: 800, cursor: 'pointer', letterSpacing: '-.01em' }}>
+              <button onClick={accept} style={{ width: '100%', padding: '13px', background: 'var(--ac)', color: 'var(--ac-ink)', borderRadius: 13, border: 'none', fontSize: 14, fontWeight: 800, cursor: 'pointer', letterSpacing: '-.01em' }}>
                 Use this workout →
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { setStep('prompt'); setResult(null) }} style={{ flex: 1, padding: '10px', background: 'rgba(167,139,250,.1)', border: '1px solid rgba(167,139,250,.25)', borderRadius: 12, fontSize: 12, fontWeight: 600, color: '#A78BFA', cursor: 'pointer' }}>
+                <button onClick={() => { setStep('prompt'); setResult(null) }} style={{ flex: 1, padding: '10px', background: 'rgba(167,139,250,.1)', border: '1px solid rgba(167,139,250,.25)', borderRadius: 12, fontSize: 12, fontWeight: 600, color: '#A184E3', cursor: 'pointer' }}>
                   ✦ Regenerate
                 </button>
                 <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, fontSize: 12, fontWeight: 600, color: 'var(--mu2)', cursor: 'pointer' }}>

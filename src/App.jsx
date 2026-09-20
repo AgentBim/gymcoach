@@ -21,6 +21,7 @@ import AthletePortalLayout from './pages/athlete/AthletePortalLayout'
 import AthleteToday from './pages/athlete/AthleteToday'
 import AthleteHistory from './pages/athlete/AthleteHistory'
 import AthleteProgram from './pages/athlete/AthleteProgram'
+import AthleteWorkoutPreview from './pages/athlete/AthleteWorkoutPreview'
 
 export default function App() {
   return (
@@ -51,6 +52,7 @@ export default function App() {
               <Route index element={<AthleteToday />} />
               <Route path="history" element={<AthleteHistory />} />
               <Route path="program" element={<AthleteProgram />} />
+              <Route path="program/:workoutId" element={<AthleteWorkoutPreview />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

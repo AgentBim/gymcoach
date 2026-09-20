@@ -7,31 +7,7 @@ import Layout from '../components/Layout'
 import { StreakFlame } from '../components/StreakFlame'
 import { useAthleteStreak } from '../hooks/useAthleteStreak'
 import { todayLocal } from '../lib/streaks'
-
-const GROUP_COLORS = {
-  Arms:      { bg: 'rgba(240,158,40,.15)',  color: '#F4B455' },
-  Back:      { bg: 'rgba(80,150,230,.15)',  color: '#6BB5F5' },
-  Legs:      { bg: 'rgba(230,70,60,.15)',   color: '#F88080' },
-  Core:      { bg: 'rgba(50,200,140,.15)',  color: '#5DD99A' },
-  Shoulders: { bg: 'rgba(160,100,230,.15)', color: '#C084F5' },
-}
-
-const LEVEL_COLORS = {
-  'Level 5': { bg: 'rgba(240,158,40,.15)', color: '#F4B455' },
-  'Level 6': { bg: 'rgba(240,158,40,.15)', color: '#F4B455' },
-  'Elite':   { bg: 'rgba(168,237,82,.12)', color: '#A8ED52' },
-}
-
-const AVATAR_PALETTE = [
-  { bg: 'rgba(200,255,80,.15)',  color: '#C8FF50' },
-  { bg: 'rgba(79,158,255,.15)',  color: '#4F9EFF' },
-  { bg: 'rgba(192,132,245,.15)', color: '#C084F5' },
-  { bg: 'rgba(48,232,200,.15)',  color: '#30E8C8' },
-  { bg: 'rgba(255,184,48,.15)',  color: '#FFB830' },
-]
-
-function initials(name) { return (name||'').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2) }
-function avPal(name) { return AVATAR_PALETTE[(name||'').charCodeAt(0) % AVATAR_PALETTE.length] }
+import { MUSCLE_COLORS, levelColor, avatarColor, initials } from '../lib/theme'
 
 function getMuscleGroups(assignment) {
   const groups = new Set(assignment.workouts?.workout_exercises?.map(we => we.exercises?.muscle_group).filter(Boolean))
@@ -118,8 +94,8 @@ export default function AthleteProfile() {
   if (loading) return <Layout><div style={{ padding: 40, color: 'var(--mu)' }}>Loading…</div></Layout>
   if (!athlete) return <Layout><div style={{ padding: 40, color: 'var(--mu)' }}>Athlete not found</div></Layout>
 
-  const av = avPal(athlete.full_name)
-  const lc = LEVEL_COLORS[athlete.level] || { bg: 'var(--br)', color: 'var(--mu2)' }
+  const av = avatarColor(athlete.full_name)
+  const lc = levelColor(athlete.level)
 
   // Aggregate muscle groups across all assignments
   const allGroups = assignments.flatMap(a => getMuscleGroups(a))
@@ -138,7 +114,7 @@ export default function AthleteProfile() {
       <div style={{ maxWidth: 600, margin: '0 auto', padding: isMobile ? '0 0 20px' : '20px 16px' }}>
 
         {/* ── HERO ── */}
-        <div style={{ padding: '20px 16px 18px', background: `linear-gradient(160deg,${av.bg.replace(',.15)',',0.06)')} 0%,transparent 65%)`, borderBottom: '1px solid var(--br)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+        <div style={{ padding: '20px 16px 18px', background: `linear-gradient(160deg,${av.bg.replace(',.14)',',0.06)')} 0%,transparent 65%)`, borderBottom: '1px solid var(--br)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
           <div style={{ width: 68, height: 68, background: av.bg, borderRadius: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: av.color, marginBottom: 12, fontFamily: 'var(--font-head,sans-serif)' }}>
             {initials(athlete.full_name)}
           </div>
@@ -155,12 +131,12 @@ export default function AthleteProfile() {
             </div>
             <div style={{ width: 1, background: 'var(--br)' }} />
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#4F9EFF', lineHeight: 1, fontFamily: 'var(--font-head,sans-serif)' }}>{Object.keys(groupCounts).length}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#6BA9DE', lineHeight: 1, fontFamily: 'var(--font-head,sans-serif)' }}>{Object.keys(groupCounts).length}</div>
               <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 3 }}>Muscle groups</div>
             </div>
             <div style={{ width: 1, background: 'var(--br)' }} />
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#FFA94D', lineHeight: 1, fontFamily: 'var(--font-head,sans-serif)' }}>{streakLoading ? '—' : streak}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ac)', lineHeight: 1, fontFamily: 'var(--font-head,sans-serif)' }}>{streakLoading ? '—' : streak}</div>
               <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 3 }}>Day streak</div>
             </div>
             {athlete.notes && <><div style={{ width: 1, background: 'var(--br)' }} />
@@ -212,7 +188,7 @@ export default function AthleteProfile() {
                 {inviteCopied ? '✓ Copied!' : '🔗 Copy invite link'}
               </button>
             ) : (
-              <button onClick={generateInvite} disabled={invitingLink} style={{ width: '100%', padding: 10, background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: invitingLink ? 0.7 : 1 }}>
+              <button onClick={generateInvite} disabled={invitingLink} style={{ width: '100%', padding: 10, background: 'rgba(199,228,92,.08)', border: '1px solid rgba(199,228,92,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: invitingLink ? 0.7 : 1 }}>
                 {invitingLink ? 'Generating...' : 'Invite to portal'}
               </button>
             )}
@@ -223,7 +199,7 @@ export default function AthleteProfile() {
             <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 12 }}>Training focus</div>
               {Object.entries(groupCounts).sort((a,b)=>b[1]-a[1]).map(([group, count]) => {
-                const c = GROUP_COLORS[group] || { bg: 'var(--br)', color: 'var(--mu2)' }
+                const c = MUSCLE_COLORS[group] || { bg: 'var(--br)', color: 'var(--mu2)' }
                 const pct = (count / maxCount) * 100
                 return (
                   <div key={group} style={{ marginBottom: 9 }}>
@@ -255,7 +231,7 @@ export default function AthleteProfile() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {assignments.map((a, idx) => {
                 const groups = getMuscleGroups(a)
-                const accent = ['var(--ac)','#4F9EFF','#C084F5','#30E8C8','#FFB830'][idx % 5]
+                const accent = ['var(--ac)','#6BA9DE','#A184E3','#4FB88A','#E7A23E'][idx % 5]
                 return (
                   <div key={a.id} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 13, padding: 14, position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: accent, borderRadius: '3px 0 0 3px' }} />
@@ -263,7 +239,7 @@ export default function AthleteProfile() {
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--tx)', marginBottom: 6 }}>{a.workouts?.name}</div>
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
                         {groups.map(g => {
-                          const c = GROUP_COLORS[g] || { bg: 'var(--br)', color: 'var(--mu2)' }
+                          const c = MUSCLE_COLORS[g] || { bg: 'var(--br)', color: 'var(--mu2)' }
                           return <span key={g} style={{ padding: '1px 7px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: c.bg, color: c.color }}>{g}</span>
                         })}
                       </div>
@@ -276,7 +252,7 @@ export default function AthleteProfile() {
                           {copied === a.assignment_token ? '✓ Copied!' : '🔗 Copy link'}
                         </button>
                         <button onClick={() => removeAssignment(a.id)}
-                          style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#F88080', fontSize: 12, padding: '9px 12px', cursor: 'pointer', minHeight: 38 }}>Remove</button>
+                          style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#E2695A', fontSize: 12, padding: '9px 12px', cursor: 'pointer', minHeight: 38 }}>Remove</button>
                       </div>
                     </div>
                   </div>

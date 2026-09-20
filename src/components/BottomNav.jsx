@@ -84,7 +84,7 @@ export default function BottomNav() {
         position: 'fixed', bottom: 0, left: 0, right: 0,
         height: 'calc(60px + env(safe-area-inset-bottom))',
         paddingBottom: 'env(safe-area-inset-bottom)',
-        background: 'rgba(15,21,32,.97)',
+        background: 'rgba(21,25,26,.97)',
         backdropFilter: 'blur(16px)',
         borderTop: '1px solid var(--br)',
         display: 'flex', alignItems: 'stretch', zIndex: 100,
@@ -96,10 +96,10 @@ export default function BottomNav() {
           <button onClick={() => { setMoreOpen(false); navigate('/workout/new') }}
             style={{
               width: 46, height: 46, borderRadius: 15,
-              background: 'var(--ac)', border: 'none', color: '#0C1118',
+              background: 'var(--ac)', border: 'none', color: 'var(--ac-ink)',
               fontSize: 24, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 16px rgba(168,237,82,.4)', cursor: 'pointer', marginBottom: 4,
+              boxShadow: '0 4px 16px rgba(199,228,92,.4)', cursor: 'pointer', marginBottom: 4,
             }}>＋</button>
         </div>
 

@@ -81,7 +81,7 @@ export default function AthleteView() {
               <div style={{ fontSize: 13, color: 'var(--tx)', marginBottom: 14 }}>Hey {athleteName.split(' ')[0]}, ready to go?</div>
             )}
             <button onClick={() => setReady(true)}
-              style={{ width: '100%', padding: 13, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+              style={{ width: '100%', padding: 13, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
               Start workout →
             </button>
           </div>
@@ -99,10 +99,10 @@ export default function AthleteView() {
       <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', padding: '13px 20px', paddingTop: 'max(13px, calc(var(--sat) + 6px))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <ChalkUpLogo size={24} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.02em' }}>chalkup</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ac)', fontFamily: 'var(--font-head)' }}>chalkup</span>
         </div>
         {allDone
-          ? <span style={{ fontSize: 11, color: 'var(--ac)', background: 'rgba(168,237,82,.12)', padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>✓ Complete</span>
+          ? <span style={{ fontSize: 11, color: 'var(--ac)', background: 'rgba(199,228,92,.12)', padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>✓ Complete</span>
           : <span style={{ fontSize: 11, color: 'var(--mu)' }}>{totalCount} exercises</span>
         }
       </div>
