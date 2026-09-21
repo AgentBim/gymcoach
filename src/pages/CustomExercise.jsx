@@ -118,9 +118,9 @@ export default function CustomExercise() {
               {MUSCLE_GROUPS.map(g => (
                 <button key={g} onClick={() => setMuscleGroup(g)} style={{
                   padding: '8px 14px', borderRadius: 20, fontSize: 13, border: 'none', cursor: 'pointer',
-                  background: muscleGroup === g ? 'rgba(168,237,82,.12)' : 'var(--br)',
+                  background: muscleGroup === g ? 'rgba(199,228,92,.12)' : 'var(--br)',
                   color: muscleGroup === g ? 'var(--ac)' : 'var(--mu)',
-                  outline: muscleGroup === g ? '1px solid rgba(168,237,82,.3)' : 'none',
+                  outline: muscleGroup === g ? '1px solid rgba(199,228,92,.3)' : 'none',
                   fontWeight: muscleGroup === g ? 600 : 400,
                 }}>{g}</button>
               ))}
@@ -133,9 +133,9 @@ export default function CustomExercise() {
               {DIFFICULTIES.map(d => (
                 <button key={d} onClick={() => setDifficulty(d)} style={{
                   flex: 1, padding: '10px 8px', borderRadius: 10, fontSize: 13, border: 'none', cursor: 'pointer',
-                  background: difficulty === d ? 'rgba(168,237,82,.12)' : 'var(--br)',
+                  background: difficulty === d ? 'rgba(199,228,92,.12)' : 'var(--br)',
                   color: difficulty === d ? 'var(--ac)' : 'var(--mu)',
-                  outline: difficulty === d ? '1px solid rgba(168,237,82,.3)' : 'none',
+                  outline: difficulty === d ? '1px solid rgba(199,228,92,.3)' : 'none',
                   fontWeight: difficulty === d ? 600 : 400,
                 }}>{d}</button>
               ))}
@@ -169,11 +169,11 @@ export default function CustomExercise() {
             </div>
           </div>
 
-          {error && <p style={{ fontSize: 12, color: '#F88080' }}>{error}</p>}
+          {error && <p style={{ fontSize: 12, color: '#E2695A' }}>{error}</p>}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
             <button onClick={() => navigate('/library')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 48 }}>Cancel</button>
-            <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, minHeight: 48 }}>
+            <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, minHeight: 48 }}>
               {saving ? 'Saving...' : isEdit ? 'Update exercise' : 'Add to library'}
             </button>
           </div>

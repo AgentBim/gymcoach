@@ -6,12 +6,12 @@ const s = {
   sidebar: { width: 200, minWidth: 200, background: 'var(--s1)', borderRight: '1px solid var(--br)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0 },
   logo: { padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--br)' },
   logoIcon: { width: 28, height: 28, background: 'var(--ac)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 },
-  logoText: { fontSize: 16, fontWeight: 700, color: 'var(--ac)', letterSpacing: '-0.03em' },
+  logoText: { fontSize: 17, fontWeight: 700, color: 'var(--tx)', letterSpacing: '0.2px', fontFamily: 'var(--font-head)' },
   nav: { flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2 },
-  link: { display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--r)', fontSize: 13, color: 'var(--mu)', transition: 'all .15s', textDecoration: 'none' },
-  cta: { margin: '6px 8px', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--r)', fontSize: 13, color: 'var(--ac)', background: 'rgba(168,237,82,.08)', border: '1px solid rgba(168,237,82,.2)', textDecoration: 'none' },
+  link: { display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--r)', fontSize: 13, fontWeight: 500, color: 'var(--mu)', transition: 'all .15s', textDecoration: 'none', position: 'relative' },
+  cta: { margin: '6px 8px', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--r)', fontSize: 13, color: 'var(--ac)', background: 'rgba(199,228,92,.08)', border: '1px solid rgba(199,228,92,.2)', textDecoration: 'none' },
   avatar: { padding: '12px 16px', borderTop: '1px solid var(--br)', display: 'flex', alignItems: 'center', gap: 10 },
-  avatarIcon: { width: 30, height: 30, background: 'rgba(168,237,82,.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--ac)', flexShrink: 0 },
+  avatarIcon: { width: 30, height: 30, background: 'rgba(199,228,92,.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--ac)', flexShrink: 0 },
 }
 
 export default function Sidebar() {
@@ -27,7 +27,14 @@ export default function Sidebar() {
     navigate('/login')
   }
 
-  const activeStyle = { color: 'var(--tx)', background: 'var(--br)' }
+  const activeStyle = { color: 'var(--tx)', background: 'var(--s2)' }
+  const accentBar = <span style={{ position: 'absolute', left: -8, top: 8, bottom: 8, width: 3, borderRadius: 2, background: 'var(--ac)' }} />
+
+  const navItem = (to, icon, label) => (
+    <NavLink to={to} style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
+      {({ isActive }) => <>{isActive && accentBar}{icon} {label}</>}
+    </NavLink>
+  )
 
   return (
     <aside style={s.sidebar}>
@@ -37,21 +44,11 @@ export default function Sidebar() {
       </div>
 
       <nav style={s.nav}>
-        <NavLink to="/dashboard" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
-          🏠 Dashboard
-        </NavLink>
-        <NavLink to="/roster" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
-          🤸 Roster
-        </NavLink>
-        <NavLink to="/programs" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
-          📅 Programs
-        </NavLink>
-        <NavLink to="/history" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
-          📊 History
-        </NavLink>
-        <NavLink to="/library" style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
-          📚 Exercise library
-        </NavLink>
+        {navItem('/dashboard', '🏠', 'Dashboard')}
+        {navItem('/roster', '🤸', 'Roster')}
+        {navItem('/programs', '📅', 'Programs')}
+        {navItem('/history', '📊', 'History')}
+        {navItem('/library', '📚', 'Exercise library')}
         <NavLink to="/workout/new" style={({ isActive }) => ({ ...s.cta, ...(isActive ? { opacity: 0.8 } : {}) })}>
           ＋ New workout
         </NavLink>

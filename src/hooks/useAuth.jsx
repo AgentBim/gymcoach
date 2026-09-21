@@ -31,16 +31,36 @@ export function AuthProvider({ children }) {
   }
 
   async function signUp(email, password, fullName) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { data: { full_name: fullName } }
     })
+
+    // Supabase's anti-enumeration behavior: signing up with an email that's
+    // already registered returns no error and no new email, just a
+    // response whose user has no identities attached. Left unchecked, the
+    // caller reports this as a normal "check your email" success.
+    const alreadyRegistered = data?.user && data.user.identities?.length === 0
+    if (alreadyRegistered) {
+      return { error: { message: 'An account already exists for this email. Try logging in instead.' } }
+    }
+
     return { error }
   }
 
   async function signIn(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error }
+
+    // The coach and athlete portals share one Supabase auth pool. Check
+    // role at the point of login, not just via route guards, so an athlete
+    // account's session never lingers even briefly after signing in here.
+    const { data: coachRow } = await supabase.from('coaches').select('id').eq('id', data.user.id).single()
+    if (!coachRow) {
+      await supabase.auth.signOut()
+      return { error: { message: 'This is an athlete account. Log in at the athlete portal instead.' } }
+    }
+    return { error: null }
   }
 
   async function signOut() {

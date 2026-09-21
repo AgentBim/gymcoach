@@ -19,21 +19,38 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       :root {
-        --bg: #0C1118;
-        --s1: #131B26;
-        --s2: #192133;
-        --br: #242E42;
-        --br2: #2E3D56;
-        --tx: #D8E3F2;
-        --mu: #6B7A96;
-        --ac: #A8ED52;
-        --ac2: #85D42E;
-        --font: 'DM Sans', sans-serif;
-        --mono: 'DM Mono', monospace;
+        /* Values below match the chalkup redesign mockup 1:1 — variable
+           NAMES are kept from the pre-redesign palette (--bg, --s1, --tx,
+           etc.) since every page already styles itself through these; only
+           what they resolve to changed, so the whole app re-themes from
+           this one block instead of every inline style needing a rewrite.
+           --mu2, --font-head and --font-sans were referenced throughout the
+           app but never defined here (dead custom properties) — now given
+           real values as part of this pass. */
+        --bg: #15191A;
+        --s1: #1E2426;
+        --s2: #262D30;
+        --br: #313A3D;
+        --br2: #38424A;
+        --tx: #ECEEE9;
+        --mu: #66716D;
+        --mu2: #9AA6A2;
+        --ac: #C7E45C;
+        --ac2: #A9C947;
+        --ac-ink: #171C0E;
+        --blue: #6BA9DE;
+        --amber: #E7A23E;
+        --coral: #E2695A;
+        --teal: #4FB88A;
+        --violet: #A184E3;
+        --font: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-head: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+        --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
         --r: 8px;
         --rl: 12px;
         --sat: env(safe-area-inset-top, 0px);

@@ -80,11 +80,11 @@ export default function AthleteForm() {
               style={{ ...inp, height: 80, resize: 'none', lineHeight: 1.5 }} />
           </div>
 
-          {error && <p style={{ fontSize: 12, color: '#F88080' }}>{error}</p>}
+          {error && <p style={{ fontSize: 12, color: '#E2695A' }}>{error}</p>}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
             <button onClick={() => navigate('/roster')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 46 }}>Cancel</button>
-            <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: '#0C1118', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, minHeight: 46 }}>
+            <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, minHeight: 46 }}>
               {saving ? 'Saving...' : isEdit ? 'Update athlete' : 'Add to roster'}
             </button>
           </div>
