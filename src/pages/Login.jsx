@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import { useAuth } from '../hooks/useAuth'
 
@@ -67,6 +67,7 @@ export default function Login() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                 <label style={{ fontSize: 11, color: 'var(--mu)' }}>Password</label>
+                {tab === 'login' && <Link to="/forgot-password" style={{ fontSize: 11, color: 'var(--mu)' }}>Forgot?</Link>}
               </div>
               <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
             </div>
