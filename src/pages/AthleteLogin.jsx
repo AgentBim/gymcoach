@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import { useAthleteAuth } from '../hooks/useAthleteAuth'
 import { supabase } from '../lib/supabase'
@@ -56,7 +56,10 @@ export default function AthleteLogin() {
               <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 5 }}>Password</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <label style={{ fontSize: 11, color: 'var(--mu)' }}>Password</label>
+                <Link to="/athlete/forgot-password" style={{ fontSize: 11, color: 'var(--mu)' }}>Forgot?</Link>
+              </div>
               <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
             </div>
 
