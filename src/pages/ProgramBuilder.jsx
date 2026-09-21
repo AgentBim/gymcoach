@@ -27,6 +27,7 @@ export default function ProgramBuilder() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [viewWeek, setViewWeek] = useState(1)
+  const [dirty, setDirty] = useState(false)
 
   useEffect(() => { fetchWorkouts() }, [user])
   useEffect(() => { if (isEdit) fetchProgram() }, [id])
@@ -58,11 +59,22 @@ export default function ProgramBuilder() {
   }
 
   function setCell(key, updates) {
+    setDirty(true)
     setDays(prev => ({ ...prev, [key]: { ...(prev[key] || { day_type: 'training', workout_id: null, notes: '' }), ...updates } }))
   }
 
   function clearCell(key) {
+    setDirty(true)
     setDays(prev => { const next = { ...prev }; delete next[key]; return next })
+  }
+
+  // The whole program (name/weeks/every cell) is one in-memory draft until
+  // "Save" is clicked — there's no per-cell commit boundary — so navigating
+  // to a workout's edit screen loses the entire draft, not just this cell.
+  function viewWorkout(workoutId, { confirmIfDirty = false } = {}) {
+    if (!workoutId) return
+    if (confirmIfDirty && dirty && !window.confirm('You have unsaved changes to this program. Leave without saving?')) return
+    navigate(`/workout/${workoutId}/edit`)
   }
 
   async function save() {
@@ -113,12 +125,19 @@ export default function ProgramBuilder() {
           return (
             <div key={di} onClick={() => setActiveCell(isActive ? null : key)}
               style={{
+                position: 'relative',
                 background: cell ? dt.bg : 'var(--br)',
                 border: `1px solid ${isActive ? 'var(--ac)' : cell ? 'rgba(255,255,255,.08)' : 'transparent'}`,
                 borderRadius: 8, padding: '10px 6px', cursor: 'pointer', textAlign: 'center', minHeight: 72,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
                 transition: 'all .15s',
               }}>
+              {workout && (
+                <span onClick={e => { e.stopPropagation(); viewWorkout(workout.id) }} title={`View ${workout.name}`}
+                  style={{ position: 'absolute', top: 4, right: 4, fontSize: 11, lineHeight: 1, cursor: 'pointer', opacity: 0.75 }}>
+                  👁
+                </span>
+              )}
               <div style={{ fontSize: 10, color: 'var(--mu)', fontWeight: 500 }}>{day}</div>
               {cell ? (
                 <>
@@ -171,6 +190,12 @@ export default function ProgramBuilder() {
                     <span style={{ fontSize: 12, color: 'var(--mu)' }}>Tap to set</span>
                   )}
                 </div>
+                {workout && (
+                  <span onClick={e => { e.stopPropagation(); viewWorkout(workout.id) }} title={`View ${workout.name}`}
+                    style={{ fontSize: 15, lineHeight: 1, cursor: 'pointer', opacity: 0.75, flexShrink: 0 }}>
+                    👁
+                  </span>
+                )}
                 {cell && <div style={{ fontSize: 18, color: 'var(--mu)' }}>›</div>}
               </div>
             </div>
@@ -192,11 +217,19 @@ export default function ProgramBuilder() {
                 {(cell?.day_type ?? 'training') === 'training' && (
                   <>
                     <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 7 }}>Workout</div>
-                    <select value={cell?.workout_id || ''} onChange={e => setCell(key, { day_type: cell?.day_type || 'training', workout_id: e.target.value || null, notes: cell?.notes || '' })}
-                      style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '9px 10px', fontSize: 13, outline: 'none', marginBottom: 10 }}>
-                      <option value="">— no workout —</option>
-                      {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                    </select>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                      <select value={cell?.workout_id || ''} onChange={e => setCell(key, { day_type: cell?.day_type || 'training', workout_id: e.target.value || null, notes: cell?.notes || '' })}
+                        style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '9px 10px', fontSize: 13, outline: 'none' }}>
+                        <option value="">— no workout —</option>
+                        {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                      </select>
+                      {cell?.workout_id && (
+                        <button type="button" onClick={() => viewWorkout(cell.workout_id, { confirmIfDirty: true })}
+                          style={{ background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', padding: '0 12px', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
+                          👁 View
+                        </button>
+                      )}
+                    </div>
                   </>
                 )}
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -217,7 +250,7 @@ export default function ProgramBuilder() {
         {/* Header */}
         <div style={{ padding: isMobile ? '12px 16px' : '14px 20px', borderBottom: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={() => navigate('/programs')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Program name..."
+          <input value={name} onChange={e => { setName(e.target.value); setDirty(true) }} placeholder="Program name..."
             style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
           <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saving ? 'Saving...' : 'Save'}
@@ -230,15 +263,15 @@ export default function ProgramBuilder() {
             <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 12 : 10, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
               <div style={{ flex: isMobile ? '1 1 auto' : 'auto' }}>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Description</div>
-                <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Optional..."
+                <input value={description} onChange={e => { setDescription(e.target.value); setDirty(true) }} placeholder="Optional..."
                   style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 7, color: 'var(--tx)', padding: '7px 10px', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Weeks</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => setWeeks(w => Math.max(1, w - 1))} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>−</button>
+                  <button onClick={() => { setWeeks(w => Math.max(1, w - 1)); setDirty(true) }} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>−</button>
                   <span style={{ fontSize: 16, fontWeight: 700, minWidth: 20, textAlign: 'center' }}>{weeks}</span>
-                  <button onClick={() => setWeeks(w => Math.min(12, w + 1))} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>+</button>
+                  <button onClick={() => { setWeeks(w => Math.min(12, w + 1)); setDirty(true) }} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>+</button>
                 </div>
               </div>
             </div>
@@ -289,11 +322,19 @@ export default function ProgramBuilder() {
                       {cell.day_type === 'training' && (
                         <>
                           <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 7 }}>Workout</div>
-                          <select value={cell.workout_id || ''} onChange={e => setCell(activeCell, { workout_id: e.target.value || null })}
-                            style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 10px', fontSize: 13, outline: 'none', marginBottom: 10 }}>
-                            <option value="">— no workout assigned —</option>
-                            {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                          </select>
+                          <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                            <select value={cell.workout_id || ''} onChange={e => setCell(activeCell, { workout_id: e.target.value || null })}
+                              style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 10px', fontSize: 13, outline: 'none' }}>
+                              <option value="">— no workout assigned —</option>
+                              {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                            </select>
+                            {cell.workout_id && (
+                              <button type="button" onClick={() => viewWorkout(cell.workout_id, { confirmIfDirty: true })}
+                                style={{ background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', padding: '0 12px', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
+                                👁 View
+                              </button>
+                            )}
+                          </div>
                         </>
                       )}
                       <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 7 }}>Notes</div>
