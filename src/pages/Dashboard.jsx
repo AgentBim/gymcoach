@@ -6,6 +6,7 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import Layout from '../components/Layout'
 import AssignModal from '../components/AssignModal'
+import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
 import { MUSCLE_COLORS as GROUP_COLORS, avatarColor as avatarPalette, initials } from '../lib/theme'
 
 const ACCENT_COLORS = ['var(--ac)', '#6BA9DE', '#A184E3', '#4FB88A', '#E7A23E', '#E2695A']
@@ -36,6 +37,7 @@ export default function Dashboard() {
   const [search, setSearch]               = useState('')
   const [filterGroup, setFilterGroup]     = useState('All')
   const [filterOpen, setFilterOpen]       = useState(false)
+  const [previewPanel, setPreviewPanel]   = useState(null) // { workoutId, anchorRect }
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -82,6 +84,10 @@ export default function Dashboard() {
     navigator.clipboard.writeText(`${window.location.origin}/share/${assignment.assignment_token}`)
     setCopied(assignment.id)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  function openPreview(workoutId, anchorEl) {
+    setPreviewPanel({ workoutId, anchorRect: anchorEl.getBoundingClientRect() })
   }
 
   const filteredWorkouts = workouts.filter(w => {
@@ -171,6 +177,10 @@ export default function Dashboard() {
                 style={{ flex: 1, background: 'rgba(199,228,92,.07)', border: '1px solid rgba(199,228,92,.2)', borderRadius: 9, color: 'var(--ac)', fontSize: 12, padding: '10px 8px', cursor: 'pointer', fontWeight: 600, minHeight: 40 }}>
                 Assign
               </button>
+              <button onClick={e => openPreview(w.id, e.currentTarget)} title="Preview workout"
+                style={{ flexShrink: 0, width: 40, background: 'transparent', border: '1px solid var(--br)', borderRadius: 9, color: 'var(--mu2)', fontSize: 14, cursor: 'pointer', minHeight: 40 }}>
+                👁
+              </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
@@ -182,6 +192,10 @@ export default function Dashboard() {
                 <button onClick={() => setAssigningWorkout(w)}
                   style={{ flex: 1, background: 'rgba(199,228,92,.07)', border: '1px solid rgba(199,228,92,.2)', borderRadius: 8, color: 'var(--ac)', fontSize: 12, padding: '9px 10px', cursor: 'pointer', fontWeight: 500, minHeight: 36 }}>
                   Assign
+                </button>
+                <button onClick={e => openPreview(w.id, e.currentTarget)} title="Preview workout"
+                  style={{ flexShrink: 0, width: 36, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: 'var(--mu2)', fontSize: 13, cursor: 'pointer', minHeight: 36 }}>
+                  👁
                 </button>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
@@ -317,6 +331,15 @@ export default function Dashboard() {
       </div>
 
       {assigningWorkout && <AssignModal workout={assigningWorkout} onClose={() => setAssigningWorkout(null)} />}
+
+      {previewPanel && (
+        <WorkoutPreviewPanel
+          workoutId={previewPanel.workoutId}
+          anchorRect={previewPanel.anchorRect}
+          onClose={() => setPreviewPanel(null)}
+          onEdit={() => navigate(`/workout/${previewPanel.workoutId}/edit`)}
+        />
+      )}
 
       {/* ── MOBILE ··· BOTTOM SHEET ── */}
       {sheetWorkout && (
