@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
 import { DAY_TYPE_COLORS } from '../lib/theme'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -28,6 +29,7 @@ export default function ProgramBuilder() {
   const [error, setError] = useState('')
   const [viewWeek, setViewWeek] = useState(1)
   const [dirty, setDirty] = useState(false)
+  const [previewPanel, setPreviewPanel] = useState(null) // { workoutId, anchorRect, confirmIfDirty }
 
   useEffect(() => { fetchWorkouts() }, [user])
   useEffect(() => { if (isEdit) fetchProgram() }, [id])
@@ -71,10 +73,17 @@ export default function ProgramBuilder() {
   // The whole program (name/weeks/every cell) is one in-memory draft until
   // "Save" is clicked — there's no per-cell commit boundary — so navigating
   // to a workout's edit screen loses the entire draft, not just this cell.
+  // Opening the peek panel never triggers this — nothing is discarded by
+  // just looking. It only applies to the panel's own "Edit workout" button.
   function viewWorkout(workoutId, { confirmIfDirty = false } = {}) {
     if (!workoutId) return
     if (confirmIfDirty && dirty && !window.confirm('You have unsaved changes to this program. Leave without saving?')) return
     navigate(`/workout/${workoutId}/edit`)
+  }
+
+  function openPreview(workoutId, anchorEl, confirmIfDirty) {
+    if (!workoutId) return
+    setPreviewPanel({ workoutId, anchorRect: anchorEl.getBoundingClientRect(), confirmIfDirty })
   }
 
   async function save() {
@@ -133,7 +142,7 @@ export default function ProgramBuilder() {
                 transition: 'all .15s',
               }}>
               {workout && (
-                <span onClick={e => { e.stopPropagation(); viewWorkout(workout.id) }} title={`View ${workout.name}`}
+                <span onClick={e => { e.stopPropagation(); openPreview(workout.id, e.currentTarget, false) }} title={`View ${workout.name}`}
                   style={{ position: 'absolute', top: 4, right: 4, fontSize: 11, lineHeight: 1, cursor: 'pointer', opacity: 0.75 }}>
                   👁
                 </span>
@@ -191,7 +200,7 @@ export default function ProgramBuilder() {
                   )}
                 </div>
                 {workout && (
-                  <span onClick={e => { e.stopPropagation(); viewWorkout(workout.id) }} title={`View ${workout.name}`}
+                  <span onClick={e => { e.stopPropagation(); openPreview(workout.id, e.currentTarget, false) }} title={`View ${workout.name}`}
                     style={{ fontSize: 15, lineHeight: 1, cursor: 'pointer', opacity: 0.75, flexShrink: 0 }}>
                     👁
                   </span>
@@ -224,7 +233,7 @@ export default function ProgramBuilder() {
                         {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                       </select>
                       {cell?.workout_id && (
-                        <button type="button" onClick={() => viewWorkout(cell.workout_id, { confirmIfDirty: true })}
+                        <button type="button" onClick={e => openPreview(cell.workout_id, e.currentTarget, true)}
                           style={{ background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', padding: '0 12px', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
                           👁 View
                         </button>
@@ -329,7 +338,7 @@ export default function ProgramBuilder() {
                               {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                             </select>
                             {cell.workout_id && (
-                              <button type="button" onClick={() => viewWorkout(cell.workout_id, { confirmIfDirty: true })}
+                              <button type="button" onClick={e => openPreview(cell.workout_id, e.currentTarget, true)}
                                 style={{ background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', padding: '0 12px', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
                                 👁 View
                               </button>
@@ -354,6 +363,15 @@ export default function ProgramBuilder() {
           </div>
         </div>
       </div>
+
+      {previewPanel && (
+        <WorkoutPreviewPanel
+          workoutId={previewPanel.workoutId}
+          anchorRect={previewPanel.anchorRect}
+          onClose={() => setPreviewPanel(null)}
+          onEdit={() => viewWorkout(previewPanel.workoutId, { confirmIfDirty: previewPanel.confirmIfDirty })}
+        />
+      )}
     </Layout>
   )
 }
