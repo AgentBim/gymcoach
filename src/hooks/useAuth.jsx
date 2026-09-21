@@ -31,10 +31,20 @@ export function AuthProvider({ children }) {
   }
 
   async function signUp(email, password, fullName) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { data: { full_name: fullName } }
     })
+
+    // Supabase's anti-enumeration behavior: signing up with an email that's
+    // already registered returns no error and no new email, just a
+    // response whose user has no identities attached. Left unchecked, the
+    // caller reports this as a normal "check your email" success.
+    const alreadyRegistered = data?.user && data.user.identities?.length === 0
+    if (alreadyRegistered) {
+      return { error: { message: 'An account already exists for this email. Try logging in instead.' } }
+    }
+
     return { error }
   }
 
