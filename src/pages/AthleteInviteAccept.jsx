@@ -17,7 +17,32 @@ export default function AthleteInviteAccept() {
   const [error, setError] = useState('')
   const [needsConfirmation, setNeedsConfirmation] = useState(false)
 
-  useEffect(() => { fetchInvite() }, [token])
+  useEffect(() => { init() }, [token])
+
+  async function init() {
+    // If this load already has a live session, we most likely arrived via
+    // the signUp() email-confirmation redirect (set to land back on this
+    // same URL) rather than a cold anonymous visit. Finish the claim right
+    // here instead of showing the form again — this doesn't depend on
+    // localStorage surviving the redirect, which breaks whenever the
+    // confirmation link opens in a different browser/app than where
+    // signup started (very common with mobile mail clients), the actual
+    // cause of a real athlete ending up with a working login but no link
+    // to their roster row.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      await supabase.rpc('claim_athlete_invite', { p_invite_token: token, p_email: session.user.email })
+      const { data: athleteRow } = await supabase.from('athletes').select('id').eq('user_id', session.user.id).single()
+      if (athleteRow) { navigate('/athlete'); return }
+      // Claim failed and this session isn't linked to any athlete row —
+      // genuinely invalid/expired/already-used-by-someone-else link.
+      setNotFound(true)
+      setLoading(false)
+      return
+    }
+
+    fetchInvite()
+  }
 
   async function fetchInvite() {
     // A raw table select here would silently return nothing: RLS on
@@ -40,7 +65,14 @@ export default function AthleteInviteAccept() {
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email, password,
-      options: { data: { role: 'athlete' } },
+      options: {
+        data: { role: 'athlete' },
+        // Land back on this same invite URL after confirming — the `init`
+        // effect above finishes the claim from there. Without this, the
+        // confirmation link falls back to Supabase's default Site URL,
+        // which may not even be this app's domain.
+        emailRedirectTo: `${window.location.origin}/athlete/invite/${token}`,
+      },
     })
 
     // If a previous attempt got as far as creating the auth user but failed
