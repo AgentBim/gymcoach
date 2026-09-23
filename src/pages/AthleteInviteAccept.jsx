@@ -20,14 +20,16 @@ export default function AthleteInviteAccept() {
   useEffect(() => { fetchInvite() }, [token])
 
   async function fetchInvite() {
-    const { data } = await supabase
-      .from('athletes')
-      .select('id, full_name, user_id')
-      .eq('invite_token', token)
-      .single()
+    // A raw table select here would silently return nothing: RLS on
+    // `athletes` only allows authenticated reads, and this page is
+    // necessarily hit by an anonymous, not-yet-signed-up visitor. Route
+    // through the same anon-safe RPC pattern as the rest of the app's
+    // pre-signup flows instead.
+    const { data } = await supabase.rpc('get_athlete_invite', { p_invite_token: token })
+    const invite = data?.[0]
 
-    if (!data || data.user_id) { setNotFound(true); setLoading(false); return }
-    setAthlete(data)
+    if (!invite) { setNotFound(true); setLoading(false); return }
+    setAthlete(invite)
     setLoading(false)
   }
 
