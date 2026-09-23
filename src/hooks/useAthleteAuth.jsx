@@ -42,11 +42,19 @@ export function AthleteAuthProvider({ children }) {
     // Mirror useAuth's coach check: verify role at login itself, not just
     // via route guards, so a coach account's session never lingers here.
     const { data: athleteRow } = await supabase.from('athletes').select('id').eq('user_id', data.user.id).single()
-    if (!athleteRow) {
-      await supabase.auth.signOut()
+    if (athleteRow) return { error: null }
+
+    // No linked athletes row — figure out why before blaming it on being a
+    // coach account. A signed-up-but-never-linked athlete (the
+    // email-confirmation redirect never completing the claim) looks
+    // identical from here unless we actually check, and wrongly telling
+    // someone "you're a coach" sends them chasing the wrong problem.
+    const { data: coachRow } = await supabase.from('coaches').select('id').eq('id', data.user.id).single()
+    await supabase.auth.signOut()
+    if (coachRow) {
       return { error: { message: 'This is a coach account. Log in at the coach dashboard instead.' } }
     }
-    return { error: null }
+    return { error: { message: "Your invite hasn't finished linking to your coach's roster. Ask your coach to resend your invite link, or try the original invite link again." } }
   }
 
   async function signOut() {
