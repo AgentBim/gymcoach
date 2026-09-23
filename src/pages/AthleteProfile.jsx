@@ -27,6 +27,7 @@ export default function AthleteProfile() {
   const [savingProgram, setSavingProgram] = useState(false)
   const [invitingLink, setInvitingLink]   = useState(false)
   const [inviteCopied, setInviteCopied]   = useState(false)
+  const [resettingAccess, setResettingAccess] = useState(false)
 
   const { streak, loading: streakLoading } = useAthleteStreak(id)
 
@@ -83,6 +84,15 @@ export default function AthleteProfile() {
       .eq('id', id).select().single()
     if (data) setAthlete(data)
     setInvitingLink(false)
+  }
+
+  async function resetPortalAccess() {
+    if (!confirm(`Reset ${athlete.full_name}'s portal login? Their current login stops working and they'll need a fresh invite link — workout history, streak, and program assignment all stay intact.`)) return
+    setResettingAccess(true)
+    const { data, error } = await supabase.rpc('reset_athlete_portal_access', { p_athlete_id: id })
+    if (data) setAthlete(data)
+    if (error) console.error(error)
+    setResettingAccess(false)
   }
 
   function copyInviteLink() {
@@ -182,7 +192,13 @@ export default function AthleteProfile() {
           <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>Athlete portal</div>
             {athlete.user_id ? (
-              <div style={{ fontSize: 13, color: 'var(--ac)' }}>✓ Linked{athlete.email ? ` · ${athlete.email}` : ''}</div>
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--ac)', marginBottom: 8 }}>✓ Linked{athlete.email ? ` · ${athlete.email}` : ''}</div>
+                <button onClick={resetPortalAccess} disabled={resettingAccess}
+                  style={{ width: '100%', padding: 9, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#E2695A', fontSize: 12, cursor: 'pointer', opacity: resettingAccess ? 0.7 : 1 }}>
+                  {resettingAccess ? 'Resetting...' : '↺ Reset portal access'}
+                </button>
+              </div>
             ) : athlete.invite_token ? (
               <button onClick={copyInviteLink} style={{ width: '100%', padding: 10, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: inviteCopied ? 'var(--ac)' : 'var(--mu2)', fontSize: 12, cursor: 'pointer' }}>
                 {inviteCopied ? '✓ Copied!' : '🔗 Copy invite link'}
