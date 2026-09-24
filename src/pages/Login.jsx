@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import { useAuth } from '../hooks/useAuth'
+import { AUTH_LINK_ERROR } from '../lib/supabase'
+
+const ATHLETE_ACCOUNT_ERROR = 'This is an athlete account'
 
 export default function Login() {
   const [tab, setTab] = useState('login')
@@ -9,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState(AUTH_LINK_ERROR ? 'This email link has expired or was already used — just log in below.' : '')
   const [loading, setLoading] = useState(false)
   const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
@@ -16,6 +20,7 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    setNotice('')
     setLoading(true)
     if (tab === 'login') {
       const { error } = await signIn(email, password)
@@ -72,7 +77,16 @@ export default function Login() {
               <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
             </div>
 
+            {notice && <p style={{ fontSize: 12, color: 'var(--ac)', textAlign: 'center' }}>{notice}</p>}
+
             {error && <p style={{ fontSize: 12, color: error.includes('Check your') ? 'var(--ac)' : '#E2695A', textAlign: 'center' }}>{error}</p>}
+
+            {error.startsWith(ATHLETE_ACCOUNT_ERROR) && (
+              <Link to="/athlete/login"
+                style={{ display: 'block', width: '100%', padding: 12, background: 'var(--br)', color: 'var(--tx)', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, textAlign: 'center', textDecoration: 'none' }}>
+                Go to athlete portal →
+              </Link>
+            )}
 
             <button type="submit" disabled={loading}
               style={{ width: '100%', padding: 12, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: loading ? 0.7 : 1, marginTop: 4 }}>
@@ -80,6 +94,10 @@ export default function Login() {
             </button>
           </form>
         </div>
+
+        <p style={{ fontSize: 12, color: 'var(--mu)', textAlign: 'center', marginTop: 16 }}>
+          Athlete? <Link to="/athlete/login" style={{ color: 'var(--ac)' }}>Log in here →</Link>
+        </p>
       </div>
     </div>
   )
