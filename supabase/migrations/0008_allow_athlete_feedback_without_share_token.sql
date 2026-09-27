@@ -1,0 +1,32 @@
+-- Fixes athlete-portal workout completions, none of which has ever been
+-- saved. Found during the Program Tools Phase 1 RLS probe (0007), but the
+-- bug predates that work.
+--
+-- submit_athlete_workout_feedback (added in 0001, guarded in 0005) inserts
+-- into workout_feedback without a share_token, and share_token is text
+-- NOT NULL with no default and no trigger. Every call failed with 23502,
+-- for hand-built and program workouts alike, so no workout_feedback row
+-- has ever had an athlete_id. Portal completions never reached streaks,
+-- the athlete's History or the coach's feedback views.
+--
+-- Fixed by dropping NOT NULL. The alternative, having the RPC copy
+-- workouts.share_token, would store the wrong value:
+--   - The column records the link a piece of feedback was submitted
+--     through. Its only writer, the anon share-link RPC
+--     submit_workout_feedback, stores the workout_assignments
+--     .assignment_token it was called with. That is a 64-hex per-assignment
+--     token, not workouts.share_token. (The one pre-assignment-token row
+--     holds workouts.share_token, which was the link token back then.)
+--   - Portal feedback isn't submitted through any link, so null is the
+--     accurate value, as assignment_id already is for these rows. Copying
+--     workouts.share_token would make portal rows look like share-link
+--     submissions.
+--   - Nothing reads workout_feedback.share_token. get_shared_workout looks
+--     up workout_assignments.assignment_token, no view references the
+--     column, and src/ never selects it (History reads workouts.share_token).
+--
+-- No function or policy changes. submit_workout_feedback always passes a
+-- validated 64-hex token, so share-link rows still get one. Existing rows
+-- are untouched, and idx_feedback_share_token keeps working with nulls.
+
+alter table public.workout_feedback alter column share_token drop not null;
