@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
+import GenerateProgramModal from '../components/GenerateProgramModal'
 import { DAY_TYPE_COLORS } from '../lib/theme'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -30,6 +31,7 @@ export default function ProgramBuilder() {
   const [viewWeek, setViewWeek] = useState(1)
   const [dirty, setDirty] = useState(false)
   const [previewPanel, setPreviewPanel] = useState(null) // { workoutId, anchorRect, confirmIfDirty }
+  const [generateOpen, setGenerateOpen] = useState(false)
 
   useEffect(() => { fetchWorkouts() }, [user])
   useEffect(() => { if (isEdit) fetchProgram() }, [id])
@@ -84,6 +86,16 @@ export default function ProgramBuilder() {
   function openPreview(workoutId, anchorEl, confirmIfDirty) {
     if (!workoutId) return
     setPreviewPanel({ workoutId, anchorRect: anchorEl.getBoundingClientRect(), confirmIfDirty })
+  }
+
+  function handleGenerated(week, results, uncheckedDayIdxs) {
+    results.forEach(({ dayIdx, workoutId }) => {
+      setCell(`w${week}d${dayIdx}`, { day_type: 'training', workout_id: workoutId })
+    })
+    uncheckedDayIdxs.forEach(dayIdx => {
+      setCell(`w${week}d${dayIdx}`, { day_type: 'rest', workout_id: null })
+    })
+    setGenerateOpen(false)
   }
 
   async function save() {
@@ -261,7 +273,11 @@ export default function ProgramBuilder() {
           <button onClick={() => navigate('/programs')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <input value={name} onChange={e => { setName(e.target.value); setDirty(true) }} placeholder="Program name..."
             style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
-          <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+          <button onClick={() => setGenerateOpen(true)} title="Generate a randomized week"
+            style={{ background: 'var(--br)', color: 'var(--tx)', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+            🔀{!isMobile && ' Generate'}
+          </button>
+          <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, flexShrink: 0 }}>
             {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
@@ -372,6 +388,21 @@ export default function ProgramBuilder() {
           onEdit={() => viewWorkout(previewPanel.workoutId, { confirmIfDirty: previewPanel.confirmIfDirty })}
         />
       )}
+
+      {generateOpen && (() => {
+        const initialWeek = isMobile ? viewWeek : 1
+        const dayTypes = DAYS.map((_, i) => days[`w${initialWeek}d${i}`]?.day_type || null)
+        return (
+          <GenerateProgramModal
+            programName={name}
+            week={initialWeek}
+            weeks={weeks}
+            dayTypes={dayTypes}
+            onClose={() => setGenerateOpen(false)}
+            onGenerated={handleGenerated}
+          />
+        )
+      })()}
     </Layout>
   )
 }
