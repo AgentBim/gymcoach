@@ -13,6 +13,7 @@ export default function Programs() {
   const isMobile = useIsMobile()
   const [programs, setPrograms] = useState([])
   const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState('')
 
   useEffect(() => { fetchPrograms() }, [user])
 
@@ -27,9 +28,14 @@ export default function Programs() {
     setLoading(false)
   }
 
+  // delete_program also removes the workouts generated for this program,
+  // except ones athletes have feedback or assignments on (those stay, for
+  // their history).
   async function deleteProgram(id) {
-    if (!confirm('Delete this program?')) return
-    await supabase.from('programs').delete().eq('id', id)
+    if (!confirm('Delete this program? Workouts generated for it are deleted too, except ones athletes have history on.')) return
+    setError('')
+    const { error: deleteError } = await supabase.rpc('delete_program', { p_program_id: id })
+    if (deleteError) { setError(deleteError.message || 'Could not delete the program'); return }
     setPrograms(p => p.filter(x => x.id !== id))
   }
 
@@ -57,6 +63,12 @@ export default function Programs() {
               <p style={{ fontSize: 13, color: 'var(--mu)', marginTop: 2 }}>Multi-week plans built from your workouts</p>
             </div>
             <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New program</button>
+          </div>
+        )}
+
+        {error && (
+          <div role="alert" style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(226,105,90,.1)', border: '1px solid rgba(226,105,90,.35)', color: '#E2695A', fontSize: 12.5, lineHeight: 1.45 }}>
+            {error}
           </div>
         )}
 
