@@ -8,7 +8,7 @@ import Layout from '../components/Layout'
 import AssignModal from '../components/AssignModal'
 import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
 import { SelectionBar, ConfirmDeleteSheet, Toast } from '../components/BulkDelete'
-import { fetchWorkoutImpact, workoutDeletePlan } from '../lib/bulkDelete'
+import { describeSelection, fetchWorkoutImpact, workoutDeletePlan } from '../lib/bulkDelete'
 import { MUSCLE_COLORS as GROUP_COLORS, avatarColor as avatarPalette, initials } from '../lib/theme'
 
 const ACCENT_COLORS = ['var(--ac)', '#6BA9DE', '#A184E3', '#4FB88A', '#E7A23E', '#E2695A']
@@ -55,6 +55,7 @@ export default function Dashboard() {
   const [deleting, setDeleting]           = useState(false)
   const [toast, setToast]                 = useState('')
   const deleteReqId = useRef(0)
+  const shiftClick = useRef(false)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -412,19 +413,22 @@ export default function Dashboard() {
 
   // ── SELECTABLE CARD (select mode) ─────────────────────────────
   // A plain render function, so toggling doesn't remount the checkbox. The
-  // label handles the click itself (preventDefault stops the native toggle)
-  // so shift-click can select a range; Space on the focused checkbox lands
-  // here too.
+  // checkbox's own change event does the toggling (clicks on the card reach
+  // it through the label, Space when it's focused); its click only records
+  // Shift for range selection. Don't preventDefault the click: the browser
+  // would revert the checkbox after React re-rendered it.
   function renderSelectableCard(w, idx) {
     const on = selected.has(w.id)
     const groups = getMuscleGroups(w)
     const exCount = w.workout_exercises?.length || 0
     const done = w.workout_feedback?.length || 0
     return (
-      <label key={w.id} onClick={e => { e.preventDefault(); toggleSelected(idx, w.id, e.shiftKey) }}
+      <label key={w.id}
         style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: isMobile ? 14 : 16, borderRadius: 14, cursor: 'pointer', userSelect: 'none',
           background: on ? 'rgba(199,228,92,.08)' : 'var(--s2)', border: `1px solid ${on ? 'rgba(199,228,92,.45)' : 'var(--br)'}` }}>
-        <input type="checkbox" checked={on} onChange={() => {}} aria-label={`Select ${w.name}`}
+        <input type="checkbox" checked={on} aria-label={`Select ${w.name}`}
+          onClick={e => { shiftClick.current = e.shiftKey }}
+          onChange={() => toggleSelected(idx, w.id, shiftClick.current)}
           style={{ width: 20, height: 20, margin: '1px 0 0', flexShrink: 0, accentColor: 'var(--ac)', cursor: 'pointer' }} />
         <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
@@ -611,8 +615,10 @@ export default function Dashboard() {
             ? `Delete ${deleteReq.workouts.length} kept workout${deleteReq.workouts.length === 1 ? '' : 's'}?`
             : `Delete ${deleteReq.workouts.length === 1 ? deleteReq.workouts[0].name : `${deleteReq.workouts.length} workouts`}?`}
           subtitle={deleteReq.historyOnly
-            ? 'Their programs are already gone. Deleting can’t be undone.'
-            : 'Deleting can’t be undone. Here’s what else it changes.'}
+            ? `${describeSelection(deleteReq.workouts.map(w => w.name))}. Their programs are already gone, and deleting can’t be undone.`
+            : deleteReq.workouts.length > 1
+              ? `${describeSelection(deleteReq.workouts.map(w => w.name))}. Deleting can’t be undone.`
+              : 'Deleting can’t be undone. Here’s what else it changes.'}
           loading={!impact && !deleteError}
           rows={deletePlan?.rows}
           keepToggle={{

@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import { SelectionBar, ConfirmDeleteSheet, Toast } from '../components/BulkDelete'
-import { fetchProgramImpact, programDeletePlan } from '../lib/bulkDelete'
+import { describeSelection, fetchProgramImpact, programDeletePlan } from '../lib/bulkDelete'
 
 const ACCENTS = ['var(--ac)', '#6BA9DE', '#A184E3', '#4FB88A', '#E7A23E']
 
@@ -26,6 +26,7 @@ export default function Programs() {
   const [deleting, setDeleting]       = useState(false)
   const [toast, setToast]             = useState('')
   const deleteReqId = useRef(0)
+  const shiftClick = useRef(false)
 
   useEffect(() => { fetchPrograms() }, [user])
 
@@ -175,14 +176,16 @@ export default function Programs() {
               const days = p.program_days?.length || 0
               const activeFor = p.athletes?.length || 0
               if (selecting) {
-                // Label handles the click itself (preventDefault stops the
-                // native toggle) so shift-click can select a range.
+                // The checkbox's change event toggles; its click only records
+                // Shift for range selection (see Dashboard's selectable card).
                 const on = selected.has(p.id)
                 return (
-                  <label key={p.id} onClick={e => { e.preventDefault(); toggleSelected(idx, p.id, e.shiftKey) }}
+                  <label key={p.id}
                     style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 14, borderRadius: 14, cursor: 'pointer', userSelect: 'none',
                       background: on ? 'rgba(199,228,92,.08)' : 'var(--s2)', border: `1px solid ${on ? 'rgba(199,228,92,.45)' : 'var(--br)'}` }}>
-                    <input type="checkbox" checked={on} onChange={() => {}} aria-label={`Select ${p.name}`}
+                    <input type="checkbox" checked={on} aria-label={`Select ${p.name}`}
+                      onClick={e => { shiftClick.current = e.shiftKey }}
+                      onChange={() => toggleSelected(idx, p.id, shiftClick.current)}
                       style={{ width: 20, height: 20, margin: '1px 0 0', flexShrink: 0, accentColor: 'var(--ac)', cursor: 'pointer' }} />
                     <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
@@ -253,7 +256,9 @@ export default function Programs() {
       {deleteReq && (
         <ConfirmDeleteSheet
           title={`Delete ${deleteReq.length === 1 ? deleteReq[0].name : `${deleteReq.length} programs`}?`}
-          subtitle="Deleting can’t be undone. Here’s what else it changes."
+          subtitle={deleteReq.length > 1
+            ? `${describeSelection(deleteReq.map(p => p.name))}. Deleting can’t be undone.`
+            : 'Deleting can’t be undone. Here’s what else it changes.'}
           loading={!impact && !deleteError}
           rows={deletePlan?.rows}
           confirmLabel={deletePlan?.confirmLabel || 'Delete'}

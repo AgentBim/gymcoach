@@ -11,6 +11,12 @@ function nameList(names) {
   return `${names.slice(0, 2).join(', ')} and ${plural(names.length - 2, 'other', 'others')}`
 }
 
+// What's about to be deleted, for the sheet's subtitle: up to three names.
+export function describeSelection(names) {
+  if (names.length <= 3) return names.length === 3 ? `${names[0]}, ${names[1]} and ${names[2]}` : names.join(' and ')
+  return `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`
+}
+
 // Per workout: completions and distinct athletes (workout_feedback, which
 // cascades on delete), assignments (also cascade) and program days that
 // would be left without a workout.
@@ -62,9 +68,10 @@ export function workoutDeletePlan(workouts, impact, { keepHistory, historyOnly =
     })
   }
   if (scheduled.length) {
+    const dayCount = sum(scheduled, 'programDays')
     rows.push({
       tone: 'info',
-      text: `${nameList(scheduled.map(w => w.name))} ${scheduled.length === 1 ? 'is' : 'are'} scheduled on ${plural(sum(scheduled, 'programDays'), 'day', 'days')} in ${nameList(programNames)}. Those days are left without a workout.`,
+      text: `${nameList(scheduled.map(w => w.name))} ${scheduled.length === 1 ? 'is' : 'are'} scheduled on ${plural(dayCount, 'day', 'days')} in ${nameList(programNames)}. ${dayCount === 1 ? 'That day is' : 'Those days are'} left without a workout.`,
     })
   }
   if (assignmentCount) {
@@ -79,7 +86,7 @@ export function workoutDeletePlan(workouts, impact, { keepHistory, historyOnly =
     keptCount: workouts.length - toDelete.length,
     rows,
     confirmLabel: toDelete.length
-      ? `Delete ${plural(toDelete.length, 'workout', 'workouts')}${historyOnly ? ' and their history' : ''}`
+      ? `Delete ${plural(toDelete.length, 'workout', 'workouts')}${historyOnly ? ` and ${toDelete.length === 1 ? 'its' : 'their'} history` : ''}`
       : 'Nothing to delete',
   }
 }
