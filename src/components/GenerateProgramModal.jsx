@@ -1,201 +1,127 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
-import { MUSCLE_COLORS } from '../lib/theme'
+import { useState } from 'react'
+import { useIsMobile } from '../hooks/useIsMobile'
+import DayFocusEditor from './DayFocusEditor'
+import { DAYS, FOCUS_PRESETS, cellKey, fillWeek, splitPool } from '../lib/programGenerator'
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const GROUPS = ['Arms', 'Back', 'Legs', 'Core', 'Shoulders']
+const DEFAULT_PRESET = 'Full body'
 
-// No-replacement weighted pick: weightFor(muscle_group) supplies each
-// exercise's relative selection weight from the body-part sliders. A
-// zero-weight muscle group is never fully excluded (floored at .02, so it's
-// just rare), and anything already picked earlier in this same generation
-// pass (across every selected day, not just the current one) gets its
-// weight cut to 12% so a whole week doesn't end up full of duplicates even
-// though every day draws from the same pool.
-function weightedPick(pool, weightFor, n, usedIds) {
-  const picks = []
-  const remaining = pool.slice()
-  for (let i = 0; i < n && remaining.length; i++) {
-    const weights = remaining.map(ex => {
-      let w = weightFor(ex.muscle_group)
-      if (w <= 0) w = 0.02
-      if (usedIds.has(ex.id)) w *= 0.12
-      return w
-    })
-    const total = weights.reduce((a, b) => a + b, 0)
-    let r = Math.random() * total
-    let idx = 0
-    for (; idx < weights.length - 1; idx++) { r -= weights[idx]; if (r <= 0) break }
-    const chosen = remaining[idx]
-    picks.push(chosen)
-    usedIds.add(chosen.id)
-    remaining.splice(idx, 1)
-  }
-  return picks
-}
-
-function toPayloadItem(ex, position) {
-  return {
-    exercise_id: ex.id,
-    position,
-    sets: ex.default_sets,
-    reps: ex.default_reps || '',
-    duration_seconds: ex.default_duration_seconds || '',
-    rest_seconds: ex.default_rest_seconds,
-  }
-}
-
-// programName/week/dayTypes describe the week being filled: dayTypes[i] is
-// that day-of-week's current type in the program draft, used only to pick
-// sensible defaults (pre-check days already set to "training", else
-// default to weekdays) — this modal never reads or writes the draft
-// directly. onGenerated(results, uncheckedDayIdxs) hands the parent what to
-// do with its own `days` state: results is [{ dayIdx, workoutId }], and
-// uncheckedDayIdxs are indices that were "training" before but got
-// unchecked here, which the parent resets to rest (any other day type is
-// left untouched either way).
-export default function GenerateProgramModal({ programName, week, weeks, dayTypes, onClose, onGenerated }) {
-  const hasExistingTraining = dayTypes.some(t => t === 'training')
-  const [checkedDays, setCheckedDays] = useState(() =>
-    DAYS.map((_, i) => (hasExistingTraining ? dayTypes[i] === 'training' : i < 5))
-  )
+// "Fill a week": randomizes the picked days of one week, each weighted toward
+// its own body-part focus. Draft-first: it never writes to the database. It
+// hands the parent new draft workouts through onApply({ week, results,
+// restDayIdxs }), and the parent snapshots its draft (so this is undoable)
+// before applying them:
+//   results      [{ dayIdx, workout }], workout being a draft workout
+//   restDayIdxs  days that were "training" in that week but got unchecked
+//                here, which the parent resets to rest (any other day type
+//                is left untouched either way)
+//
+// days is the program draft, read only to pre-check days already set to
+// "training" (else default to weekdays). pool is the exercise library, or
+// null while it loads.
+export default function GenerateProgramModal({ programName, week, weeks, days, pool, poolError, onClose, onApply }) {
+  const isMobile = useIsMobile()
+  const [checkedDays, setCheckedDays] = useState(() => {
+    const types = DAYS.map((_, i) => days[cellKey(week, i)]?.day_type || null)
+    const hasTraining = types.some(t => t === 'training')
+    return DAYS.map((_, i) => (hasTraining ? types[i] === 'training' : i < 5))
+  })
   const [targetWeek, setTargetWeek] = useState(week)
   const [count, setCount] = useState(6)
   const [includePrehab, setIncludePrehab] = useState(true)
-  const [weights, setWeights] = useState(() => Object.fromEntries(GROUPS.map(g => [g, 50])))
-  const [exercises, setExercises] = useState([])
-  const [generating, setGenerating] = useState(false)
+  const [dayFocus, setDayFocus] = useState(() =>
+    Object.fromEntries(DAYS.map((_, i) => [i, { preset: DEFAULT_PRESET, weights: { ...FOCUS_PRESETS[DEFAULT_PRESET] } }]))
+  )
   const [error, setError] = useState('')
 
-  useEffect(() => { fetchExercises() }, [])
-
-  async function fetchExercises() {
-    const { data } = await supabase.from('exercises').select('*')
-    setExercises(data || [])
-  }
-
-  const totalWeight = GROUPS.reduce((sum, g) => sum + weights[g], 0)
-  const trainingCount = checkedDays.filter(Boolean).length
+  const dayIdxs = DAYS.map((_, i) => i).filter(i => checkedDays[i])
+  const loading = !pool && !poolError
+  const canGenerate = dayIdxs.length > 0 && pool && pool.length > 0
 
   function toggleDay(i) {
     setCheckedDays(prev => prev.map((v, idx) => idx === i ? !v : v))
   }
 
-  async function generate() {
+  function generate() {
     setError('')
-    setGenerating(true)
-
-    const strengthPool = exercises.filter(e => (e.category || 'strength') === 'strength')
-    const prehabPool = exercises.filter(e => e.category === 'prehab')
-    const weightFor = muscle => weights[muscle] || 0
-    const usedIds = new Set()
-    const results = []
-
-    try {
-      for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-        if (!checkedDays[dayIdx]) continue
-
-        const mainPicks = weightedPick(strengthPool, weightFor, count, usedIds)
-        const pExercises = mainPicks.map((ex, i) => toPayloadItem(ex, i))
-
-        let pPrehab = []
-        if (includePrehab && prehabPool.length) {
-          const prehabPicks = weightedPick(prehabPool, weightFor, Math.min(2, prehabPool.length), usedIds)
-          pPrehab = prehabPicks.map((ex, i) => toPayloadItem(ex, i))
-        }
-
-        const workoutName = `${programName || 'Program'} · ${DAYS[dayIdx]}`
-        const { data: workoutId, error: saveError } = await supabase.rpc('save_workout', {
-          p_workout_id: null,
-          p_name: workoutName,
-          p_is_ai_generated: false,
-          p_exercises: pExercises,
-          p_prehab: pPrehab,
-        })
-        if (saveError) throw saveError
-
-        results.push({ dayIdx, workoutId, workoutName })
-      }
-
-      const uncheckedDayIdxs = DAYS
-        .map((_, i) => i)
-        .filter(i => !checkedDays[i] && dayTypes[i] === 'training')
-
-      onGenerated(targetWeek, results, uncheckedDayIdxs)
-    } catch (err) {
-      setError(err.message || 'Something went wrong generating the program')
-    } finally {
-      setGenerating(false)
+    if (!splitPool(pool).strength.length) {
+      setError('Your exercise library has no strength exercises to pick from')
+      return
     }
+    const results = fillWeek({ programName, week: targetWeek, dayIdxs, dayFocus, count, includePrehab, pool })
+    const restDayIdxs = DAYS.map((_, i) => i)
+      .filter(i => !checkedDays[i] && days[cellKey(targetWeek, i)]?.day_type === 'training')
+    onApply({ week: targetWeek, results, restDayIdxs })
   }
 
+  const label = { fontSize: 10, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }
+  const field = { width: '100%', minHeight: 44, boxSizing: 'border-box', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 10px', fontSize: 13, outline: 'none' }
+
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: 380, maxHeight: '86vh', overflowY: 'auto', background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 14, padding: 22 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--tx)' }}>Generate program</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 18, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
-        </div>
-        <p style={{ fontSize: 11.5, color: 'var(--mu)', marginBottom: 16 }}>Randomly fills the days you pick from your library, weighted toward the body parts you emphasize below</p>
+    <div onClick={onClose}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 300, display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 16 }}>
+      <div role="dialog" aria-modal="true" aria-label="Fill a week" onClick={e => e.stopPropagation()}
+        style={{ width: isMobile ? '100%' : 460, maxWidth: '100%', maxHeight: isMobile ? '100%' : '88vh', display: 'flex', flexDirection: 'column', background: 'var(--s1)', border: isMobile ? 'none' : '1px solid var(--br)', borderRadius: isMobile ? 0 : 14, overflow: 'hidden' }}>
 
-        {weeks > 1 && (
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 6 }}>Week</div>
-            <select value={targetWeek} onChange={e => setTargetWeek(parseInt(e.target.value, 10))}
-              style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 10px', fontSize: 13, outline: 'none' }}>
-              {Array.from({ length: weeks }, (_, i) => i + 1).map(w => <option key={w} value={w}>Week {w}</option>)}
-            </select>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px 12px', paddingTop: isMobile ? 'max(14px, calc(var(--sat) + 8px))' : 18, borderBottom: '1px solid var(--br)' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--tx)' }}>Fill a week</div>
+            <p style={{ fontSize: 11.5, color: 'var(--mu)', margin: '4px 0 0', lineHeight: 1.45 }}>Randomly fills the days you pick from your library, each weighted toward its own focus. Nothing is saved until you press Save, and you can undo it.</p>
           </div>
-        )}
-
-        <div style={{ fontSize: 10, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>Training days</div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-          {DAYS.map((d, i) => (
-            <span key={d} onClick={() => toggleDay(i)}
-              style={{ fontSize: 11, fontWeight: 600, padding: '5px 11px', borderRadius: 20, cursor: 'pointer',
-                background: checkedDays[i] ? 'rgba(199,228,92,.16)' : 'transparent',
-                color: checkedDays[i] ? 'var(--ac)' : 'var(--mu)',
-                border: `1px ${checkedDays[i] ? 'solid rgba(199,228,92,.4)' : 'dashed var(--br)'}` }}>
-              {d}
-            </span>
-          ))}
+          <button type="button" onClick={onClose} aria-label="Close"
+            style={{ width: 44, height: 44, flexShrink: 0, margin: '-8px -8px 0 0', background: 'none', border: 'none', color: 'var(--mu)', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 6 }}>Exercises per workout</div>
-            <input type="number" min={2} max={10} value={count} onChange={e => setCount(Math.min(10, Math.max(2, parseInt(e.target.value, 10) || 2)))}
-              style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 10px', fontSize: 13, outline: 'none' }} />
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {weeks > 1 && (
+            <div>
+              <div style={label}>Week</div>
+              <select value={targetWeek} onChange={e => setTargetWeek(parseInt(e.target.value, 10))} aria-label="Week to fill" style={field}>
+                {Array.from({ length: weeks }, (_, i) => i + 1).map(w => <option key={w} value={w}>Week {w}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <div style={label}>Training days</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 5 }}>
+              {DAYS.map((d, i) => (
+                <button key={d} type="button" aria-pressed={checkedDays[i]} onClick={() => toggleDay(i)}
+                  style={{ minHeight: 44, fontSize: 12, fontWeight: 600, borderRadius: 10, cursor: 'pointer', padding: 0,
+                    background: checkedDays[i] ? 'rgba(199,228,92,.16)' : 'transparent',
+                    color: checkedDays[i] ? 'var(--ac)' : 'var(--mu)',
+                    border: `1px ${checkedDays[i] ? 'solid rgba(199,228,92,.4)' : 'dashed var(--br)'}` }}>
+                  {d}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', paddingBottom: 9 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--tx)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={includePrehab} onChange={e => setIncludePrehab(e.target.checked)} />
+
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <div style={label}>Exercises per workout</div>
+              <input type="number" min={2} max={10} value={count} aria-label="Exercises per workout"
+                onChange={e => setCount(Math.min(10, Math.max(2, parseInt(e.target.value, 10) || 2)))} style={field} />
+            </div>
+            <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, minHeight: 44, fontSize: 12.5, color: 'var(--tx)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={includePrehab} onChange={e => setIncludePrehab(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--ac)' }} />
               Include prehab warm-up
             </label>
           </div>
+
+          <div>
+            <div style={label}>Day focus</div>
+            <DayFocusEditor dayIdxs={dayIdxs} focus={dayFocus} onChange={setDayFocus} count={count} />
+          </div>
         </div>
 
-        <div style={{ fontSize: 10, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Body-part emphasis</div>
-        {GROUPS.map(g => {
-          const c = MUSCLE_COLORS[g] || { bg: 'var(--br)', color: 'var(--mu)' }
-          const pct = totalWeight ? Math.round((weights[g] / totalWeight) * 100) : Math.round(100 / GROUPS.length)
-          return (
-            <div key={g} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
-              <span style={{ width: 78, flexShrink: 0, fontSize: 10.5, fontWeight: 600, padding: '3px 0', borderRadius: 20, textAlign: 'center', background: c.bg, color: c.color }}>{g}</span>
-              <input type="range" min={0} max={100} value={weights[g]} onChange={e => setWeights(prev => ({ ...prev, [g]: parseInt(e.target.value, 10) }))}
-                style={{ flex: 1, cursor: 'pointer' }} />
-              <span style={{ width: 32, flexShrink: 0, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--mu)' }}>{pct}%</span>
-            </div>
-          )
-        })}
-        <p style={{ fontSize: 10.5, color: 'var(--mu)', margin: '4px 0 16px', lineHeight: 1.5 }}>Higher = more of that muscle group across the generated workouts. Sliders don't need to add up to 100 — they're weighted relative to each other.</p>
-
-        {error && <p style={{ fontSize: 12, color: '#E2695A', marginBottom: 10 }}>{error}</p>}
-
-        <button onClick={generate} disabled={!trainingCount || generating || !exercises.length}
-          style={{ width: '100%', padding: 11, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', opacity: (!trainingCount || generating || !exercises.length) ? 0.5 : 1 }}>
-          {generating ? 'Generating…' : `🔀 Generate ${trainingCount || ''} workout${trainingCount === 1 ? '' : 's'}`}
-        </button>
+        <div style={{ padding: '12px 16px', paddingBottom: isMobile ? 'calc(env(safe-area-inset-bottom) + 12px)' : 16, borderTop: '1px solid var(--br)' }}>
+          {(error || poolError) && <p style={{ fontSize: 12, color: '#E2695A', margin: '0 0 10px' }}>{error || poolError}</p>}
+          {pool && pool.length === 0 && <p style={{ fontSize: 12, color: 'var(--mu)', margin: '0 0 10px' }}>Your exercise library is empty, so there's nothing to pick from yet.</p>}
+          <button type="button" onClick={generate} disabled={!canGenerate}
+            style={{ width: '100%', minHeight: 48, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: canGenerate ? 'pointer' : 'default', opacity: canGenerate ? 1 : 0.5 }}>
+            {loading ? 'Loading exercises…' : `🔀 Fill ${dayIdxs.length || ''} day${dayIdxs.length === 1 ? '' : 's'} in week ${targetWeek}`}
+          </button>
+        </div>
       </div>
     </div>
   )

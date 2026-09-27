@@ -38,6 +38,8 @@ export default function Dashboard() {
   const [filterGroup, setFilterGroup]     = useState('All')
   const [filterOpen, setFilterOpen]       = useState(false)
   const [previewPanel, setPreviewPanel]   = useState(null) // { workoutId, anchorRect }
+  const [programWorkouts, setProgramWorkouts] = useState([])
+  const [programWorkoutsOpen, setProgramWorkoutsOpen] = useState(false)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -45,19 +47,29 @@ export default function Dashboard() {
 
   async function fetchAll() {
     if (!user) return
-    const [wRes, aRes, fbRes] = await Promise.all([
+    // Program-generated workouts are managed inside their program, so the
+    // list only shows hand-built ones; the generated ones are summarized in
+    // the collapsed "Program workouts" section instead.
+    const [wRes, aRes, fbRes, pwRes] = await Promise.all([
       supabase.from('workouts')
         .select('*, workout_exercises(exercise_id, exercises(muscle_group)), workout_assignments(id, athlete_id, assignment_token, athletes(full_name))')
         .eq('coach_id', user.id)
+        .eq('program_generated', false)
         .order('created_at', { ascending: false }),
       supabase.from('athletes').select('id, full_name').eq('coach_id', user.id),
       supabase.from('workout_feedback')
         .select('id, workouts!inner(coach_id)')
         .eq('workouts.coach_id', user.id),
+      supabase.from('workouts')
+        .select('id, name, source_program_id, programs!workouts_source_program_id_fkey(id, name, duration_weeks)')
+        .eq('coach_id', user.id)
+        .eq('program_generated', true)
+        .order('name'),
     ])
     setWorkouts(wRes.data || [])
     setAthletes(aRes.data || [])
     setCompletionCount((fbRes.data || []).length)
+    setProgramWorkouts(pwRes.data || [])
     setLoading(false)
   }
 
@@ -99,8 +111,82 @@ export default function Dashboard() {
     return true
   })
 
+  // Generated workouts grouped by their program. Ones whose program was
+  // deleted (kept because athletes have history on them) have no source.
+  const programGroups = []
+  const keptForHistory = []
+  programWorkouts.forEach(w => {
+    if (!w.source_program_id) { keptForHistory.push(w); return }
+    let group = programGroups.find(g => g.id === w.source_program_id)
+    if (!group) {
+      group = { id: w.source_program_id, name: w.programs?.name || 'Program', weeks: w.programs?.duration_weeks, count: 0 }
+      programGroups.push(group)
+    }
+    group.count += 1
+  })
+  programGroups.sort((a, b) => a.name.localeCompare(b.name))
+
   const coachFirst = coach?.full_name?.split(' ')[0] || 'Coach'
   const day = new Date().toLocaleDateString('en-US', { weekday: 'long' })
+
+  // ── PROGRAM WORKOUTS (collapsed) ──────────────────────────────
+  // Called as a plain function, not <Component />, so toggling it doesn't
+  // remount the button and drop keyboard focus.
+  function renderProgramWorkouts() {
+    const total = programWorkouts.length
+    const sources = programGroups.length
+    const summary = [
+      sources > 0 && `${total - keptForHistory.length} from ${sources} program${sources !== 1 ? 's' : ''}`,
+      keptForHistory.length > 0 && `${keptForHistory.length} kept for history`,
+    ].filter(Boolean).join(' · ')
+    return (
+      <div style={{ margin: isMobile ? '6px 16px 20px' : '20px 0 0', borderRadius: 14, border: '1.5px dashed var(--br)' }}>
+        <button onClick={() => setProgramWorkoutsOpen(o => !o)} aria-expanded={programWorkoutsOpen}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: 12, minHeight: 60, background: 'none', border: 'none', color: 'var(--tx)', textAlign: 'left', cursor: 'pointer' }}>
+          <span style={{ width: 40, height: 40, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, background: 'var(--s1)', fontSize: 18 }}>📅</span>
+          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 600 }}>Program workouts</span>
+            <span style={{ fontSize: 11.5, color: 'var(--mu)' }}>{summary} · kept out of your list</span>
+          </span>
+          <span style={{ fontSize: 20, color: 'var(--mu)', transform: `rotate(${programWorkoutsOpen ? 90 : 0}deg)`, transition: 'transform .15s', lineHeight: 1 }}>›</span>
+        </button>
+        {programWorkoutsOpen && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 12px 12px' }}>
+            {programGroups.map(g => (
+              <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--s1)', border: '1px solid var(--br)' }}>
+                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--mu)' }}>
+                    {g.count} WORKOUT{g.count !== 1 ? 'S' : ''}{g.weeks ? ` · ${g.weeks} WEEK${g.weeks !== 1 ? 'S' : ''}` : ''}
+                  </span>
+                </span>
+                <button onClick={() => navigate(`/programs/${g.id}`)}
+                  style={{ minHeight: isMobile ? 44 : 36, padding: '0 14px', borderRadius: 8, background: 'transparent', border: '1px solid var(--br)', color: 'var(--ac)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                  Open
+                </button>
+              </div>
+            ))}
+            {keptForHistory.length > 0 && (
+              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--s1)', border: '1px solid var(--br)' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>Kept for athlete history</div>
+                <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 6 }}>Their program was deleted, but athletes have completed or been assigned them.</div>
+                {keptForHistory.map(w => (
+                  <div key={w.id} style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: isMobile ? 44 : 32, borderTop: '1px solid var(--br)' }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</span>
+                    <button onClick={e => openPreview(w.id, e.currentTarget)} title="Preview workout" aria-label={`Preview ${w.name}`}
+                      style={{ width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, flexShrink: 0, background: 'transparent', border: 'none', color: 'var(--mu2)', fontSize: 13, cursor: 'pointer' }}>
+                      👁
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p style={{ margin: '2px 2px 0', fontSize: 11.5, color: 'var(--mu)', lineHeight: 1.5 }}>These are managed inside their program and deleted with it, except ones athletes have history on.</p>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   // ── WORKOUT CARD ──────────────────────────────────────────────
   function WorkoutCard({ w, idx }) {
@@ -328,9 +414,11 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {programWorkouts.length > 0 && renderProgramWorkouts()}
       </div>
 
-      {assigningWorkout && <AssignModal workout={assigningWorkout} onClose={() => setAssigningWorkout(null)} />}
+      {assigningWorkout &&<AssignModal workout={assigningWorkout} onClose={() => setAssigningWorkout(null)} />}
 
       {previewPanel && (
         <WorkoutPreviewPanel

@@ -11,10 +11,14 @@ const WIDTH = 340
 // picking a side/edge that keeps the panel fully on screen even for a long
 // exercise list, and closes on an outside click without touching whatever
 // state was behind it.
-export default function WorkoutPreviewPanel({ workoutId, anchorRect, onClose, onEdit }) {
+//
+// draftWorkout ({ name, exercises, prehab }) previews an unsaved program
+// workout with no fetch. Drafts have nothing to edit yet, so the Edit button
+// stays hidden for them.
+export default function WorkoutPreviewPanel({ workoutId, draftWorkout = null, anchorRect, onClose, onEdit }) {
   const panelRef = useRef(null)
   const [style, setStyle] = useState({ position: 'fixed', top: -9999, left: -9999, width: WIDTH, opacity: 0 })
-  const { workout, exercises, prehabExercises, loading } = useWorkoutPreview(workoutId)
+  const { workout, exercises, prehabExercises, loading } = useWorkoutPreview(workoutId, draftWorkout)
 
   useLayoutEffect(() => {
     const el = panelRef.current
@@ -65,11 +69,16 @@ export default function WorkoutPreviewPanel({ workoutId, anchorRect, onClose, on
         ) : !workout ? (
           <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '20px 0' }}>Workout not found</div>
         ) : (
-          <WorkoutPreviewCard workout={workout} exercises={exercises} prehabExercises={prehabExercises} />
+          <>
+            {draftWorkout && (
+              <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 10 }}>Generated draft · created when you save the program</div>
+            )}
+            <WorkoutPreviewCard workout={workout} exercises={exercises} prehabExercises={prehabExercises} />
+          </>
         )}
       </div>
 
-      {workout && (
+      {workout && !draftWorkout && onEdit && (
         <div style={{ padding: 16 }}>
           <button onClick={onEdit}
             style={{ width: '100%', padding: 10, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>

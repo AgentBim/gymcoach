@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -7,11 +7,36 @@ import Layout from '../components/Layout'
 import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
 import GenerateProgramModal from '../components/GenerateProgramModal'
 import { DAY_TYPE_COLORS } from '../lib/theme'
+import { DAYS, buildSavePayload, cellKey, draftPreview, parseCellKey, pruneDraftWorkouts } from '../lib/programGenerator'
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const DAY_TYPES = ['training', 'rest', 'recovery', 'competition'].map(key => ({ key, ...DAY_TYPE_COLORS[key] }))
+const EMPTY_CELL = { day_type: 'training', workout_id: null, workout_ref: null, notes: '' }
+const HISTORY_CAP = 10
+const REF_PREFIX = 'ref:'
 
 function getDayType(key) { return DAY_TYPES.find(d => d.key === key) || DAY_TYPES[0] }
+
+// Cell picker value -> cell fields. Draft workouts have no id yet, so their
+// option values carry the draft ref instead.
+function pickerUpdates(value) {
+  if (!value) return { workout_id: null, workout_ref: null }
+  if (value.startsWith(REF_PREFIX)) return { workout_id: null, workout_ref: value.slice(REF_PREFIX.length) }
+  return { workout_id: value, workout_ref: null }
+}
+
+function pickerValue(cell) {
+  if (cell?.workout_ref) return REF_PREFIX + cell.workout_ref
+  return cell?.workout_id || ''
+}
+
+function GenTag({ compact }) {
+  return (
+    <span title="Generated for this program"
+      style={{ fontFamily: 'var(--mono)', fontSize: compact ? 8.5 : 9.5, fontWeight: 600, letterSpacing: '.06em', color: 'var(--ac)', background: 'rgba(199,228,92,.12)', padding: compact ? '1px 4px' : '2px 6px', borderRadius: 4, flexShrink: 0, lineHeight: 1.3 }}>
+      GEN
+    </span>
+  )
+}
 
 export default function ProgramBuilder() {
   const { id } = useParams()
@@ -23,53 +48,166 @@ export default function ProgramBuilder() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [weeks, setWeeks] = useState(4)
-  const [days, setDays] = useState({}) // { 'w1d0': { day_type, workout_id, notes } }
-  const [workouts, setWorkouts] = useState([])
+  // The whole program is one in-memory draft until Save (see
+  // docs/handoffs/program-tools.md):
+  //   days:          { 'w1d0': { day_type, workout_id, workout_ref, notes } }
+  //   draftWorkouts: { [ref]: { ref, id, name, focus, exercises, prehab } }
+  //   history:       [{ days, draftWorkouts, label }], undo stack for tools
+  const [days, setDays] = useState({})
+  const [draftWorkouts, setDraftWorkouts] = useState({})
+  const [history, setHistory] = useState([])
+  const [workouts, setWorkouts] = useState([]) // cell picker: hand-built + this program's generated
+  const [linkedWorkouts, setLinkedWorkouts] = useState([]) // workouts the saved schedule already uses
+  const [pool, setPool] = useState(null) // exercise library, loaded once when a tool first opens
+  const [poolError, setPoolError] = useState('')
   const [activeCell, setActiveCell] = useState(null) // 'w1d0'
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [viewWeek, setViewWeek] = useState(1)
   const [dirty, setDirty] = useState(false)
-  const [previewPanel, setPreviewPanel] = useState(null) // { workoutId, anchorRect, confirmIfDirty }
-  const [generateOpen, setGenerateOpen] = useState(false)
+  const [previewPanel, setPreviewPanel] = useState(null) // { workoutId, draftRef, anchorRect, confirmIfDirty }
+  const [fillOpen, setFillOpen] = useState(false)
+  const errorRef = useRef(null)
 
-  useEffect(() => { fetchWorkouts() }, [user])
+  useEffect(() => { fetchWorkouts() }, [user, id])
   useEffect(() => { if (isEdit) fetchProgram() }, [id])
+  useEffect(() => { if (error) errorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) }, [error])
+
+  const workoutsById = useMemo(
+    () => Object.fromEntries([...linkedWorkouts, ...workouts].map(w => [w.id, w])),
+    [linkedWorkouts, workouts]
+  )
+  const poolById = useMemo(() => Object.fromEntries((pool || []).map(e => [e.id, e])), [pool])
+  const pendingWorkouts = useMemo(
+    () => buildSavePayload(days, draftWorkouts, weeks).p_workouts.filter(w => !w.id).length,
+    [days, draftWorkouts, weeks]
+  )
 
   async function fetchWorkouts() {
     if (!user) return
-    const { data } = await supabase.from('workouts').select('id, name').eq('coach_id', user.id).order('name')
+    // Program-generated workouts stay out of the picker unless they belong
+    // to this program.
+    let query = supabase.from('workouts').select('id, name, program_generated').eq('coach_id', user.id)
+    query = isEdit
+      ? query.or(`program_generated.eq.false,source_program_id.eq.${id}`)
+      : query.eq('program_generated', false)
+    const { data } = await query.order('name')
     setWorkouts(data || [])
   }
 
   async function fetchProgram() {
     const { data: prog } = await supabase.from('programs').select('*').eq('id', id).single()
-    if (!prog) return
+    if (!prog) { setError('Program not found'); return }
     setName(prog.name)
     setDescription(prog.description || '')
     setWeeks(prog.duration_weeks)
 
-    const { data: progDays } = await supabase.from('program_days').select('*').eq('program_id', id)
+    const { data: progDays } = await supabase
+      .from('program_days')
+      .select('*, workouts(id, name, program_generated)')
+      .eq('program_id', id)
     const dayMap = {}
+    const linked = []
     ;(progDays || []).forEach(d => {
-      dayMap[`w${d.week_number}d${d.day_of_week}`] = {
+      dayMap[cellKey(d.week_number, d.day_of_week)] = {
         day_type: d.day_type,
         workout_id: d.workout_id,
+        workout_ref: null,
         notes: d.notes || '',
-        db_id: d.id,
       }
+      if (d.workouts) linked.push(d.workouts)
     })
     setDays(dayMap)
+    setLinkedWorkouts(linked)
+    setDraftWorkouts({})
+    setHistory([])
+  }
+
+  async function ensurePool() {
+    if (pool) return
+    setPoolError('')
+    const { data, error: poolFetchError } = await supabase.from('exercises').select('*')
+    if (poolFetchError) { setPoolError(poolFetchError.message); return }
+    setPool(data || [])
   }
 
   function setCell(key, updates) {
     setDirty(true)
-    setDays(prev => ({ ...prev, [key]: { ...(prev[key] || { day_type: 'training', workout_id: null, notes: '' }), ...updates } }))
+    setDays(prev => ({ ...prev, [key]: { ...(prev[key] || EMPTY_CELL), ...updates } }))
   }
 
   function clearCell(key) {
     setDirty(true)
     setDays(prev => { const next = { ...prev }; delete next[key]; return next })
+  }
+
+  // Cells beyond the new count stay in the draft (growing the count again
+  // brings them back) but are never saved: buildSavePayload drops them.
+  function changeWeeks(delta) {
+    const next = Math.min(12, Math.max(1, weeks + delta))
+    if (next === weeks) return
+    setWeeks(next)
+    setDirty(true)
+    setViewWeek(v => Math.min(v, next))
+    setActiveCell(c => (c && parseCellKey(c).week > next ? null : c))
+  }
+
+  // Every tool snapshots the draft first, so each run can be undone.
+  function applyTool(label, nextDays, nextDraftWorkouts) {
+    setHistory(prev => [...prev, { days, draftWorkouts, label }].slice(-HISTORY_CAP))
+    setDays(nextDays)
+    setDraftWorkouts(pruneDraftWorkouts(nextDays, nextDraftWorkouts))
+    setDirty(true)
+  }
+
+  function undo() {
+    const last = history[history.length - 1]
+    if (!last) return
+    setHistory(history.slice(0, -1))
+    setDays(last.days)
+    setDraftWorkouts(last.draftWorkouts)
+    setActiveCell(null)
+    setPreviewPanel(null)
+  }
+
+  function openFillWeek() {
+    ensurePool()
+    setFillOpen(true)
+  }
+
+  function handleFillWeek({ week, results, restDayIdxs }) {
+    const nextDays = { ...days }
+    const nextDrafts = { ...draftWorkouts }
+    results.forEach(({ dayIdx, workout }) => {
+      const key = cellKey(week, dayIdx)
+      nextDays[key] = { ...EMPTY_CELL, ...days[key], day_type: 'training', workout_id: null, workout_ref: workout.ref }
+      nextDrafts[workout.ref] = workout
+    })
+    restDayIdxs.forEach(dayIdx => {
+      const key = cellKey(week, dayIdx)
+      nextDays[key] = { ...EMPTY_CELL, ...days[key], day_type: 'rest', workout_id: null, workout_ref: null }
+    })
+    applyTool('Fill a week', nextDays, nextDrafts)
+    setFillOpen(false)
+    if (isMobile) setViewWeek(week)
+  }
+
+  // What a cell's workout is, whether saved or still a draft.
+  function cellWorkout(cell) {
+    if (cell?.workout_ref) {
+      const draft = draftWorkouts[cell.workout_ref]
+      return draft ? { draftRef: draft.ref, name: draft.name, generated: true } : null
+    }
+    if (cell?.workout_id) {
+      const saved = workoutsById[cell.workout_id]
+      return { id: cell.workout_id, name: saved?.name || 'Workout', generated: Boolean(saved?.program_generated) }
+    }
+    return null
+  }
+
+  function leave() {
+    if (dirty && !window.confirm('You have unsaved changes to this program. Leave without saving?')) return
+    navigate('/programs')
   }
 
   // The whole program (name/weeks/every cell) is one in-memory draft until
@@ -83,52 +221,58 @@ export default function ProgramBuilder() {
     navigate(`/workout/${workoutId}/edit`)
   }
 
-  function openPreview(workoutId, anchorEl, confirmIfDirty) {
-    if (!workoutId) return
-    setPreviewPanel({ workoutId, anchorRect: anchorEl.getBoundingClientRect(), confirmIfDirty })
+  function openPreview(workout, anchorEl, confirmIfDirty) {
+    if (!workout) return
+    setPreviewPanel({ workoutId: workout.id || null, draftRef: workout.draftRef || null, anchorRect: anchorEl.getBoundingClientRect(), confirmIfDirty })
   }
 
-  function handleGenerated(week, results, uncheckedDayIdxs) {
-    results.forEach(({ dayIdx, workoutId }) => {
-      setCell(`w${week}d${dayIdx}`, { day_type: 'training', workout_id: workoutId })
-    })
-    uncheckedDayIdxs.forEach(dayIdx => {
-      setCell(`w${week}d${dayIdx}`, { day_type: 'rest', workout_id: null })
-    })
-    setGenerateOpen(false)
-  }
-
+  // One transaction (save_program): the program, its new generated workouts
+  // and the full schedule. On failure nothing changed server-side, so the
+  // draft stays as it is and the error shows here.
   async function save() {
     if (!name.trim()) { setError('Program name is required'); return }
     setSaving(true); setError('')
-    let progId = id
-
-    if (isEdit) {
-      await supabase.from('programs').update({ name, description, duration_weeks: weeks }).eq('id', id)
-      await supabase.from('program_days').delete().eq('program_id', id)
-    } else {
-      const { data: prog, error: pe } = await supabase.from('programs').insert({ coach_id: user.id, name, description, duration_weeks: weeks }).select().single()
-      if (pe) { setError(pe.message); setSaving(false); return }
-      progId = prog.id
-    }
-
-    const rows = Object.entries(days).map(([key, val]) => {
-      const [wPart, dPart] = key.split('d')
-      return {
-        program_id: progId,
-        week_number: parseInt(wPart.replace('w', '')),
-        day_of_week: parseInt(dPart),
-        day_type: val.day_type,
-        workout_id: val.workout_id || null,
-        notes: val.notes || null,
-      }
+    const { p_days, p_workouts } = buildSavePayload(days, draftWorkouts, weeks)
+    const { error: saveError } = await supabase.rpc('save_program', {
+      p_program_id: id || null,
+      p_name: name.trim(),
+      p_description: description,
+      p_weeks: weeks,
+      p_workouts,
+      p_days,
     })
-
-    if (rows.length) await supabase.from('program_days').insert(rows)
+    setSaving(false)
+    if (saveError) { setError(saveError.message || 'Could not save the program'); return }
+    setDirty(false)
     navigate('/programs')
   }
 
   const weekData = Array.from({ length: weeks }, (_, i) => i + 1)
+  const handBuilt = workouts.filter(w => !w.program_generated)
+  const programGenerated = workouts.filter(w => w.program_generated)
+  const drafts = Object.values(draftWorkouts)
+
+  // Picker options: hand-built workouts, then this program's generated ones
+  // (saved and unsaved). A workout the saved schedule uses but the picker
+  // doesn't list is added so the select can still show it.
+  const renderWorkoutOptions = (cell, emptyLabel) => {
+    const extra = cell?.workout_id && !workouts.some(w => w.id === cell.workout_id) ? workoutsById[cell.workout_id] : null
+    return (
+      <>
+        <option value="">{emptyLabel}</option>
+        {extra && <option value={extra.id}>{extra.name}</option>}
+        <optgroup label="Your workouts">
+          {handBuilt.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+        </optgroup>
+        {(programGenerated.length > 0 || drafts.length > 0) && (
+          <optgroup label="This program's workouts">
+            {programGenerated.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            {drafts.map(d => <option key={d.ref} value={REF_PREFIX + d.ref}>{d.name} (unsaved)</option>)}
+          </optgroup>
+        )}
+      </>
+    )
+  }
 
   // Desktop grid — 7 columns
   const renderWeekGrid = (week) => (
@@ -138,10 +282,10 @@ export default function ProgramBuilder() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
         {DAYS.map((day, di) => {
-          const key = `w${week}d${di}`
+          const key = cellKey(week, di)
           const cell = days[key]
           const dt = cell ? getDayType(cell.day_type) : null
-          const workout = cell?.workout_id ? workouts.find(w => w.id === cell.workout_id) : null
+          const workout = cellWorkout(cell)
           const isActive = activeCell === key
           return (
             <div key={di} onClick={() => setActiveCell(isActive ? null : key)}
@@ -153,8 +297,9 @@ export default function ProgramBuilder() {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
                 transition: 'all .15s',
               }}>
+              {workout?.generated && <span style={{ position: 'absolute', top: 4, left: 4 }}><GenTag compact /></span>}
               {workout && (
-                <span onClick={e => { e.stopPropagation(); openPreview(workout.id, e.currentTarget, false) }} title={`View ${workout.name}`}
+                <span onClick={e => { e.stopPropagation(); openPreview(workout, e.currentTarget, false) }} title={`View ${workout.name}`}
                   style={{ position: 'absolute', top: 4, right: 4, fontSize: 11, lineHeight: 1, cursor: 'pointer', opacity: 0.75 }}>
                   👁
                 </span>
@@ -180,10 +325,10 @@ export default function ProgramBuilder() {
   const renderWeekList = (week) => (
     <div key={week}>
       {DAYS.map((day, di) => {
-        const key = `w${week}d${di}`
+        const key = cellKey(week, di)
         const cell = days[key]
         const dt = cell ? getDayType(cell.day_type) : DAY_TYPES[0]
-        const workout = cell?.workout_id ? workouts.find(w => w.id === cell.workout_id) : null
+        const workout = cellWorkout(cell)
         const isActive = activeCell === key
         return (
           <div key={di}>
@@ -194,7 +339,7 @@ export default function ProgramBuilder() {
               }}>
               <div style={{ width: 36, fontSize: 11, fontWeight: 600, color: 'var(--mu)', flexShrink: 0 }}>{day}</div>
               <div style={{
-                flex: 1, display: 'flex', alignItems: 'center', gap: 10,
+                flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10,
                 background: cell ? dt.bg : 'var(--br)', borderRadius: 10,
                 padding: '10px 12px',
                 border: `1px solid ${isActive ? 'var(--ac)' : 'transparent'}`,
@@ -204,7 +349,12 @@ export default function ProgramBuilder() {
                   {cell ? (
                     <>
                       <div style={{ fontSize: 12, fontWeight: 600, color: dt.color }}>{dt.label}</div>
-                      {workout && <div style={{ fontSize: 12, color: 'var(--tx)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{workout.name}</div>}
+                      {workout && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, minWidth: 0 }}>
+                          <span style={{ fontSize: 12, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{workout.name}</span>
+                          {workout.generated && <GenTag />}
+                        </div>
+                      )}
                       {cell.notes && <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{cell.notes}</div>}
                     </>
                   ) : (
@@ -212,7 +362,7 @@ export default function ProgramBuilder() {
                   )}
                 </div>
                 {workout && (
-                  <span onClick={e => { e.stopPropagation(); openPreview(workout.id, e.currentTarget, false) }} title={`View ${workout.name}`}
+                  <span onClick={e => { e.stopPropagation(); openPreview(workout, e.currentTarget, false) }} title={`View ${workout.name}`}
                     style={{ fontSize: 15, lineHeight: 1, cursor: 'pointer', opacity: 0.75, flexShrink: 0 }}>
                     👁
                   </span>
@@ -239,13 +389,12 @@ export default function ProgramBuilder() {
                   <>
                     <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 7 }}>Workout</div>
                     <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                      <select value={cell?.workout_id || ''} onChange={e => setCell(key, { day_type: cell?.day_type || 'training', workout_id: e.target.value || null, notes: cell?.notes || '' })}
-                        style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '9px 10px', fontSize: 13, outline: 'none' }}>
-                        <option value="">— no workout —</option>
-                        {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                      <select value={pickerValue(cell)} onChange={e => setCell(key, pickerUpdates(e.target.value))}
+                        style={{ flex: 1, minWidth: 0, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '9px 10px', fontSize: 13, outline: 'none' }}>
+                        {renderWorkoutOptions(cell, '— no workout —')}
                       </select>
-                      {cell?.workout_id && (
-                        <button type="button" onClick={e => openPreview(cell.workout_id, e.currentTarget, true)}
+                      {workout && (
+                        <button type="button" onClick={e => openPreview(workout, e.currentTarget, true)}
                           style={{ background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', padding: '0 12px', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
                           👁 View
                         </button>
@@ -265,17 +414,20 @@ export default function ProgramBuilder() {
     </div>
   )
 
+  const lastTool = history[history.length - 1]
+  const previewDraft = previewPanel?.draftRef && draftWorkouts[previewPanel.draftRef]
+
   return (
     <Layout>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Header */}
         <div style={{ padding: isMobile ? '12px 16px' : '14px 20px', paddingTop: isMobile ? 'max(12px, calc(var(--sat) + 6px))' : '14px', borderBottom: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={() => navigate('/programs')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+          <button onClick={leave} aria-label="Back to programs" style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <input value={name} onChange={e => { setName(e.target.value); setDirty(true) }} placeholder="Program name..."
-            style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
-          <button onClick={() => setGenerateOpen(true)} title="Generate a randomized week"
+            style={{ flex: 1, minWidth: 0, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
+          <button onClick={openFillWeek} title="Randomly fill one week of this draft" aria-label="Fill a week"
             style={{ background: 'var(--br)', color: 'var(--tx)', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
-            🔀{!isMobile && ' Generate'}
+            🔀{!isMobile && ' Fill a week'}
           </button>
           <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, flexShrink: 0 }}>
             {saving ? 'Saving...' : 'Save'}
@@ -284,7 +436,7 @@ export default function ProgramBuilder() {
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: isMobile ? 'column' : 'row' }}>
           {/* Left: settings */}
-          <div style={{ width: isMobile ? '100%' : 220, minWidth: isMobile ? 'auto' : 220, borderRight: isMobile ? 'none' : '1px solid var(--br)', borderBottom: isMobile ? '1px solid var(--br)' : 'none', padding: isMobile ? '12px 16px' : 14, background: 'var(--s1)' }}>
+          <div style={{ width: isMobile ? '100%' : 220, minWidth: isMobile ? 'auto' : 220, borderRight: isMobile ? 'none' : '1px solid var(--br)', borderBottom: isMobile ? '1px solid var(--br)' : 'none', padding: isMobile ? '12px 16px' : 14, background: 'var(--s1)', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 12 : 10, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
               <div style={{ flex: isMobile ? '1 1 auto' : 'auto' }}>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Description</div>
@@ -294,16 +446,40 @@ export default function ProgramBuilder() {
               <div>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Weeks</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => { setWeeks(w => Math.max(1, w - 1)); setDirty(true) }} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>−</button>
+                  <button onClick={() => changeWeeks(-1)} aria-label="Fewer weeks" style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>−</button>
                   <span style={{ fontSize: 16, fontWeight: 700, minWidth: 20, textAlign: 'center' }}>{weeks}</span>
-                  <button onClick={() => { setWeeks(w => Math.min(12, w + 1)); setDirty(true) }} style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>+</button>
+                  <button onClick={() => changeWeeks(1)} aria-label="More weeks" style={{ width: 28, height: 28, background: 'var(--br)', border: 'none', borderRadius: 6, color: 'var(--tx)', fontSize: 16, cursor: 'pointer' }}>+</button>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Right: grid + cell editor */}
-          <div style={{ flex: 1, padding: isMobile ? '12px 16px' : 20, overflowY: 'auto' }}>
+          <div style={{ flex: 1, minWidth: 0, padding: isMobile ? '12px 16px' : 20, overflowY: 'auto' }}>
+            {error && (
+              <div ref={errorRef} role="alert" style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(226,105,90,.1)', border: '1px solid rgba(226,105,90,.35)', color: '#E2695A', fontSize: 12.5, lineHeight: 1.45 }}>
+                {error}
+              </div>
+            )}
+
+            {lastTool && (
+              <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(199,228,92,.08)', border: '1px solid rgba(199,228,92,.28)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 16, flexShrink: 0 }}>🔀</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--tx)' }}>Generated draft, not saved yet</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--mu)', marginTop: 2 }}>
+                    {pendingWorkouts > 0
+                      ? `${pendingWorkouts} program workout${pendingWorkouts === 1 ? ' is' : 's are'} created when you save`
+                      : 'Nothing changes until you save'}
+                  </div>
+                </div>
+                <button onClick={undo} title={`Undo ${lastTool.label}`}
+                  style={{ minHeight: isMobile ? 44 : 34, padding: '0 12px', borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--br)', color: 'var(--tx)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                  ↶ Undo
+                </button>
+              </div>
+            )}
+
             {/* Mobile week nav */}
             {isMobile && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -322,11 +498,9 @@ export default function ProgramBuilder() {
             {!isMobile && activeCell && (
               <div style={{ marginTop: 16, background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 12, padding: 14 }}>
                 {(() => {
-                  const [wPart, dPart] = activeCell.split('d')
-                  const week = parseInt(wPart.replace('w', ''))
-                  const dayIdx = parseInt(dPart)
-                  const cell = days[activeCell] || { day_type: 'training', workout_id: null, notes: '' }
-                  const dt = getDayType(cell.day_type)
+                  const { week, dayIdx } = parseCellKey(activeCell)
+                  const cell = days[activeCell] || EMPTY_CELL
+                  const workout = cellWorkout(cell)
                   return (
                     <>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 12 }}>
@@ -348,13 +522,12 @@ export default function ProgramBuilder() {
                         <>
                           <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 7 }}>Workout</div>
                           <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                            <select value={cell.workout_id || ''} onChange={e => setCell(activeCell, { workout_id: e.target.value || null })}
-                              style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 10px', fontSize: 13, outline: 'none' }}>
-                              <option value="">— no workout assigned —</option>
-                              {workouts.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                            <select value={pickerValue(cell)} onChange={e => setCell(activeCell, pickerUpdates(e.target.value))}
+                              style={{ flex: 1, minWidth: 0, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 10px', fontSize: 13, outline: 'none' }}>
+                              {renderWorkoutOptions(cell, '— no workout assigned —')}
                             </select>
-                            {cell.workout_id && (
-                              <button type="button" onClick={e => openPreview(cell.workout_id, e.currentTarget, true)}
+                            {workout && (
+                              <button type="button" onClick={e => openPreview(workout, e.currentTarget, true)}
                                 style={{ background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', padding: '0 12px', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
                                 👁 View
                               </button>
@@ -375,7 +548,6 @@ export default function ProgramBuilder() {
                 })()}
               </div>
             )}
-            {error && <p style={{ fontSize: 12, color: '#E2695A', marginTop: 10 }}>{error}</p>}
           </div>
         </div>
       </div>
@@ -383,26 +555,25 @@ export default function ProgramBuilder() {
       {previewPanel && (
         <WorkoutPreviewPanel
           workoutId={previewPanel.workoutId}
+          draftWorkout={previewDraft ? draftPreview(previewDraft, poolById) : null}
           anchorRect={previewPanel.anchorRect}
           onClose={() => setPreviewPanel(null)}
           onEdit={() => viewWorkout(previewPanel.workoutId, { confirmIfDirty: previewPanel.confirmIfDirty })}
         />
       )}
 
-      {generateOpen && (() => {
-        const initialWeek = isMobile ? viewWeek : 1
-        const dayTypes = DAYS.map((_, i) => days[`w${initialWeek}d${i}`]?.day_type || null)
-        return (
-          <GenerateProgramModal
-            programName={name}
-            week={initialWeek}
-            weeks={weeks}
-            dayTypes={dayTypes}
-            onClose={() => setGenerateOpen(false)}
-            onGenerated={handleGenerated}
-          />
-        )
-      })()}
+      {fillOpen && (
+        <GenerateProgramModal
+          programName={name}
+          week={isMobile ? viewWeek : 1}
+          weeks={weeks}
+          days={days}
+          pool={pool}
+          poolError={poolError}
+          onClose={() => setFillOpen(false)}
+          onApply={handleFillWeek}
+        />
+      )}
     </Layout>
   )
 }
