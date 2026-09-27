@@ -269,7 +269,7 @@ export default function ProgramBuilder() {
     <Layout>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Header */}
-        <div style={{ padding: isMobile ? '12px 16px' : '14px 20px', borderBottom: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ padding: isMobile ? '12px 16px' : '14px 20px', paddingTop: isMobile ? 'max(12px, calc(var(--sat) + 6px))' : '14px', borderBottom: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={() => navigate('/programs')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <input value={name} onChange={e => { setName(e.target.value); setDirty(true) }} placeholder="Program name..."
             style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
