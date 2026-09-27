@@ -305,7 +305,7 @@ export default function ProgramBuilder() {
     <div key={week} style={{ marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 24, marginBottom: 8 }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Week {week}</span>
-        {weekHasDays(days, week) && (
+        {weeks > 1 && weekHasDays(days, week) && (
           <button type="button" onClick={() => openCopyWeeks(week)} title={`Copy week ${week} to other weeks`}
             style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '4px 6px' }}>
             ⧉ Copy to…
