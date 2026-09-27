@@ -110,7 +110,7 @@ export default function GenerateProgramModal({ programName, week, weeks, days, p
 
           <div>
             <div style={label}>Day focus</div>
-            <DayFocusEditor dayIdxs={dayIdxs} focus={dayFocus} onChange={setDayFocus} count={count} />
+            <DayFocusEditor dayIdxs={dayIdxs} focus={dayFocus} onChange={setDayFocus} count={count} initialMatchSame={false} />
           </div>
         </div>
 

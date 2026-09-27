@@ -418,7 +418,7 @@ export default function Dashboard() {
         {programWorkouts.length > 0 && renderProgramWorkouts()}
       </div>
 
-      {assigningWorkout &&<AssignModal workout={assigningWorkout} onClose={() => setAssigningWorkout(null)} />}
+      {assigningWorkout && <AssignModal workout={assigningWorkout} onClose={() => setAssigningWorkout(null)} />}
 
       {previewPanel && (
         <WorkoutPreviewPanel

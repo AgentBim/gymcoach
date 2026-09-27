@@ -29,6 +29,18 @@ function pickerValue(cell) {
   return cell?.workout_id || ''
 }
 
+// Generated names read "{Program} · {Focus} {n} · W{week}". Inside the
+// builder the program and the week are already on screen, so cells show just
+// the part that tells workouts apart.
+function cellLabel(workoutName, programName, week) {
+  let label = workoutName
+  const prefix = `${programName.trim()} · `
+  if (programName.trim() && label.startsWith(prefix)) label = label.slice(prefix.length)
+  const suffix = ` · W${week}`
+  if (label.endsWith(suffix)) label = label.slice(0, -suffix.length)
+  return label || workoutName
+}
+
 function GenTag({ compact }) {
   return (
     <span title="Generated for this program"
@@ -308,7 +320,10 @@ export default function ProgramBuilder() {
               {cell ? (
                 <>
                   <div style={{ fontSize: 18 }}>{dt.icon}</div>
-                  {workout && <div style={{ fontSize: 9, color: dt.color, fontWeight: 500, lineHeight: 1.2 }}>{workout.name.length > 12 ? workout.name.slice(0, 12) + '…' : workout.name}</div>}
+                  {workout && (() => {
+                    const label = cellLabel(workout.name, name, week)
+                    return <div title={workout.name} style={{ fontSize: 9, color: dt.color, fontWeight: 500, lineHeight: 1.2 }}>{label.length > 12 ? label.slice(0, 12) + '…' : label}</div>
+                  })()}
                   {!workout && cell.day_type !== 'training' && <div style={{ fontSize: 9, color: dt.color }}>{dt.label}</div>}
                 </>
               ) : (
@@ -351,7 +366,7 @@ export default function ProgramBuilder() {
                       <div style={{ fontSize: 12, fontWeight: 600, color: dt.color }}>{dt.label}</div>
                       {workout && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, minWidth: 0 }}>
-                          <span style={{ fontSize: 12, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{workout.name}</span>
+                          <span title={workout.name} style={{ fontSize: 12, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cellLabel(workout.name, name, week)}</span>
                           {workout.generated && <GenTag />}
                         </div>
                       )}

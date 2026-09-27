@@ -92,6 +92,12 @@ save_program(
 
 `delete_program(p_program_id uuid)`, also `SECURITY INVOKER`. It deletes this program's generated workouts that have no feedback or assignments, then deletes the program (its `program_days` cascade). Generated workouts that do have feedback survive with `source_program_id` set to null. Switch `Programs.jsx → deleteProgram` to this RPC and show its error.
 
+**Migration 0009** (a follow-up after Phase 1) did two things:
+- It dropped an older, unused `save_program(…, p_duration_weeks, p_days)` overload.
+- It made both RPCs lock the program's generated workouts `FOR UPDATE` in their own statement before the cleanup delete, so an athlete completion committed at the same moment can't be cascade-deleted.
+
+Keep that lock if you change either RPC.
+
 ### RLS
 
 The existing policies already cover the new columns: coaches manage their own workouts, and athletes see workouts scheduled in their active program via `program_days`. **Don't add policies on `workouts` that query `program_days`/`workout_assignments` inline, or the reverse.** That exact cycle caused `42P17 infinite recursion` (migration 0006). Use a `SECURITY DEFINER` helper if a new cross-table check is ever needed.
@@ -211,32 +217,34 @@ Ship each phase as its own PR into `main` (commit → push `feature/redesign` �
 
 ## Acceptance criteria
 
+Phase 1 was verified with rolled-back RLS probes (migrations 0007 and 0009) and a signed-in browser pass on the Vercel preview. Criteria that later phases extend are ticked for what exists now, with a note on what to recheck.
+
 **Data safety**
-- [ ] Generating, rerolling, copying and cancelling create **zero** rows in `workouts` until Save.
-- [ ] A save that fails partway (for example an invalid day type injected in dev tools) leaves the program and its days exactly as they were, and the error shows in the builder.
-- [ ] Rerolling and re-saving an existing program leaves no orphaned generated workouts (orphan cleanup step).
-- [ ] Deleting a program removes its generated workouts **except** ones with athlete feedback. Those stay hidden from Home and still appear in History.
-- [ ] Reducing weeks from 8 to 6 and saving removes the week 7–8 `program_days`.
+- [x] Generating, rerolling, copying and cancelling create **zero** rows in `workouts` until Save. *Phase 1: Fill a week, reroll, Undo and cancel wrote nothing. Recheck copying in Phase 2 and the full program in Phase 3.*
+- [x] A save that fails partway (for example an invalid day type injected in dev tools) leaves the program and its days exactly as they were, and the error shows in the builder. *Tested both ways: an invalid day type injected into React state in the browser, and a check violation after writes had started, in a probe.*
+- [x] Rerolling and re-saving an existing program leaves no orphaned generated workouts (orphan cleanup step).
+- [x] Deleting a program removes its generated workouts **except** ones with athlete feedback. Those stay hidden from Home and still appear in History.
+- [x] Reducing weeks from 8 to 6 and saving removes the week 7–8 `program_days`.
 
 **Visibility**
-- [ ] Home's workout list never shows `program_generated` workouts. The Program workouts section lists them grouped by program, with working Open links.
-- [ ] An athlete whose active program uses generated workouts sees them in `/athlete/program` and can complete them (feedback goes through `submit_athlete_workout_feedback`).
+- [x] Home's workout list never shows `program_generated` workouts. The Program workouts section lists them grouped by program, with working Open links.
+- [x] An athlete whose active program uses generated workouts sees them in `/athlete/program` and can complete them (feedback goes through `submit_athlete_workout_feedback`). *Needs migration 0008: before it, portal completions failed for every workout.*
 
 **Behaviour**
-- [ ] Full program Upper/Lower, Mon/Tue/Thu/Fri, 8 weeks, rotate every 4, +1 set, deload every 4th week: the setup footer says 32 workouts, weeks 4 and 8 show the deload dosage, and weeks 1–3 show 3/4/5 sets.
-- [ ] A locked workout is unchanged by "Reroll block" and "Reroll all".
-- [ ] Copy weeks in Link mode followed by Save gives target weeks the same `workout_id`s as the source. Clone mode gives new ids, and the counts match the footer.
-- [ ] Undo restores the exact previous draft after each tool.
-- [ ] Mobile: all new sheets clear the status bar (`--sat` padding pattern, as in #11), touch targets are ≥ 44px, and there's no horizontal scroll at 375px.
+- [ ] Full program Upper/Lower, Mon/Tue/Thu/Fri, 8 weeks, rotate every 4, +1 set, deload every 4th week: the setup footer says 32 workouts, weeks 4 and 8 show the deload dosage, and weeks 1–3 show 3/4/5 sets. *(Phase 3)*
+- [ ] A locked workout is unchanged by "Reroll block" and "Reroll all". *(Phase 3)*
+- [ ] Copy weeks in Link mode followed by Save gives target weeks the same `workout_id`s as the source. Clone mode gives new ids, and the counts match the footer. *(Phase 2)*
+- [x] Undo restores the exact previous draft after each tool. *Phase 1: Fill a week. Recheck each new tool.*
+- [x] Mobile: all new sheets clear the status bar (`--sat` padding pattern, as in #11), touch targets are ≥ 44px, and there's no horizontal scroll at 375px. *Phase 1: the Fill a week sheet. Recheck new sheets.*
 
 **Checks**
-- [ ] `npm run build` passes.
-- [ ] Supabase security advisor shows no new `anon_*` findings for the new RPCs.
-- [ ] RLS verified by simulating a coach (`set local role authenticated; set local request.jwt.claim.sub = '<coach uuid>'` inside a `do` block via `apply_migration`, as done for migration 0006):
+- [x] `npm run build` passes.
+- [x] Supabase security advisor shows no new `anon_*` findings for the new RPCs.
+- [x] RLS verified by simulating a coach (`set local role authenticated; set local request.jwt.claim.sub = '<coach uuid>'` inside a `do` block via `apply_migration`, as done for migration 0006):
   - `save_program` works for the owner.
   - It raises for another coach's program or workout.
   - It does not trigger `42P17`.
-- [ ] Clean up any probe rows and tables afterwards.
+- [x] Clean up any probe rows and tables afterwards.
 
 ## Open questions (decide during Phase 3; defaults in bold)
 

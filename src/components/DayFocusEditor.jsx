@@ -12,10 +12,13 @@ const PRESET_NAMES = [...Object.keys(FOCUS_PRESETS), CUSTOM_PRESET]
 // focus:   { [dayIdx]: { preset, weights } }, owned by the parent.
 // onChange(nextFocus) replaces the whole map.
 // count:   exercises per workout, for the "Typical workout" summary.
-export default function DayFocusEditor({ dayIdxs, focus, onChange, count }) {
+// initialMatchSame: whether "Apply to days with the same preset" starts on.
+//   Only useful when days start with distinct presets (e.g. from a split);
+//   when every day starts the same, it would make the first pick apply to all.
+export default function DayFocusEditor({ dayIdxs, focus, onChange, count, initialMatchSame = true }) {
   const isMobile = useIsMobile()
   const [activeDay, setActiveDay] = useState(dayIdxs[0] ?? 0)
-  const [matchSame, setMatchSame] = useState(true)
+  const [matchSame, setMatchSame] = useState(initialMatchSame)
 
   if (!dayIdxs.length) {
     return <p style={{ fontSize: 12, color: 'var(--mu)', margin: 0 }}>Pick at least one training day to set its focus.</p>
@@ -49,7 +52,7 @@ export default function DayFocusEditor({ dayIdxs, focus, onChange, count }) {
         {dayIdxs.map(d => {
           const on = d === active
           return (
-            <button key={d} type="button" role="tab" aria-selected={on} onClick={() => setActiveDay(d)}
+            <button key={d} type="button" role="tab" aria-selected={on} aria-label={`${DAYS[d]}, ${focus[d].preset}`} onClick={() => setActiveDay(d)}
               style={{ minHeight: isMobile ? 52 : 44, borderRadius: 10, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
                 background: on ? 'rgba(199,228,92,.12)' : 'var(--s2)', border: `1px solid ${on ? 'rgba(199,228,92,.45)' : 'var(--br)'}`, color: on ? 'var(--ac)' : 'var(--tx)' }}>
               <span style={{ fontSize: 13, fontWeight: 700 }}>{DAYS[d]}</span>
@@ -88,7 +91,7 @@ export default function DayFocusEditor({ dayIdxs, focus, onChange, count }) {
               <span style={{ width: 78, flexShrink: 0, fontSize: 10.5, fontWeight: 600, padding: '3px 0', borderRadius: 20, textAlign: 'center', background: c.bg, color: c.color }}>{g}</span>
               <input type="range" min={0} max={100} value={current.weights[g]} aria-label={`${g} emphasis for ${DAYS[active]}`}
                 onChange={e => setWeight(g, parseInt(e.target.value, 10))}
-                style={{ flex: 1, minWidth: 0, cursor: 'pointer', accentColor: 'var(--ac)' }} />
+                style={{ flex: 1, minWidth: 0, height: target, margin: 0, cursor: 'pointer', accentColor: 'var(--ac)' }} />
               <span style={{ width: 36, flexShrink: 0, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--mu)' }}>{pct}%</span>
             </label>
           )
