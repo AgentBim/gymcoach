@@ -19,14 +19,14 @@ function toItems(rows) {
     }))
 }
 
-function Segmented({ options, value, onChange }) {
+function Segmented({ options, value, onChange, tall }) {
   return (
     <div style={{ display: 'flex', padding: 3, borderRadius: 10, background: 'var(--s2)', border: '1px solid var(--br)' }}>
       {options.map(([id, label]) => {
         const on = value === id
         return (
           <button key={id} type="button" aria-pressed={on} onClick={() => onChange(id)}
-            style={{ flex: 1, minHeight: 40, borderRadius: 7, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: on ? 'var(--br)' : 'transparent', color: on ? 'var(--tx)' : 'var(--mu)' }}>
+            style={{ flex: 1, minHeight: tall ? 44 : 40, borderRadius: 7, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: on ? 'var(--br)' : 'transparent', color: on ? 'var(--tx)' : 'var(--mu)' }}>
             {label}
           </button>
         )
@@ -216,7 +216,7 @@ export default function CopyWeeksModal({ programName, weeks, initialSource, days
 
           <section>
             <div style={label}>How to copy</div>
-            <Segmented options={[['link', 'Link'], ['clone', 'Clone']]} value={mode} onChange={setMode} />
+            <Segmented options={[['link', 'Link'], ['clone', 'Clone']]} value={mode} onChange={setMode} tall={isMobile} />
             <div style={{ marginTop: 8, padding: 12, borderRadius: 10, background: 'var(--s2)', border: '1px solid var(--br)', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <span style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--tx)' }}>
                 {mode === 'link'
@@ -240,7 +240,7 @@ export default function CopyWeeksModal({ programName, weeks, initialSource, days
 
           <section>
             <div style={label}>If a week already has days</div>
-            <Segmented options={[['replace', 'Replace'], ['fill', 'Only fill empty days']]} value={conflict} onChange={setConflict} />
+            <Segmented options={[['replace', 'Replace'], ['fill', 'Only fill empty days']]} value={conflict} onChange={setConflict} tall={isMobile} />
             {warningText && (
               <div role="status" style={{ marginTop: 8, display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 10, background: 'rgba(231,162,62,.08)', border: '1px solid rgba(231,162,62,.3)' }}>
                 <span style={{ color: '#E7A23E', fontSize: 14, lineHeight: 1.2 }}>⚠</span>

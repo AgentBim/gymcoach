@@ -220,7 +220,7 @@ Ship each phase as its own PR into `main` (commit → push `feature/redesign` �
 Phase 1 was verified with rolled-back RLS probes (migrations 0007 and 0009) and a signed-in browser pass on the Vercel preview. Criteria that later phases extend are ticked for what exists now, with a note on what to recheck.
 
 **Data safety**
-- [x] Generating, rerolling, copying and cancelling create **zero** rows in `workouts` until Save. *Phase 1: Fill a week, reroll, Undo and cancel wrote nothing. Recheck copying in Phase 2 and the full program in Phase 3.*
+- [x] Generating, rerolling, copying and cancelling create **zero** rows in `workouts` until Save. *Verified for Fill a week, reroll, Undo and cancel (Phase 1) and for Copy weeks in Link and Clone mode (Phase 2). Recheck the full program in Phase 3.*
 - [x] A save that fails partway (for example an invalid day type injected in dev tools) leaves the program and its days exactly as they were, and the error shows in the builder. *Tested both ways: an invalid day type injected into React state in the browser, and a check violation after writes had started, in a probe.*
 - [x] Rerolling and re-saving an existing program leaves no orphaned generated workouts (orphan cleanup step).
 - [x] Deleting a program removes its generated workouts **except** ones with athlete feedback. Those stay hidden from Home and still appear in History.
@@ -233,9 +233,9 @@ Phase 1 was verified with rolled-back RLS probes (migrations 0007 and 0009) and 
 **Behaviour**
 - [ ] Full program Upper/Lower, Mon/Tue/Thu/Fri, 8 weeks, rotate every 4, +1 set, deload every 4th week: the setup footer says 32 workouts, weeks 4 and 8 show the deload dosage, and weeks 1–3 show 3/4/5 sets. *(Phase 3)*
 - [ ] A locked workout is unchanged by "Reroll block" and "Reroll all". *(Phase 3)*
-- [ ] Copy weeks in Link mode followed by Save gives target weeks the same `workout_id`s as the source. Clone mode gives new ids, and the counts match the footer. *(Phase 2)*
-- [x] Undo restores the exact previous draft after each tool. *Phase 1: Fill a week. Recheck each new tool.*
-- [x] Mobile: all new sheets clear the status bar (`--sat` padding pattern, as in #11), touch targets are ≥ 44px, and there's no horizontal scroll at 375px. *Phase 1: the Fill a week sheet. Recheck new sheets.*
+- [x] Copy weeks in Link mode followed by Save gives target weeks the same `workout_id`s as the source. Clone mode gives new ids, and the counts match the footer. *Phase 2: Link W1→W2–3 saved the same 10 ids. Clone W1→W4 gave 5 new ids, as the footer said, named "… · W4", with sets progressed 3 → 6.*
+- [x] Undo restores the exact previous draft after each tool. *Verified for Fill a week (Phase 1) and Copy weeks (Phase 2). Recheck each new tool.*
+- [x] Mobile: all new sheets clear the status bar (`--sat` padding pattern, as in #11), touch targets are ≥ 44px, and there's no horizontal scroll at 375px. *Verified for the Fill a week (Phase 1) and Copy weeks (Phase 2) sheets. Recheck new sheets.*
 
 **Checks**
 - [x] `npm run build` passes.
