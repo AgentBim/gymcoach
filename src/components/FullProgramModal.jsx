@@ -31,11 +31,14 @@ function weeksText(weeks) {
   return contiguous ? `weeks ${weeks[0]}–${weeks[weeks.length - 1]}` : `weeks ${weeks.join(', ')}`
 }
 
+// A 50×30 switch inside a 44px-tall tap area.
 function Switch({ checked, onChange, label }) {
   return (
     <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}
-      style={{ width: 50, height: 30, flexShrink: 0, borderRadius: 15, border: 'none', padding: 3, cursor: 'pointer', display: 'flex', background: checked ? 'var(--ac)' : 'var(--br)' }}>
-      <span style={{ width: 24, height: 24, borderRadius: 12, background: '#ECEEE9', marginLeft: checked ? 20 : 0, transition: 'margin .15s' }} />
+      style={{ width: 50, height: 44, flexShrink: 0, border: 'none', padding: 0, background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+      <span style={{ width: 50, height: 30, boxSizing: 'border-box', borderRadius: 15, padding: 3, display: 'flex', background: checked ? 'var(--ac)' : 'var(--br)' }}>
+        <span style={{ width: 24, height: 24, borderRadius: 12, background: '#ECEEE9', marginLeft: checked ? 20 : 0, transition: 'margin .15s' }} />
+      </span>
     </button>
   )
 }
@@ -354,7 +357,7 @@ export default function FullProgramModal({ programName, initialWeeks, pool, pool
               <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--mu)' }}>{g.range}</span>
               {variation === 'rotate' && (
                 <button type="button" onClick={() => generate(new Set(Object.entries(plan.selections).filter(([, s]) => s.block === g.id).map(([k]) => k)))}
-                  style={{ marginLeft: 'auto', minHeight: isMobile ? 40 : 32, padding: '0 12px', borderRadius: 20, background: 'transparent', border: '1px solid var(--br)', color: 'var(--tx)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ marginLeft: 'auto', minHeight: isMobile ? 44 : 32, padding: '0 12px', borderRadius: 20, background: 'transparent', border: '1px solid var(--br)', color: 'var(--tx)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>
                   ↻ Reroll block
                 </button>
               )}

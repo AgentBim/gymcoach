@@ -230,8 +230,10 @@ export default function CopyWeeksModal({ programName, weeks, initialSource, days
                     <span style={{ fontSize: 11.5, color: 'var(--mu)' }}>+1 set per week after the source, up to 6</span>
                   </span>
                   <button type="button" role="switch" aria-checked={progress} aria-label="Progress the copies" onClick={() => setProgress(p => !p)}
-                    style={{ width: 50, height: 30, flexShrink: 0, borderRadius: 15, border: 'none', padding: 3, cursor: 'pointer', display: 'flex', background: progress ? 'var(--ac)' : 'var(--br)' }}>
-                    <span style={{ width: 24, height: 24, borderRadius: 12, background: '#ECEEE9', marginLeft: progress ? 20 : 0, transition: 'margin .15s' }} />
+                    style={{ width: 50, height: 44, flexShrink: 0, border: 'none', padding: 0, background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ width: 50, height: 30, boxSizing: 'border-box', borderRadius: 15, padding: 3, display: 'flex', background: progress ? 'var(--ac)' : 'var(--br)' }}>
+                      <span style={{ width: 24, height: 24, borderRadius: 12, background: '#ECEEE9', marginLeft: progress ? 20 : 0, transition: 'margin .15s' }} />
+                    </span>
                   </button>
                 </div>
               )}
