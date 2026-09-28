@@ -6,8 +6,9 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
 import GenerateProgramModal from '../components/GenerateProgramModal'
+import CopyWeeksModal from '../components/CopyWeeksModal'
 import { DAY_TYPE_COLORS } from '../lib/theme'
-import { DAYS, buildSavePayload, cellKey, draftPreview, parseCellKey, pruneDraftWorkouts } from '../lib/programGenerator'
+import { DAYS, buildSavePayload, cellKey, draftPreview, parseCellKey, pruneDraftWorkouts, weekHasDays } from '../lib/programGenerator'
 
 const DAY_TYPES = ['training', 'rest', 'recovery', 'competition'].map(key => ({ key, ...DAY_TYPE_COLORS[key] }))
 const EMPTY_CELL = { day_type: 'training', workout_id: null, workout_ref: null, notes: '' }
@@ -79,6 +80,7 @@ export default function ProgramBuilder() {
   const [dirty, setDirty] = useState(false)
   const [previewPanel, setPreviewPanel] = useState(null) // { workoutId, draftRef, anchorRect, confirmIfDirty }
   const [fillOpen, setFillOpen] = useState(false)
+  const [copySource, setCopySource] = useState(null) // week the Copy weeks sheet opened from
   const errorRef = useRef(null)
 
   useEffect(() => { fetchWorkouts() }, [user, id])
@@ -204,6 +206,18 @@ export default function ProgramBuilder() {
     if (isMobile) setViewWeek(week)
   }
 
+  // Clones are draft workouts too, so load the exercise pool for previewing
+  // them.
+  function openCopyWeeks(week) {
+    ensurePool()
+    setCopySource(week)
+  }
+
+  function handleCopyWeeks({ days: nextDays, draftWorkouts: nextDrafts }) {
+    applyTool('Copy weeks', nextDays, nextDrafts)
+    setCopySource(null)
+  }
+
   // What a cell's workout is, whether saved or still a draft.
   function cellWorkout(cell) {
     if (cell?.workout_ref) {
@@ -289,8 +303,14 @@ export default function ProgramBuilder() {
   // Desktop grid — 7 columns
   const renderWeekGrid = (week) => (
     <div key={week} style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 8 }}>
-        Week {week}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 24, marginBottom: 8 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Week {week}</span>
+        {weeks > 1 && weekHasDays(days, week) && (
+          <button type="button" onClick={() => openCopyWeeks(week)} title={`Copy week ${week} to other weeks`}
+            style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '4px 6px' }}>
+            ⧉ Copy to…
+          </button>
+        )}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
         {DAYS.map((day, di) => {
@@ -503,6 +523,14 @@ export default function ProgramBuilder() {
                 <button onClick={() => setViewWeek(w => Math.min(weeks, w + 1))} disabled={viewWeek === weeks} style={{ background: 'var(--br)', border: 'none', borderRadius: 7, color: 'var(--tx)', padding: '6px 12px', fontSize: 13, cursor: 'pointer', opacity: viewWeek === weeks ? 0.4 : 1 }}>Next →</button>
               </div>
             )}
+            {isMobile && weeks > 1 && weekHasDays(days, viewWeek) && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                <button type="button" onClick={() => openCopyWeeks(viewWeek)}
+                  style={{ minHeight: 44, padding: '0 16px', borderRadius: 22, background: 'transparent', border: '1px solid var(--br)', color: 'var(--tx)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+                  ⧉ Copy this week to…
+                </button>
+              </div>
+            )}
 
             {/* Grids (desktop) / List (mobile) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -587,6 +615,18 @@ export default function ProgramBuilder() {
           poolError={poolError}
           onClose={() => setFillOpen(false)}
           onApply={handleFillWeek}
+        />
+      )}
+
+      {copySource && (
+        <CopyWeeksModal
+          programName={name}
+          weeks={weeks}
+          initialSource={copySource}
+          days={days}
+          draftWorkouts={draftWorkouts}
+          onClose={() => setCopySource(null)}
+          onApply={handleCopyWeeks}
         />
       )}
     </Layout>

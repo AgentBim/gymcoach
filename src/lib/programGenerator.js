@@ -160,6 +160,106 @@ export function referencedDraftRefs(days, weeks) {
   return refs
 }
 
+export function weekHasDays(days, week) {
+  return DAYS.some((_, d) => Boolean(days[cellKey(week, d)]))
+}
+
+// Generated names end in " · W{week}"; a copy for another week gets that
+// week's number instead (or gains the suffix if it had none).
+export function renameForWeek(name, sourceWeek, targetWeek) {
+  const suffix = ` · W${sourceWeek}`
+  const base = name.endsWith(suffix) ? name.slice(0, -suffix.length) : name
+  return truncateName(`${base} · W${targetWeek}`)
+}
+
+// "Progress the copies": +1 set per week after the source, capped at 6 (a
+// base already above 6 is left alone). Prehab keeps its dosage.
+function progressSets(sets, weeksAfter) {
+  return weeksAfter > 0 ? Math.max(sets, Math.min(sets + weeksAfter, 6)) : sets
+}
+
+// Copies one week's cells to other weeks. Pure: returns the next draft plus
+// the counts the Copy weeks footer shows, so the footer is computed by the
+// same code that applies the copy.
+//
+// mode 'link':  target cells point at the same workout_id / workout_ref.
+// mode 'clone': each target week gets its own draft copy of every workout
+//               in the source week (one per source workout, so days that
+//               shared a workout still share its copy). Saved workouts need
+//               their contents in savedContent[id] = { name, exercises,
+//               prehab }; when one is missing the copy is counted but not
+//               made, and stats.missingContent is set.
+// conflict 'replace': the target week mirrors the source for the copied day
+//               types (a day that's empty in the source is cleared).
+// conflict 'fill':    only days that are empty in the target are written.
+// copyDayTypes false: only training days are copied; other target days stay.
+// copyNotes false:    a written cell keeps the target's own note, if any.
+export function copyWeeks(state, opts, savedContent = {}) {
+  const { days, draftWorkouts } = state
+  const { source, targets, mode, conflict, copyDayTypes, copyNotes, progress } = opts
+  const nextDays = { ...days }
+  const nextDrafts = { ...draftWorkouts }
+  const stats = { daysWritten: 0, weeksWritten: 0, workoutsCreated: 0, missingContent: false }
+
+  targets.filter(t => t !== source).forEach(target => {
+    const clones = {}
+    let wrote = false
+    DAYS.forEach((_, d) => {
+      const key = cellKey(target, d)
+      const src = days[cellKey(source, d)]
+      const existing = days[key]
+      if (!src) {
+        if (conflict === 'replace' && existing) delete nextDays[key]
+        return
+      }
+      if (!copyDayTypes && src.day_type !== 'training') return
+      if (conflict === 'fill' && existing) return
+
+      let workout_id = src.workout_id || null
+      let workout_ref = src.workout_ref || null
+      if (mode === 'clone' && (workout_id || workout_ref)) {
+        const srcKey = workout_ref ? `ref:${workout_ref}` : `id:${workout_id}`
+        if (!(srcKey in clones)) {
+          const content = workout_ref ? draftWorkouts[workout_ref] : savedContent[workout_id]
+          stats.workoutsCreated += 1
+          if (!content) {
+            stats.missingContent = true
+            clones[srcKey] = null
+          } else {
+            const clone = {
+              ref: newRef(),
+              id: null,
+              name: renameForWeek(content.name, source, target),
+              focus: content.focus || null,
+              exercises: content.exercises.map(item => ({
+                ...item,
+                sets: progress ? progressSets(item.sets, target - source) : item.sets,
+              })),
+              prehab: (content.prehab || []).map(item => ({ ...item })),
+            }
+            nextDrafts[clone.ref] = clone
+            clones[srcKey] = clone.ref
+          }
+        }
+        workout_id = null
+        workout_ref = clones[srcKey]
+      }
+
+      nextDays[key] = {
+        day_type: src.day_type,
+        workout_id,
+        workout_ref,
+        notes: copyNotes ? (src.notes || '') : (existing?.notes || ''),
+      }
+      stats.daysWritten += 1
+      wrote = true
+    })
+    if (wrote) stats.weeksWritten += 1
+  })
+
+  return { days: nextDays, draftWorkouts: nextDrafts, stats }
+}
+
 // Drops draft workouts no cell points at any more (any week, so shrinking and
 // re-growing the week count doesn't lose them).
 export function pruneDraftWorkouts(days, draftWorkouts) {
