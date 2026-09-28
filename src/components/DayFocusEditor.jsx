@@ -15,9 +15,10 @@ const PRESET_NAMES = [...Object.keys(FOCUS_PRESETS), CUSTOM_PRESET]
 // initialMatchSame: whether "Apply to days with the same preset" starts on.
 //   Only useful when days start with distinct presets (e.g. from a split);
 //   when every day starts the same, it would make the first pick apply to all.
-export default function DayFocusEditor({ dayIdxs, focus, onChange, count, initialMatchSame = true }) {
+// initialDay: the tab to open on (defaults to the first training day).
+export default function DayFocusEditor({ dayIdxs, focus, onChange, count, initialMatchSame = true, initialDay }) {
   const isMobile = useIsMobile()
-  const [activeDay, setActiveDay] = useState(dayIdxs[0] ?? 0)
+  const [activeDay, setActiveDay] = useState(initialDay ?? dayIdxs[0] ?? 0)
   const [matchSame, setMatchSame] = useState(initialMatchSame)
 
   if (!dayIdxs.length) {

@@ -310,3 +310,208 @@ export function draftPreview(draft, poolById) {
     prehab: join(draft.prehab || [], 'pre'),
   }
 }
+
+// ── Full program generation (Phase 3) ──────────────────────────────────────
+//
+// config: {
+//   programName, weeks, trainingDays: bool[7], offDays: 'rest'|'recovery',
+//   dayFocus: { [dayIdx]: { preset, weights } }, count, includePrehab,
+//   variation: 'repeat'|'rotate'|'fresh', rotateEvery,
+//   progression: null|'sets'|'reps', deloadEvery: null|int,
+// }
+//
+// A "selection" is one training day's exercise picks for one block:
+// repeat has a single block, rotate a block every rotateEvery weeks, fresh a
+// block per week. Workouts are built from selections:
+//   - progression on: one workout per training day per week (sets/reps live
+//     on workout_exercises, so each week needs its own copy);
+//   - progression off: one workout per selection, shared by the block's
+//     weeks, plus one deload copy per selection that has a deload week.
+
+export const SPLITS = [
+  { id: 'full', label: 'Full body', seq: ['Full body'] },
+  { id: 'ul', label: 'Upper / Lower', seq: ['Upper', 'Lower'] },
+  { id: 'ppl', label: 'Push / Pull / Legs', seq: ['Push', 'Pull', 'Legs'] },
+  { id: 'bp', label: 'Body part', seq: ['Legs', 'Back', 'Shoulders', 'Arms', 'Core'] },
+  { id: 'custom', label: 'Custom', seq: [CUSTOM_PRESET] },
+]
+
+// The k-th selected training day gets seq[k % seq.length].
+export function splitFocus(splitId, trainingDays) {
+  const { seq } = SPLITS.find(s => s.id === splitId) || SPLITS[0]
+  const focus = {}
+  let k = 0
+  trainingDays.forEach((on, dayIdx) => {
+    if (!on) return
+    const preset = seq[k % seq.length]
+    k += 1
+    focus[dayIdx] = { preset, weights: { ...(FOCUS_PRESETS[preset] || FOCUS_PRESETS['Full body']) } }
+  })
+  return focus
+}
+
+function selectionBlock(week, config) {
+  if (config.variation === 'repeat') return 0
+  if (config.variation === 'rotate') return Math.floor((week - 1) / config.rotateEvery)
+  return week - 1
+}
+
+// Weeks into the current progression cycle: a rotation block, else a deload
+// cycle, else the whole program.
+function cycleIndex(week, config) {
+  const len = config.variation === 'rotate' ? config.rotateEvery : (config.deloadEvery || config.weeks)
+  return (week - 1) % len
+}
+
+function isDeloadWeek(week, config) {
+  return Boolean(config.deloadEvery) && week % config.deloadEvery === 0
+}
+
+// "1 recovery day": the first off day after a training day (Wed for a
+// Mon/Tue/Thu/Fri week), else the first off day.
+function recoveryDayFor(trainingDays) {
+  const off = DAYS.map((_, i) => i).filter(i => !trainingDays[i])
+  return off.find(i => trainingDays.slice(0, i).some(Boolean)) ?? off[0] ?? null
+}
+
+// Structure only, no exercise picks: every cell, every workout to create and
+// every selection. summarize() and the preview both read it.
+export function planProgram(config) {
+  const { weeks, trainingDays, offDays, dayFocus, progression } = config
+  const recoveryDay = offDays === 'recovery' ? recoveryDayFor(trainingDays) : null
+  const perWeek = Boolean(progression)
+  const focusN = {}
+  const seenPreset = {}
+  DAYS.forEach((_, dayIdx) => {
+    if (!trainingDays[dayIdx]) return
+    const preset = dayFocus[dayIdx]?.preset || 'Full body'
+    seenPreset[preset] = (seenPreset[preset] || 0) + 1
+    focusN[dayIdx] = seenPreset[preset]
+  })
+
+  const cells = {}
+  const workouts = {}
+  const selections = {}
+  for (let week = 1; week <= weeks; week++) {
+    const block = selectionBlock(week, config)
+    const deload = isDeloadWeek(week, config)
+    for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+      const key = cellKey(week, dayIdx)
+      if (!trainingDays[dayIdx]) {
+        cells[key] = { kind: dayIdx === recoveryDay ? 'recovery' : 'rest', week, dayIdx }
+        continue
+      }
+      const selKey = `d${dayIdx}:b${block}`
+      const workoutKey = perWeek ? `${selKey}:w${week}` : deload ? `${selKey}:deload` : selKey
+      if (!selections[selKey]) selections[selKey] = { dayIdx, block, weeks: [] }
+      selections[selKey].weeks.push(week)
+      if (!workouts[workoutKey]) {
+        workouts[workoutKey] = { selKey, dayIdx, block, week, deload, i: perWeek ? cycleIndex(week, config) : 0, perWeek, weeks: [] }
+      }
+      workouts[workoutKey].weeks.push(week)
+      cells[key] = { kind: 'training', week, dayIdx, block, deload, selKey, workoutKey }
+    }
+  }
+  return { cells, workouts, selections, focusN }
+}
+
+// The workout count the setup footer shows (and apply creates).
+export function summarize(config) {
+  return Object.keys(planProgram(config).workouts).length
+}
+
+function selectionSignature(config, dayIdx) {
+  return JSON.stringify([config.dayFocus[dayIdx]?.weights, config.count, config.includePrehab])
+}
+
+// Exercise picks per selection. A previous pick is kept when its day's focus
+// and size are unchanged and it's either locked or not being rerolled
+// (reroll: 'all' or a Set of selection keys). Picks within a block avoid
+// repeating each other (weightedPick's usedIds).
+export function pickSelections(plan, config, pool, previous = {}, { locked = new Set(), reroll = null } = {}) {
+  const { strength, prehab } = splitPool(pool)
+  const next = {}
+  const blocks = {}
+  Object.entries(plan.selections).forEach(([selKey, s]) => {
+    (blocks[s.block] = blocks[s.block] || []).push(selKey)
+  })
+  const wanted = key => reroll === 'all' || (reroll instanceof Set && reroll.has(key))
+  Object.values(blocks).forEach(keys => {
+    const used = new Set()
+    keys.forEach(key => {
+      const prev = previous?.[key]
+      const sig = selectionSignature(config, plan.selections[key].dayIdx)
+      if (prev && prev.sig === sig && (locked.has(key) || !wanted(key))) {
+        next[key] = prev
+        prev.main.concat(prev.prehab).forEach(id => used.add(id))
+      }
+    })
+    keys.forEach(key => {
+      if (next[key]) return
+      const { dayIdx } = plan.selections[key]
+      const weights = config.dayFocus[dayIdx]?.weights || FOCUS_PRESETS['Full body']
+      const weightFor = muscle => weights[muscle] || 0
+      const main = weightedPick(strength, weightFor, config.count, used).map(ex => ex.id)
+      const extra = config.includePrehab && prehab.length
+        ? weightedPick(prehab, weightFor, Math.min(2, prehab.length), used).map(ex => ex.id)
+        : []
+      next[key] = { sig: selectionSignature(config, dayIdx), main, prehab: extra }
+    })
+  })
+  return next
+}
+
+// Sets/reps for one exercise in one workout. Deload: ~60% of the sets, reps
+// unchanged. Progression: sets +1 per week into the cycle (up to 6), or reps
+// +2 per week for rep-based exercises (timed ones keep their duration).
+function dosedItem(ex, position, { deload, i }, progression) {
+  const item = toPayloadItem(ex, position)
+  if (deload) item.sets = Math.max(1, Math.round(ex.default_sets * 0.6))
+  else if (progression === 'sets') item.sets = progressSets(ex.default_sets, i)
+  else if (progression === 'reps' && ex.default_reps) item.reps = ex.default_reps + 2 * i
+  return item
+}
+
+function programWorkoutName(config, plan, w) {
+  const preset = config.dayFocus[w.dayIdx]?.preset || 'Full body'
+  const base = `${config.programName.trim() || 'Program'} · ${preset} ${plan.focusN[w.dayIdx]}`
+  if (w.perWeek || config.variation === 'fresh') return truncateName(`${base} · W${w.week}`)
+  const block = config.variation === 'rotate' ? ` · B${w.block + 1}` : ''
+  return truncateName(`${base}${block}${w.deload ? ' · Deload' : ''}`)
+}
+
+// Builds the whole draft (every week of the program) from a plan and its
+// picks, in ProgramBuilder's { days, draftWorkouts } shape.
+export function buildProgramDraft(plan, selections, config, poolById) {
+  const draftWorkouts = {}
+  const refFor = {}
+  Object.entries(plan.workouts).forEach(([workoutKey, w]) => {
+    const sel = selections[w.selKey]
+    const ref = newRef()
+    draftWorkouts[ref] = {
+      ref,
+      id: null,
+      name: programWorkoutName(config, plan, w),
+      focus: config.dayFocus[w.dayIdx]?.preset || null,
+      exercises: sel.main.filter(id => poolById[id]).map((id, pos) => dosedItem(poolById[id], pos, w, config.progression)),
+      prehab: sel.prehab.filter(id => poolById[id]).map((id, pos) => toPayloadItem(poolById[id], pos)),
+    }
+    refFor[workoutKey] = ref
+  })
+  const days = {}
+  Object.entries(plan.cells).forEach(([key, c]) => {
+    days[key] = c.kind === 'training'
+      ? { day_type: 'training', workout_id: null, workout_ref: refFor[c.workoutKey], notes: '' }
+      : { day_type: c.kind, workout_id: null, workout_ref: null, notes: '' }
+  })
+  return { days, draftWorkouts }
+}
+
+// Plan + picks + draft in one call. options: { previous, locked, reroll }.
+export function generateProgram(config, pool, options = {}) {
+  if (!splitPool(pool).strength.length) throw new Error('Your exercise library has no strength exercises to pick from')
+  const plan = planProgram(config)
+  const selections = pickSelections(plan, config, pool, options.previous, options)
+  const poolById = Object.fromEntries(pool.map(e => [e.id, e]))
+  return { plan, selections, ...buildProgramDraft(plan, selections, config, poolById) }
+}
