@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -7,6 +7,8 @@ import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import Layout from '../components/Layout'
 import AssignModal from '../components/AssignModal'
 import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
+import { SelectionBar, ConfirmDeleteSheet, Toast } from '../components/BulkDelete'
+import { describeSelection, fetchWorkoutImpact, workoutDeletePlan } from '../lib/bulkDelete'
 import { MUSCLE_COLORS as GROUP_COLORS, avatarColor as avatarPalette, initials } from '../lib/theme'
 
 const ACCENT_COLORS = ['var(--ac)', '#6BA9DE', '#A184E3', '#4FB88A', '#E7A23E', '#E2695A']
@@ -40,6 +42,20 @@ export default function Dashboard() {
   const [previewPanel, setPreviewPanel]   = useState(null) // { workoutId, anchorRect }
   const [programWorkouts, setProgramWorkouts] = useState([])
   const [programWorkoutsOpen, setProgramWorkoutsOpen] = useState(false)
+  // Bulk delete: select mode on the workout list, plus checkboxes on the
+  // "Kept for athlete history" list. deleteReq opens the confirmation sheet.
+  const [selecting, setSelecting]         = useState(false)
+  const [selected, setSelected]           = useState(() => new Set())
+  const [lastIdx, setLastIdx]             = useState(null)
+  const [keptSelected, setKeptSelected]   = useState(() => new Set())
+  const [deleteReq, setDeleteReq]         = useState(null) // { workouts: [{ id, name }], historyOnly }
+  const [impact, setImpact]               = useState(null)
+  const [deleteError, setDeleteError]     = useState('')
+  const [keepHistory, setKeepHistory]     = useState(true)
+  const [deleting, setDeleting]           = useState(false)
+  const [toast, setToast]                 = useState('')
+  const deleteReqId = useRef(0)
+  const shiftClick = useRef(false)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -52,7 +68,7 @@ export default function Dashboard() {
     // the collapsed "Program workouts" section instead.
     const [wRes, aRes, fbRes, pwRes] = await Promise.all([
       supabase.from('workouts')
-        .select('*, workout_exercises(exercise_id, exercises(muscle_group)), workout_assignments(id, athlete_id, assignment_token, athletes(full_name))')
+        .select('*, workout_exercises(exercise_id, exercises(muscle_group)), workout_assignments(id, athlete_id, assignment_token, athletes(full_name)), workout_feedback(id)')
         .eq('coach_id', user.id)
         .eq('program_generated', false)
         .order('created_at', { ascending: false }),
@@ -73,10 +89,81 @@ export default function Dashboard() {
     setLoading(false)
   }
 
-  async function deleteWorkout(id) {
-    if (!confirm('Delete this workout?')) return
-    await supabase.from('workouts').delete().eq('id', id)
-    setWorkouts(w => w.filter(x => x.id !== id))
+  // Every delete, one workout or many, goes through the confirmation sheet
+  // and the delete_workouts RPC, which keeps workouts with athlete history
+  // unless the coach turns that off (their feedback cascades on delete).
+  async function openDelete(list, { historyOnly = false } = {}) {
+    if (!list.length) return
+    const reqId = ++deleteReqId.current
+    setDeleteReq({ workouts: list.map(w => ({ id: w.id, name: w.name })), historyOnly })
+    setImpact(null)
+    setDeleteError('')
+    setKeepHistory(true)
+    try {
+      const result = await fetchWorkoutImpact(list.map(w => w.id))
+      if (reqId === deleteReqId.current) setImpact(result)
+    } catch (err) {
+      if (reqId === deleteReqId.current) setDeleteError(err.message || 'Could not check what this delete changes')
+    }
+  }
+
+  function closeDelete() {
+    deleteReqId.current += 1
+    setDeleteReq(null)
+  }
+
+  async function confirmDelete() {
+    setDeleting(true)
+    setDeleteError('')
+    const { data, error } = await supabase.rpc('delete_workouts', {
+      p_workout_ids: deleteReq.workouts.map(w => w.id),
+      p_keep_history: deleteReq.historyOnly ? false : keepHistory,
+    })
+    setDeleting(false)
+    if (error) { setDeleteError(error.message || 'Could not delete'); return }
+    const deleted = data?.deleted || 0
+    const kept = data?.kept?.length || 0
+    setToast(`${deleted} workout${deleted === 1 ? '' : 's'} deleted${kept ? ` · ${kept} kept for athlete history` : ''}`)
+    setDeleteReq(null)
+    stopSelecting()
+    setKeptSelected(new Set())
+    fetchAll()
+  }
+
+  function startSelecting() {
+    setSelecting(true)
+    setSelected(new Set())
+    setLastIdx(null)
+    setFilterOpen(false)
+  }
+
+  function stopSelecting() {
+    setSelecting(false)
+    setSelected(new Set())
+    setLastIdx(null)
+  }
+
+  // Click toggles; shift-click selects the range from the last clicked card.
+  function toggleSelected(idx, id, shiftKey) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (shiftKey && lastIdx !== null) {
+        const [from, to] = [Math.min(lastIdx, idx), Math.max(lastIdx, idx)]
+        filteredWorkouts.slice(from, to + 1).forEach(w => next.add(w.id))
+      } else if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+    setLastIdx(idx)
+  }
+
+  function toggleKept(id) {
+    setKeptSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   async function duplicateWorkout(w) {
@@ -126,6 +213,16 @@ export default function Dashboard() {
   })
   programGroups.sort((a, b) => a.name.localeCompare(b.name))
 
+  // Only workouts the current search/filter shows count as selected, so a
+  // filter can't hide part of what's about to be deleted.
+  const selectedWorkouts = filteredWorkouts.filter(w => selected.has(w.id))
+  const allVisibleSelected = filteredWorkouts.length > 0 && selectedWorkouts.length === filteredWorkouts.length
+  const selectedWithHistory = selectedWorkouts.filter(w => w.workout_feedback?.length).length
+  const keptChosen = keptForHistory.filter(w => keptSelected.has(w.id))
+  const deletePlan = deleteReq && impact
+    ? workoutDeletePlan(deleteReq.workouts, impact, { keepHistory, historyOnly: deleteReq.historyOnly })
+    : null
+
   const coachFirst = coach?.full_name?.split(' ')[0] || 'Coach'
   const day = new Date().toLocaleDateString('en-US', { weekday: 'long' })
 
@@ -168,11 +265,26 @@ export default function Dashboard() {
             ))}
             {keptForHistory.length > 0 && (
               <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--s1)', border: '1px solid var(--br)' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>Kept for athlete history</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>Kept for athlete history</span>
+                  <button onClick={() => setKeptSelected(keptChosen.length === keptForHistory.length ? new Set() : new Set(keptForHistory.map(w => w.id)))}
+                    style={{ minHeight: isMobile ? 44 : 30, padding: '0 8px', background: 'none', border: 'none', color: 'var(--ac)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    {keptChosen.length === keptForHistory.length ? 'Deselect all' : 'Select all'}
+                  </button>
+                  {keptChosen.length > 0 && (
+                    <button onClick={() => openDelete(keptChosen, { historyOnly: true })}
+                      style={{ minHeight: isMobile ? 44 : 30, padding: '0 12px', borderRadius: 8, background: '#E2695A', border: 'none', color: '#1A0E0C', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      🗑 Delete {keptChosen.length}
+                    </button>
+                  )}
+                </div>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 6 }}>Their program was deleted, but athletes have completed or been assigned them.</div>
                 {keptForHistory.map(w => (
                   <div key={w.id} style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: isMobile ? 44 : 32, borderTop: '1px solid var(--br)' }}>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</span>
+                    <label style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, minHeight: isMobile ? 44 : 32, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={keptSelected.has(w.id)} onChange={() => toggleKept(w.id)} style={{ width: 18, height: 18, flexShrink: 0, accentColor: 'var(--ac)' }} />
+                      <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</span>
+                    </label>
                     <button onClick={e => openPreview(w.id, e.currentTarget)} title="Preview workout" aria-label={`Preview ${w.name}`}
                       style={{ width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, flexShrink: 0, background: 'transparent', border: 'none', color: 'var(--mu2)', fontSize: 13, cursor: 'pointer' }}>
                       👁
@@ -289,13 +401,50 @@ export default function Dashboard() {
                   style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 32 }}>✏️ Edit</button>
                 <button onClick={() => duplicateWorkout(w)}
                   style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 32 }}>⧉ Copy</button>
-                <button onClick={() => deleteWorkout(w.id)}
+                <button onClick={() => openDelete([w])} aria-label={`Delete ${w.name}`}
                   style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#E2695A', fontSize: 12, padding: '7px 12px', cursor: 'pointer', minHeight: 32 }}>🗑</button>
               </div>
             </div>
           )}
         </div>
       </div>
+    )
+  }
+
+  // ── SELECTABLE CARD (select mode) ─────────────────────────────
+  // A plain render function, so toggling doesn't remount the checkbox. The
+  // checkbox's own change event does the toggling (clicks on the card reach
+  // it through the label, Space when it's focused); its click only records
+  // Shift for range selection. Don't preventDefault the click: the browser
+  // would revert the checkbox after React re-rendered it.
+  function renderSelectableCard(w, idx) {
+    const on = selected.has(w.id)
+    const groups = getMuscleGroups(w)
+    const exCount = w.workout_exercises?.length || 0
+    const done = w.workout_feedback?.length || 0
+    return (
+      <label key={w.id}
+        style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: isMobile ? 14 : 16, borderRadius: 14, cursor: 'pointer', userSelect: 'none',
+          background: on ? 'rgba(199,228,92,.08)' : 'var(--s2)', border: `1px solid ${on ? 'rgba(199,228,92,.45)' : 'var(--br)'}` }}>
+        <input type="checkbox" checked={on} aria-label={`Select ${w.name}`}
+          onClick={e => { shiftClick.current = e.shiftKey }}
+          onChange={() => toggleSelected(idx, w.id, shiftClick.current)}
+          style={{ width: 20, height: 20, margin: '1px 0 0', flexShrink: 0, accentColor: 'var(--ac)', cursor: 'pointer' }} />
+        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+            <span style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</span>
+            {w.is_ai_generated && <span style={{ fontSize: 10, background: 'rgba(167,139,250,.12)', color: '#A184E3', border: '1px solid rgba(167,139,250,.25)', borderRadius: 20, padding: '1px 7px', fontWeight: 700, flexShrink: 0 }}>✦ AI</span>}
+          </span>
+          <span style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, color: 'var(--mu2)' }}>{exCount} exercise{exCount !== 1 ? 's' : ''}</span>
+            {groups.slice(0, 3).map(g => {
+              const c = GROUP_COLORS[g] || { bg: 'var(--br)', color: 'var(--mu2)' }
+              return <span key={g} style={{ padding: '1px 7px', borderRadius: 20, fontSize: 10, fontWeight: 500, background: c.bg, color: c.color }}>{g}</span>
+            })}
+          </span>
+          {done > 0 && <span style={{ fontSize: 11.5, color: '#E7A23E' }}>⏱ {done} completion{done === 1 ? '' : 's'} by athletes</span>}
+        </span>
+      </label>
     )
   }
 
@@ -306,15 +455,29 @@ export default function Dashboard() {
       {/* ── MOBILE STICKY HEADER ── */}
       {isMobile && (
         <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10, paddingTop: 'var(--sat)' }}>
+          {selecting ? (
+            <div style={{ padding: '8px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button onClick={stopSelecting} style={{ minHeight: 44, padding: '0 12px', background: 'none', border: 'none', color: 'var(--mu)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <span style={{ flex: 1, textAlign: 'center', fontSize: 15, fontWeight: 700, color: 'var(--tx)' }}>{selectedWorkouts.length ? `${selectedWorkouts.length} selected` : 'Select workouts'}</span>
+              <button onClick={() => setSelected(allVisibleSelected ? new Set() : new Set(filteredWorkouts.map(w => w.id)))}
+                style={{ minHeight: 44, padding: '0 12px', background: 'none', border: 'none', color: 'var(--ac)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                {allVisibleSelected ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
+          ) : (
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <ChalkUpLogo size={22} />
             <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ac)', fontFamily: 'var(--font-head)', flex: 1 }}>chalkup</span>
+            {workouts.length > 0 && (
+              <button onClick={startSelecting} style={{ background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--tx)', padding: '7px 10px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Select</button>
+            )}
             <button onClick={() => setFilterOpen(o => !o)} style={{ background: filterOpen || search || filterGroup !== 'All' ? 'rgba(199,228,92,.12)' : 'var(--br)', border: 'none', borderRadius: 8, color: filterOpen || search || filterGroup !== 'All' ? 'var(--ac)' : 'var(--mu)', padding: '7px 10px', fontSize: 13, cursor: 'pointer' }}>
               {filterOpen ? '✕' : '🔍'}
             </button>
             <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '7px 13px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
           </div>
-          {filterOpen && (
+          )}
+          {filterOpen && !selecting && (
             <div style={{ padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workouts…" autoFocus
                 style={{ width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 11px', fontSize: 13, outline: 'none' }} />
@@ -372,6 +535,18 @@ export default function Dashboard() {
                   <div style={{ fontSize: 10, color: 'var(--mu)', fontWeight: 500 }}>{lbl}</div>
                 </div>
               ))}
+              {selecting && (
+                <button onClick={() => setSelected(allVisibleSelected ? new Set() : new Set(filteredWorkouts.map(w => w.id)))}
+                  style={{ background: 'none', border: 'none', color: 'var(--ac)', padding: '10px 8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  {allVisibleSelected ? 'Deselect all' : `Select all ${filteredWorkouts.length}`}
+                </button>
+              )}
+              {workouts.length > 0 && (
+                <button onClick={selecting ? stopSelecting : startSelecting} aria-pressed={selecting}
+                  style={{ background: selecting ? 'rgba(199,228,92,.12)' : 'var(--s2)', border: `1px solid ${selecting ? 'rgba(199,228,92,.45)' : 'var(--br)'}`, color: selecting ? 'var(--ac)' : 'var(--tx)', borderRadius: 10, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  {selecting ? 'Done' : 'Select'}
+                </button>
+              )}
               <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New workout</button>
             </div>
           </div>
@@ -404,8 +579,8 @@ export default function Dashboard() {
               </div>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(290px, 1fr))', gap: isMobile ? 10 : 14 }}>
-              {filteredWorkouts.map((w, i) => <WorkoutCard key={w.id} w={w} idx={i} />)}
-              {!isMobile && (
+              {filteredWorkouts.map((w, i) => (selecting ? renderSelectableCard(w, i) : <WorkoutCard key={w.id} w={w} idx={i} />))}
+              {!isMobile && !selecting && (
                 <div onClick={() => navigate('/workout/new')} style={{ border: '1.5px dashed var(--br)', borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 160, gap: 8, cursor: 'pointer', color: 'var(--mu)', transition: 'border-color .15s' }}>
                   <div style={{ width: 36, height: 36, background: 'var(--br)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>＋</div>
                   <span style={{ fontSize: 13 }}>New workout</span>
@@ -419,6 +594,49 @@ export default function Dashboard() {
       </div>
 
       {assigningWorkout && <AssignModal workout={assigningWorkout} onClose={() => setAssigningWorkout(null)} />}
+
+      {selecting && (
+        <SelectionBar
+          count={selectedWorkouts.length}
+          deleteLabel={selectedWorkouts.length ? `Delete ${selectedWorkouts.length}` : 'Delete'}
+          hint={selectedWorkouts.length === 0
+            ? (isMobile ? 'Tap workouts to select them' : 'Click cards to select · Shift-click selects a range')
+            : selectedWithHistory
+              ? `${selectedWithHistory} ${selectedWithHistory === 1 ? 'has' : 'have'} athlete history`
+              : `${selectedWorkouts.length} selected`}
+          hintTone={selectedWithHistory ? 'warn' : 'muted'}
+          onDelete={() => openDelete(selectedWorkouts)}
+        />
+      )}
+
+      {deleteReq && (
+        <ConfirmDeleteSheet
+          title={deleteReq.historyOnly
+            ? `Delete ${deleteReq.workouts.length} kept workout${deleteReq.workouts.length === 1 ? '' : 's'}?`
+            : `Delete ${deleteReq.workouts.length === 1 ? deleteReq.workouts[0].name : `${deleteReq.workouts.length} workouts`}?`}
+          subtitle={deleteReq.historyOnly
+            ? `${describeSelection(deleteReq.workouts.map(w => w.name))}. Their programs are already gone, and deleting can’t be undone.`
+            : deleteReq.workouts.length > 1
+              ? `${describeSelection(deleteReq.workouts.map(w => w.name))}. Deleting can’t be undone.`
+              : 'Deleting can’t be undone. Here’s what else it changes.'}
+          loading={!impact && !deleteError}
+          rows={deletePlan?.rows}
+          keepToggle={{
+            label: 'Keep workouts with athlete history',
+            hint: 'They stay in your list. Turn this off to delete them and their history too.',
+            checked: keepHistory,
+            onChange: setKeepHistory,
+          }}
+          confirmLabel={deletePlan?.confirmLabel || 'Delete'}
+          confirmDisabled={!deletePlan || deletePlan.toDelete.length === 0}
+          busy={deleting}
+          error={deleteError}
+          onConfirm={confirmDelete}
+          onClose={closeDelete}
+        />
+      )}
+
+      {toast && <Toast message={toast} onClose={() => setToast('')} />}
 
       {previewPanel && (
         <WorkoutPreviewPanel
@@ -445,7 +663,7 @@ export default function Dashboard() {
                 { icon: '✏️', label: 'Edit',       action: () => { setSheetWorkout(null); navigate(`/workout/${sheetWorkout.id}/edit`) } },
                 { icon: '⧉',  label: 'Duplicate',  action: () => { duplicateWorkout(sheetWorkout); setSheetWorkout(null) } },
                 { icon: '🔗', label: 'Copy link',  action: () => { copyWorkoutLink(sheetWorkout); setSheetWorkout(null) } },
-                { icon: '🗑', label: 'Delete', danger: true, action: () => { deleteWorkout(sheetWorkout.id); setSheetWorkout(null) } },
+                { icon: '🗑', label: 'Delete', danger: true, action: () => { openDelete([sheetWorkout]); setSheetWorkout(null) } },
               ].map(item => (
                 <button key={item.label} onClick={item.action}
                   style={{ background: item.danger ? 'rgba(248,128,128,.07)' : 'var(--s2)', border: `1px solid ${item.danger ? 'rgba(248,128,128,.2)' : 'var(--br)'}`, borderRadius: 14, padding: '16px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', minHeight: 80 }}>
