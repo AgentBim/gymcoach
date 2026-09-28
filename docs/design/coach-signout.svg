@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="760" viewBox="0 0 1120 760">
+<rect width="1120" height="760" fill="#0e1213"/>
+<style>text{font-family:Arial,sans-serif;fill:#edf1ec} .muted{fill:#9da9a4;font-size:14px}.label{fill:#c7e45c;font-size:13px;letter-spacing:2px}.nav{font-size:17px}.small{font-size:13px}</style>
+<text x="40" y="48" font-size="28" font-weight="700">Coach sign out</text><text x="40" y="77" class="muted">ChalkUp · Design proposal · Desktop and mobile</text>
+<text x="40" y="120" class="label">DESKTOP · SIDEBAR FOOTER</text>
+<rect x="40" y="142" width="610" height="560" rx="18" fill="#15191a" stroke="#34403b"/>
+<path d="M290 142V702" stroke="#34403b"/>
+<text x="64" y="184" font-size="24" font-weight="700">chalkup</text><circle cx="258" cy="176" r="8" fill="#c7e45c"/>
+<rect x="54" y="215" width="220" height="44" rx="8" fill="#262e2a"/>
+<text x="72" y="243" class="nav">Dashboard</text><text x="72" y="290" class="nav">Roster</text><text x="72" y="338" class="nav">Programs</text><text x="72" y="386" class="nav">History</text><text x="72" y="434" class="nav">Exercise library</text>
+<rect x="54" y="463" width="220" height="44" rx="8" fill="#28321d"/><text x="72" y="491" font-size="16" style="fill:#c7e45c">+ New workout</text>
+<path d="M54 563H274" stroke="#34403b"/><circle cx="78" cy="599" r="20" fill="#303e25"/><text x="67" y="604" class="small">CO</text><text x="111" y="594" font-size="15">Coach</text><text x="111" y="616" class="muted">Coach account</text>
+<rect x="54" y="638" width="220" height="48" rx="9" fill="#202727" stroke="#6c7c74"/><text x="80" y="668" font-size="17">↪</text><text x="115" y="668" font-size="16" font-weight="700">Sign out</text>
+<text x="316" y="188" font-size="22" font-weight="700">Dashboard</text><text x="316" y="215" class="muted">Welcome back, Coach</text>
+<rect x="316" y="247" width="306" height="110" rx="12" fill="#202727"/><text x="336" y="280" class="muted">YOUR TEAM</text><text x="336" y="327" font-size="30">12 athletes</text>
+<rect x="316" y="377" width="306" height="140" rx="12" fill="#202727"/><text x="336" y="410" font-size="17">Upcoming workouts</text><path d="M336 441H599M336 475H570" stroke="#34403b" stroke-width="8"/>
+<text x="710" y="120" class="label">MOBILE · MORE MENU</text>
+<rect x="710" y="142" width="370" height="560" rx="25" fill="#15191a" stroke="#536159"/>
+<text x="732" y="183" font-size="20" font-weight="700">Dashboard</text><text x="732" y="209" class="muted">Welcome back, Coach</text><rect x="732" y="235" width="326" height="108" rx="12" fill="#202727"/>
+<rect x="711" y="352" width="368" height="290" rx="20" fill="#202727"/>
+<rect x="876" y="363" width="38" height="4" rx="2" fill="#67766f"/>
+<text x="734" y="401" font-size="16" font-weight="700">Coach account</text><text x="1038" y="401" class="muted">×</text>
+<path d="M730 423H1060M730 479H1060M730 535H1060" stroke="#39443e"/>
+<text x="742" y="458" class="nav">Programs</text><text x="742" y="513" class="nav">History</text>
+<rect x="730" y="551" width="330" height="54" rx="9" fill="#293230" stroke="#6c7c74"/><text x="748" y="585" font-size="18">↪</text><text x="783" y="585" font-size="17" font-weight="700">Sign out</text>
+<path d="M711 642H1079" stroke="#34403b"/><text x="727" y="678" class="small">Home</text><text x="790" y="678" class="small">Roster</text><rect x="875" y="649" width="40" height="40" rx="12" fill="#c7e45c"/><text x="888" y="677" font-size="25" style="fill:#17200f">+</text><text x="935" y="678" class="small">Library</text><text x="1023" y="678" font-size="13" style="fill:#c7e45c">More</text>
+<text x="40" y="738" class="muted">Proposed behavior: Sign out → Signing out… → Coach login. On failure, show an inline error and allow retry.</text>
+</svg>
