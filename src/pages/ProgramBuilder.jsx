@@ -7,6 +7,8 @@ import Layout from '../components/Layout'
 import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
 import GenerateProgramModal from '../components/GenerateProgramModal'
 import CopyWeeksModal from '../components/CopyWeeksModal'
+import ProgramToolsSheet from '../components/ProgramToolsSheet'
+import FullProgramModal from '../components/FullProgramModal'
 import { DAY_TYPE_COLORS } from '../lib/theme'
 import { DAYS, buildSavePayload, cellKey, draftPreview, parseCellKey, pruneDraftWorkouts, weekHasDays } from '../lib/programGenerator'
 
@@ -65,7 +67,7 @@ export default function ProgramBuilder() {
   // docs/handoffs/program-tools.md):
   //   days:          { 'w1d0': { day_type, workout_id, workout_ref, notes } }
   //   draftWorkouts: { [ref]: { ref, id, name, focus, exercises, prehab } }
-  //   history:       [{ days, draftWorkouts, label }], undo stack for tools
+  //   history:       [{ days, draftWorkouts, weeks, label }], undo stack for tools
   const [days, setDays] = useState({})
   const [draftWorkouts, setDraftWorkouts] = useState({})
   const [history, setHistory] = useState([])
@@ -81,6 +83,8 @@ export default function ProgramBuilder() {
   const [previewPanel, setPreviewPanel] = useState(null) // { workoutId, draftRef, anchorRect, confirmIfDirty }
   const [fillOpen, setFillOpen] = useState(false)
   const [copySource, setCopySource] = useState(null) // week the Copy weeks sheet opened from
+  const [toolsOpen, setToolsOpen] = useState(false)
+  const [fullOpen, setFullOpen] = useState(false)
   const errorRef = useRef(null)
 
   useEffect(() => { fetchWorkouts() }, [user, id])
@@ -166,11 +170,16 @@ export default function ProgramBuilder() {
     setActiveCell(c => (c && parseCellKey(c).week > next ? null : c))
   }
 
-  // Every tool snapshots the draft first, so each run can be undone.
-  function applyTool(label, nextDays, nextDraftWorkouts) {
-    setHistory(prev => [...prev, { days, draftWorkouts, label }].slice(-HISTORY_CAP))
+  // Every tool snapshots the draft first, so each run can be undone. The
+  // week count is part of the snapshot: Generate full program sets it.
+  function applyTool(label, nextDays, nextDraftWorkouts, nextWeeks = weeks) {
+    setHistory(prev => [...prev, { days, draftWorkouts, weeks, label }].slice(-HISTORY_CAP))
     setDays(nextDays)
     setDraftWorkouts(pruneDraftWorkouts(nextDays, nextDraftWorkouts))
+    if (nextWeeks !== weeks) {
+      setWeeks(nextWeeks)
+      setViewWeek(v => Math.min(v, nextWeeks))
+    }
     setDirty(true)
   }
 
@@ -180,8 +189,26 @@ export default function ProgramBuilder() {
     setHistory(history.slice(0, -1))
     setDays(last.days)
     setDraftWorkouts(last.draftWorkouts)
+    setWeeks(last.weeks)
+    setViewWeek(v => Math.min(v, last.weeks))
     setActiveCell(null)
     setPreviewPanel(null)
+  }
+
+  function openTool(id) {
+    setToolsOpen(false)
+    if (id === 'full') { ensurePool(); setFullOpen(true) }
+    if (id === 'fill') openFillWeek()
+    if (id === 'copy') openCopyWeeks(isMobile ? viewWeek : 1)
+  }
+
+  // Replaces the whole draft (hand-picked cells included) and the week
+  // count; Undo brings both back.
+  function handleFullProgram({ days: nextDays, draftWorkouts: nextDrafts, weeks: nextWeeks }) {
+    applyTool('Generate full program', nextDays, nextDrafts, nextWeeks)
+    setFullOpen(false)
+    setViewWeek(1)
+    setActiveCell(null)
   }
 
   function openFillWeek() {
@@ -460,9 +487,9 @@ export default function ProgramBuilder() {
           <button onClick={leave} aria-label="Back to programs" style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <input value={name} onChange={e => { setName(e.target.value); setDirty(true) }} placeholder="Program name..."
             style={{ flex: 1, minWidth: 0, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 15, fontWeight: 600, outline: 'none' }} />
-          <button onClick={openFillWeek} title="Randomly fill one week of this draft" aria-label="Fill a week"
+          <button onClick={() => setToolsOpen(true)} title="Generate, fill or copy weeks in this draft" aria-label="Program tools"
             style={{ background: 'var(--br)', color: 'var(--tx)', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
-            🔀{!isMobile && ' Fill a week'}
+            🛠{!isMobile && ' Tools'}
           </button>
           <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, flexShrink: 0 }}>
             {saving ? 'Saving...' : 'Save'}
@@ -615,6 +642,19 @@ export default function ProgramBuilder() {
           poolError={poolError}
           onClose={() => setFillOpen(false)}
           onApply={handleFillWeek}
+        />
+      )}
+
+      {toolsOpen && <ProgramToolsSheet onPick={openTool} onClose={() => setToolsOpen(false)} />}
+
+      {fullOpen && (
+        <FullProgramModal
+          programName={name}
+          initialWeeks={weeks}
+          pool={pool}
+          poolError={poolError}
+          onClose={() => setFullOpen(false)}
+          onApply={handleFullProgram}
         />
       )}
 

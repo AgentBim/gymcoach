@@ -220,7 +220,7 @@ Ship each phase as its own PR into `main` (commit → push `feature/redesign` �
 Phase 1 was verified with rolled-back RLS probes (migrations 0007 and 0009) and a signed-in browser pass on the Vercel preview. Criteria that later phases extend are ticked for what exists now, with a note on what to recheck.
 
 **Data safety**
-- [x] Generating, rerolling, copying and cancelling create **zero** rows in `workouts` until Save. *Verified for Fill a week, reroll, Undo and cancel (Phase 1) and for Copy weeks in Link and Clone mode (Phase 2). Recheck the full program in Phase 3.*
+- [x] Generating, rerolling, copying and cancelling create **zero** rows in `workouts` until Save. *Verified for Fill a week, reroll, Undo and cancel (Phase 1) and for Copy weeks in Link and Clone mode (Phase 2), and for the full program, including rerolls, Apply and Undo (Phase 3).*
 - [x] A save that fails partway (for example an invalid day type injected in dev tools) leaves the program and its days exactly as they were, and the error shows in the builder. *Tested both ways: an invalid day type injected into React state in the browser, and a check violation after writes had started, in a probe.*
 - [x] Rerolling and re-saving an existing program leaves no orphaned generated workouts (orphan cleanup step).
 - [x] Deleting a program removes its generated workouts **except** ones with athlete feedback. Those stay hidden from Home and still appear in History.
@@ -231,11 +231,11 @@ Phase 1 was verified with rolled-back RLS probes (migrations 0007 and 0009) and 
 - [x] An athlete whose active program uses generated workouts sees them in `/athlete/program` and can complete them (feedback goes through `submit_athlete_workout_feedback`). *Needs migration 0008: before it, portal completions failed for every workout.*
 
 **Behaviour**
-- [ ] Full program Upper/Lower, Mon/Tue/Thu/Fri, 8 weeks, rotate every 4, +1 set, deload every 4th week: the setup footer says 32 workouts, weeks 4 and 8 show the deload dosage, and weeks 1–3 show 3/4/5 sets. *(Phase 3)*
-- [ ] A locked workout is unchanged by "Reroll block" and "Reroll all". *(Phase 3)*
+- [x] Full program Upper/Lower, Mon/Tue/Thu/Fri, 8 weeks, rotate every 4, +1 set, deload every 4th week: the setup footer says 32 workouts, weeks 4 and 8 show the deload dosage, and weeks 1–3 show 3/4/5 sets. *Phase 3: the footer said 32; Monday ran 3/4/5/2 (deload) in both blocks; a Block B exercise with 4 default sets ran 4/5/6/2; after Save, 32 generated workouts across 56 days (8 recovery, 16 rest).*
+- [x] A locked workout is unchanged by "Reroll block" and "Reroll all". *Phase 3: a locked Upper 1 kept all 6 exercises through both; an unlocked workout was re-picked, and "Reroll this workout" is disabled while locked.*
 - [x] Copy weeks in Link mode followed by Save gives target weeks the same `workout_id`s as the source. Clone mode gives new ids, and the counts match the footer. *Phase 2: Link W1→W2–3 saved the same 10 ids. Clone W1→W4 gave 5 new ids, as the footer said, named "… · W4", with sets progressed 3 → 6.*
-- [x] Undo restores the exact previous draft after each tool. *Verified for Fill a week (Phase 1) and Copy weeks (Phase 2). Recheck each new tool.*
-- [x] Mobile: all new sheets clear the status bar (`--sat` padding pattern, as in #11), touch targets are ≥ 44px, and there's no horizontal scroll at 375px. *Verified for the Fill a week (Phase 1) and Copy weeks (Phase 2) sheets. Recheck new sheets.*
+- [x] Undo restores the exact previous draft after each tool. *Verified for Fill a week (Phase 1), Copy weeks (Phase 2) and Generate full program (Phase 3, including the week count).*
+- [x] Mobile: all new sheets clear the status bar (`--sat` padding pattern, as in #11), touch targets are ≥ 44px, and there's no horizontal scroll at 375px. *Verified for the Fill a week (Phase 1), Copy weeks (Phase 2), Program tools and Generate full program (Phase 3) sheets. On/off switches got 44px tap areas in Phase 3.*
 
 **Checks**
 - [x] `npm run build` passes.
