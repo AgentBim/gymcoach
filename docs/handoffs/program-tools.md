@@ -205,15 +205,15 @@ With progression on, every week must be its own workout, because sets and reps l
 
 Ship each phase as its own PR into `main` (commit → push `feature/redesign` → PR → CI (Vercel) green → merge), the way this repo has been run.
 
-1. **Foundation**
+1. **Foundation** (shipped in #13, with follow-ups in migration 0009)
    - Migration 0007, `save_program`, `delete_program`.
    - `ProgramBuilder` saves through the RPC with visible errors and prunes weeks.
    - Draft model, undo banner, draft preview.
    - Fill a week becomes draft-first with per-day focus.
    - Dashboard filter and Program workouts section, cell picker filter.
-2. **Copy weeks:** `CopyWeeksModal`, `copyWeeks()`, and the "Copy this week to…" shortcut.
-3. **Full program:** `programGenerator.generateProgram`, `ProgramToolsSheet`, `FullProgramModal` (setup, day focus, preview with reroll and lock).
-4. **Polish:** Save to library, generated tags, desktop layout of the preview grid (7 columns × N weeks fits at 1280px), and the loading/empty state when the exercise pool is small.
+2. **Copy weeks:** `CopyWeeksModal`, `copyWeeks()`, and the "Copy this week to…" shortcut. Shipped in #14.
+3. **Full program:** `programGenerator.generateProgram`, `ProgramToolsSheet`, `FullProgramModal` (setup, day focus, preview with reroll and lock). Shipped in #17.
+4. **Polish:** Save to library, generated tags, desktop layout of the preview grid (7 columns × N weeks fits at 1280px), and the loading/empty state when the exercise pool is small. Done: Save to library (`duplicate_workout` gained an optional `p_name` in migration 0011), GEN tags (since Phase 1), the preview widening to 1040px on desktop with the detail panel beside the grid, and a shared notice for an empty library, a library too small for the chosen size, repeats across days, or no prehab.
 
 ## Acceptance criteria
 

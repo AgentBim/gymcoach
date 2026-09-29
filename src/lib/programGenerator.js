@@ -86,6 +86,28 @@ export function splitPool(pool) {
   }
 }
 
+// What a generator should tell the coach before generating from this pool:
+// nothing to pick from, workouts that will come out short, exercises that
+// will repeat across days, or no prehab to add. days is how many workouts
+// draw from the pool together (a week's training days).
+export function poolNotice(pool, { count, days = 1, includePrehab }) {
+  if (!pool) return null
+  const { strength, prehab } = splitPool(pool)
+  if (!strength.length) {
+    return { tone: 'error', text: 'Your exercise library has no strength exercises yet, so there’s nothing to pick from. Add some in the Exercise library first.' }
+  }
+  if (strength.length < count) {
+    return { tone: 'warn', text: `Your library has ${strength.length} strength exercise${strength.length === 1 ? '' : 's'}, so each workout gets ${strength.length} instead of ${count}.` }
+  }
+  if (strength.length < count * days) {
+    return { tone: 'info', text: `${strength.length} strength exercises for ${days} days of ${count}, so some exercises will repeat across days.` }
+  }
+  if (includePrehab && !prehab.length) {
+    return { tone: 'info', text: 'There are no prehab exercises in your library, so workouts get no warm-up.' }
+  }
+  return null
+}
+
 // One draft workout: `count` strength picks weighted by focusWeights, then up
 // to two prehab picks under the same weights. usedIds is shared across a whole
 // generation run so repeats stay rare.

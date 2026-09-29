@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useIsMobile } from '../hooks/useIsMobile'
 import DayFocusEditor from './DayFocusEditor'
-import { DAYS, FOCUS_PRESETS, cellKey, fillWeek, splitPool } from '../lib/programGenerator'
+import Notice from './Notice'
+import { DAYS, FOCUS_PRESETS, cellKey, fillWeek, poolNotice } from '../lib/programGenerator'
 
 const DEFAULT_PRESET = 'Full body'
 
@@ -35,7 +36,8 @@ export default function GenerateProgramModal({ programName, week, weeks, days, p
 
   const dayIdxs = DAYS.map((_, i) => i).filter(i => checkedDays[i])
   const loading = !pool && !poolError
-  const canGenerate = dayIdxs.length > 0 && pool && pool.length > 0
+  const notice = poolNotice(pool, { count, days: dayIdxs.length, includePrehab })
+  const canGenerate = dayIdxs.length > 0 && Boolean(pool) && notice?.tone !== 'error'
 
   function toggleDay(i) {
     setCheckedDays(prev => prev.map((v, idx) => idx === i ? !v : v))
@@ -43,10 +45,6 @@ export default function GenerateProgramModal({ programName, week, weeks, days, p
 
   function generate() {
     setError('')
-    if (!splitPool(pool).strength.length) {
-      setError('Your exercise library has no strength exercises to pick from')
-      return
-    }
     const results = fillWeek({ programName, week: targetWeek, dayIdxs, dayFocus, count, includePrehab, pool })
     const restDayIdxs = DAYS.map((_, i) => i)
       .filter(i => !checkedDays[i] && days[cellKey(targetWeek, i)]?.day_type === 'training')
@@ -116,7 +114,7 @@ export default function GenerateProgramModal({ programName, week, weeks, days, p
 
         <div style={{ padding: '12px 16px', paddingBottom: isMobile ? 'calc(env(safe-area-inset-bottom) + 12px)' : 16, borderTop: '1px solid var(--br)' }}>
           {(error || poolError) && <p style={{ fontSize: 12, color: '#E2695A', margin: '0 0 10px' }}>{error || poolError}</p>}
-          {pool && pool.length === 0 && <p style={{ fontSize: 12, color: 'var(--mu)', margin: '0 0 10px' }}>Your exercise library is empty, so there's nothing to pick from yet.</p>}
+          {notice && <div style={{ marginBottom: 10 }}><Notice notice={notice} /></div>}
           <button type="button" onClick={generate} disabled={!canGenerate}
             style={{ width: '100%', minHeight: 48, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: canGenerate ? 'pointer' : 'default', opacity: canGenerate ? 1 : 0.5 }}>
             {loading ? 'Loading exercises…' : `🔀 Fill ${dayIdxs.length || ''} day${dayIdxs.length === 1 ? '' : 's'} in week ${targetWeek}`}
