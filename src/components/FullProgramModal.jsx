@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useIsMobile } from '../hooks/useIsMobile'
 import DayFocusEditor from './DayFocusEditor'
+import Notice from './Notice'
 import { MUSCLE_COLORS } from '../lib/theme'
-import { DAYS, MUSCLE_GROUPS, SPLITS, cellKey, generateProgram, splitFocus, summarize } from '../lib/programGenerator'
+import { DAYS, MUSCLE_GROUPS, SPLITS, cellKey, generateProgram, poolNotice, splitFocus, summarize } from '../lib/programGenerator'
 
 const FULL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -105,7 +106,8 @@ export default function FullProgramModal({ programName, initialWeeks, pool, pool
   }
   const workoutCount = trainingIdxs.length ? summarize(config) : 0
   const loading = !pool && !poolError
-  const canPreview = trainingIdxs.length > 0 && pool && pool.length > 0
+  const notice = poolNotice(pool, { count, days: trainingIdxs.length, includePrehab })
+  const canPreview = trainingIdxs.length > 0 && Boolean(pool) && notice?.tone !== 'error'
 
   function pickSplit(id) {
     setSplit(id)
@@ -157,6 +159,8 @@ export default function FullProgramModal({ programName, initialWeeks, pool, pool
   // ── SETUP ──────────────────────────────────────────────────────
   const renderSetup = () => (
     <>
+      {loading && <Notice notice={{ tone: 'info', text: 'Loading your exercise library…' }} />}
+      <Notice notice={notice} />
       <section>
         <div style={label}>Split</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -332,7 +336,7 @@ export default function FullProgramModal({ programName, initialWeeks, pool, pool
   const renderPreview = () => {
     const presetsUsed = [...new Set(trainingIdxs.map(d => dayFocus[d]?.preset))]
     const sel = selected && plan.cells[selected] ? cellView(selected) : null
-    return (
+    const gridPart = (
       <>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {presetsUsed.map(p => (
@@ -399,8 +403,9 @@ export default function FullProgramModal({ programName, initialWeeks, pool, pool
             ))}
           </div>
         ))}
-
-        {sel && (
+      </>
+    )
+    const detailPart = sel && (
           <section aria-live="polite" style={{ ...card, background: 'var(--s1)', display: 'flex', flexDirection: 'column', gap: 10, padding: 14 }}>
             {sel.c.kind === 'training' ? (() => {
               const s = plan.selections[sel.c.selKey]
@@ -458,8 +463,15 @@ export default function FullProgramModal({ programName, initialWeeks, pool, pool
               </div>
             )}
           </section>
-        )}
-      </>
+    )
+    if (isMobile) return <>{gridPart}{detailPart}</>
+    // Desktop: the detail panel sits beside the grid (and stays in view while
+    // the grid scrolls), so 7 columns × up to 12 weeks fit at 1280px.
+    return (
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>{gridPart}</div>
+        <div style={{ width: 340, flexShrink: 0, position: 'sticky', top: 0 }}>{detailPart}</div>
+      </div>
     )
   }
 
@@ -475,7 +487,7 @@ export default function FullProgramModal({ programName, initialWeeks, pool, pool
     <div onClick={onClose}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 300, display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 16 }}>
       <div role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}
-        style={{ width: isMobile ? '100%' : 640, maxWidth: '100%', height: isMobile ? '100%' : '90vh', display: 'flex', flexDirection: 'column', background: 'var(--s1)', border: isMobile ? 'none' : '1px solid var(--br)', borderRadius: isMobile ? 0 : 14, overflow: 'hidden' }}>
+        style={{ width: isMobile ? '100%' : step === 'preview' ? 1040 : 640, maxWidth: '100%', height: isMobile ? '100%' : '90vh', display: 'flex', flexDirection: 'column', background: 'var(--s1)', border: isMobile ? 'none' : '1px solid var(--br)', borderRadius: isMobile ? 0 : 14, overflow: 'hidden' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', paddingTop: isMobile ? 'max(10px, calc(var(--sat) + 6px))' : 12, borderBottom: '1px solid var(--br)' }}>
           {step !== 'setup' ? (

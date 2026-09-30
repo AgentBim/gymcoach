@@ -4,13 +4,19 @@
 //
 // A calendar day is DUE for an athlete if:
 //  - they're on an active program and that program's schedule for that
-//    weekday has a workout attached, or
+//    weekday has a workout attached (unless it's a recovery/competition
+//    day — a workout there is optional, so the day is never due), or
 //  - they're not on any active program (every day is due).
 // Walking backward from today: a due day that's logged continues the streak,
 // a due day with nothing logged breaks it, a non-due day is skipped (neither
-// extends nor breaks), and today is never itself a break condition.
+// extends nor breaks) — except an optional day (see OPTIONAL_DAY_TYPES) that
+// was logged, which extends it — and today is never itself a break condition.
 
 export const DUE_STATUS = { DUE: 'due', NOT_DUE: 'not_due' }
+
+// Day types whose attached workout is optional: doing it extends the streak,
+// skipping it never breaks it (the day is then skipped like a rest day).
+export const OPTIONAL_DAY_TYPES = new Set(['recovery', 'competition'])
 
 function toDateOnly(d) {
   const date = d instanceof Date ? d : new Date(d + 'T00:00:00')
@@ -72,23 +78,28 @@ export function resolveProgramCell(programStartedOn, durationWeeks, dateStr) {
  * @param dateStr 'YYYY-MM-DD'
  * @param activeProgram { id, duration_weeks } or null/undefined
  * @param programStartedOn 'YYYY-MM-DD' or null — required if activeProgram is set
- * @param programDaysByCell Map keyed by `${week_number}:${day_of_week}` -> { workout_id }
+ * @param programDaysByCell Map keyed by `${week_number}:${day_of_week}` -> { workout_id, day_type }
  *   (only cells for the athlete's active program need to be present)
- * @returns { due: boolean, workoutId: string|null }
+ * @returns { due: boolean, workoutId: string|null, optional: boolean }
+ *   optional is true when a workout is attached but the day type makes it
+ *   optional (due is then false).
  */
 export function isDueOnDate(dateStr, activeProgram, programStartedOn, programDaysByCell) {
   if (!activeProgram || !programStartedOn) {
-    return { due: true, workoutId: null } // no program = plain daily streak
+    return { due: true, workoutId: null, optional: false } // no program = plain daily streak
   }
   // Dates before the athlete started this program aren't evaluated against
   // it (v1 simplification — see spec's "program changes mid-stream" note).
   if (toDateOnly(dateStr) < toDateOnly(programStartedOn)) {
-    return { due: true, workoutId: null }
+    return { due: true, workoutId: null, optional: false }
   }
   const { week_number, day_of_week } = resolveProgramCell(programStartedOn, activeProgram.duration_weeks, dateStr)
   const cell = programDaysByCell.get(`${week_number}:${day_of_week}`)
-  if (cell && cell.workout_id) return { due: true, workoutId: cell.workout_id }
-  return { due: false, workoutId: null } // rest day, or a day with nothing attached
+  if (cell && cell.workout_id) {
+    if (OPTIONAL_DAY_TYPES.has(cell.day_type)) return { due: false, workoutId: cell.workout_id, optional: true }
+    return { due: true, workoutId: cell.workout_id, optional: false }
+  }
+  return { due: false, workoutId: null, optional: false } // rest day, or a day with nothing attached
 }
 
 /**
@@ -109,8 +120,11 @@ export function walkBackwardStreak(today, completedDates, dueCheck, maxDays = 18
   for (let i = 0; i < maxDays; i++) {
     cursor = addDays(cursor, -1)
     const dateStr = formatDateOnly(cursor)
-    const { due } = dueCheck(dateStr)
-    if (!due) continue // skipped, doesn't break or extend
+    const { due, optional } = dueCheck(dateStr)
+    if (!due) {
+      if (optional && completedDates.has(dateStr)) streak += 1 // optional workout done: extends
+      continue // otherwise skipped, doesn't break or extend
+    }
     if (completedDates.has(dateStr)) streak += 1
     else break // due day, nothing logged -> streak stops here
   }
@@ -138,8 +152,11 @@ export function advanceStreakCache({ cachedStreak, lastComputedDate, throughDate
   for (let i = 0; i < maxDays && cursor < end; i++) {
     cursor = addDays(cursor, 1)
     const dateStr = formatDateOnly(cursor)
-    const { due } = dueCheck(dateStr)
-    if (!due) continue
+    const { due, optional } = dueCheck(dateStr)
+    if (!due) {
+      if (optional && completedDates.has(dateStr)) streak += 1
+      continue
+    }
     if (completedDates.has(dateStr)) streak += 1
     else streak = 0
   }
@@ -148,10 +165,10 @@ export function advanceStreakCache({ cachedStreak, lastComputedDate, throughDate
 
 /**
  * The number to actually display: the persisted cache (accurate through
- * yesterday) plus 1 if today is itself a due day that's already been logged.
- * Today never subtracts from the streak — an undecided due day just isn't
- * added yet.
+ * yesterday) plus 1 if today is a due (or optional) day that's already been
+ * logged. Today never subtracts from the streak — an undecided due day just
+ * isn't added yet.
  */
-export function displayStreak(cachedStreak, todayDue, todayLogged) {
-  return cachedStreak + (todayDue && todayLogged ? 1 : 0)
+export function displayStreak(cachedStreak, todayDue, todayLogged, todayOptional = false) {
+  return cachedStreak + ((todayDue || todayOptional) && todayLogged ? 1 : 0)
 }

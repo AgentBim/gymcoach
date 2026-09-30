@@ -629,6 +629,7 @@ export default function ProgramBuilder() {
           anchorRect={previewPanel.anchorRect}
           onClose={() => setPreviewPanel(null)}
           onEdit={() => viewWorkout(previewPanel.workoutId, { confirmIfDirty: previewPanel.confirmIfDirty })}
+          onSavedToLibrary={fetchWorkouts}
         />
       )}
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAthleteAuth } from '../../hooks/useAthleteAuth'
 import { supabase } from '../../lib/supabase'
-import { resolveProgramCell, todayLocal } from '../../lib/streaks'
+import { resolveProgramCell, todayLocal, OPTIONAL_DAY_TYPES } from '../../lib/streaks'
 import { DAY_TYPE_COLORS } from '../../lib/theme'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -79,7 +79,7 @@ export default function AthleteProgram() {
                 {meta.icon} {meta.label}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                {workout && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{workout.name}</div>}
+                {workout && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{workout.name}{OPTIONAL_DAY_TYPES.has(dayType) && <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--mu2)', marginLeft: 6 }}>Optional</span>}</div>}
                 {cell?.notes && <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{cell.notes}</div>}
               </div>
               {isToday && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ac)', background: 'rgba(199,228,92,.15)', padding: '3px 8px', borderRadius: 20, flexShrink: 0 }}>Today</span>}

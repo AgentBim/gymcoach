@@ -293,7 +293,7 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-            <p style={{ margin: '2px 2px 0', fontSize: 11.5, color: 'var(--mu)', lineHeight: 1.5 }}>These are managed inside their program and deleted with it, except ones athletes have history on.</p>
+            <p style={{ margin: '2px 2px 0', fontSize: 11.5, color: 'var(--mu)', lineHeight: 1.5 }}>These are managed inside their program and deleted with it, except ones athletes have history on. To reuse one elsewhere, preview it and choose Save to library, which makes a regular copy.</p>
           </div>
         )}
       </div>
@@ -644,6 +644,7 @@ export default function Dashboard() {
           anchorRect={previewPanel.anchorRect}
           onClose={() => setPreviewPanel(null)}
           onEdit={() => navigate(`/workout/${previewPanel.workoutId}/edit`)}
+          onSavedToLibrary={fetchAll}
         />
       )}
 
