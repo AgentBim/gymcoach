@@ -7,15 +7,15 @@ import { supabase } from './supabase'
 import { advanceStreakCache, isDueOnDate, displayStreak, todayLocal, shiftDateStr } from './streaks'
 
 async function fetchProgramDaysByProgramIds(programIds) {
-  const map = new Map() // programId -> Map(cellKey -> { workout_id })
+  const map = new Map() // programId -> Map(cellKey -> { workout_id, day_type })
   if (programIds.length === 0) return map
   const { data } = await supabase
     .from('program_days')
-    .select('program_id, week_number, day_of_week, workout_id')
+    .select('program_id, week_number, day_of_week, workout_id, day_type')
     .in('program_id', programIds)
   ;(data || []).forEach(d => {
     if (!map.has(d.program_id)) map.set(d.program_id, new Map())
-    map.get(d.program_id).set(`${d.week_number}:${d.day_of_week}`, { workout_id: d.workout_id })
+    map.get(d.program_id).set(`${d.week_number}:${d.day_of_week}`, { workout_id: d.workout_id, day_type: d.day_type })
   })
   return map
 }
@@ -38,7 +38,8 @@ async function fetchCompletedDatesByAthleteIds(athleteIds) {
 /**
  * athleteRows: [{ id, active_program_id, program_started_on, current_streak, streak_last_computed_date }]
  * programsById: Map(program_id -> { id, duration_weeks })
- * Returns Map(athleteId -> { streak, todayDue, todayWorkoutId, todayLogged }).
+ * Returns Map(athleteId -> { streak, todayDue, todayWorkoutId, todayOptional, todayLogged }).
+ * todayWorkoutId is also set on optional (recovery/competition) days, where todayDue is false.
  * Fire-and-forgets a persist of any athlete whose cache advanced.
  */
 export async function batchComputeStreaks(athleteRows, programsById) {
@@ -68,11 +69,11 @@ export async function batchComputeStreaks(athleteRows, programsById) {
       dueCheck,
     })
 
-    const { due: todayDue, workoutId: todayWorkoutId } = dueCheck(today)
+    const { due: todayDue, workoutId: todayWorkoutId, optional: todayOptional } = dueCheck(today)
     const todayLogged = completedDates.has(today)
-    const streak = displayStreak(advance.streak, todayDue, todayLogged)
+    const streak = displayStreak(advance.streak, todayDue, todayLogged, todayOptional)
 
-    result.set(a.id, { streak, todayDue, todayWorkoutId, todayLogged })
+    result.set(a.id, { streak, todayDue, todayWorkoutId, todayOptional, todayLogged })
 
     if (advance.streak !== (a.current_streak || 0) || advance.lastComputedDate !== a.streak_last_computed_date) {
       toPersist.push({ id: a.id, current_streak: advance.streak, streak_last_computed_date: advance.lastComputedDate })
