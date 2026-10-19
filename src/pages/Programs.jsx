@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import PlanTabs from '../components/PlanTabs'
 import { SelectionBar, ConfirmDeleteSheet, Toast } from '../components/BulkDelete'
 import { describeSelection, fetchProgramImpact, programDeletePlan } from '../lib/bulkDelete'
 
@@ -109,6 +110,7 @@ export default function Programs() {
 
   return (
     <Layout>
+      <PlanTabs />
       {/* ── MOBILE HEADER ── */}
       {isMobile && (
         <div style={{ paddingTop: 'max(14px, calc(var(--sat) + 6px))', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
@@ -129,7 +131,7 @@ export default function Programs() {
               {programs.length > 0 && (
                 <button onClick={startSelecting} style={{ background: 'var(--br)', border: 'none', borderRadius: 10, color: 'var(--tx)', padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Select</button>
               )}
-              <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
+              <button onClick={() => navigate('/plan/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
             </div>
           )}
         </div>
@@ -155,7 +157,7 @@ export default function Programs() {
                   {selecting ? 'Done' : 'Select'}
                 </button>
               )}
-              <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New program</button>
+              <button onClick={() => navigate('/plan/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New program</button>
             </div>
           </div>
         )}
@@ -167,7 +169,7 @@ export default function Programs() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)', marginBottom: 6 }}>No programs yet</p>
             <p style={{ fontSize: 13, marginBottom: 20 }}>Build a multi-week plan from your saved workouts</p>
-            <button onClick={() => navigate('/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Create program</button>
+            <button onClick={() => navigate('/plan/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Create program</button>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(290px, 1fr))', gap: isMobile ? 10 : 14 }}>
@@ -218,7 +220,7 @@ export default function Programs() {
                       </span>
                     </div>
                     <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', gap: 7 }}>
-                      <button onClick={() => navigate(`/programs/${p.id}`)}
+                      <button onClick={() => navigate(`/plan/programs/${p.id}`)}
                         style={{ flex: 1, background: 'rgba(200,255,80,.08)', border: '1px solid rgba(200,255,80,.2)', borderRadius: 9, color: 'var(--ac)', fontSize: 13, fontWeight: 600, padding: '9px 10px', cursor: 'pointer' }}>
                         Open
                       </button>
@@ -230,7 +232,7 @@ export default function Programs() {
               )
             })}
             {!isMobile && !selecting && (
-              <div onClick={() => navigate('/programs/new')} style={{ border: '1.5px dashed var(--br)', borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 160, gap: 8, cursor: 'pointer', color: 'var(--mu)' }}>
+              <div onClick={() => navigate('/plan/programs/new')} style={{ border: '1.5px dashed var(--br)', borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 160, gap: 8, cursor: 'pointer', color: 'var(--mu)' }}>
                 <div style={{ width: 36, height: 36, background: 'var(--br)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>＋</div>
                 <span style={{ fontSize: 13 }}>New program</span>
               </div>

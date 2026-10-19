@@ -260,7 +260,7 @@ export default function ProgramBuilder() {
 
   function leave() {
     if (dirty && !window.confirm('You have unsaved changes to this program. Leave without saving?')) return
-    navigate('/programs')
+    navigate('/plan/programs')
   }
 
   // The whole program (name/weeks/every cell) is one in-memory draft until
@@ -271,7 +271,7 @@ export default function ProgramBuilder() {
   function viewWorkout(workoutId, { confirmIfDirty = false } = {}) {
     if (!workoutId) return
     if (confirmIfDirty && dirty && !window.confirm('You have unsaved changes to this program. Leave without saving?')) return
-    navigate(`/workout/${workoutId}/edit`)
+    navigate(`/plan/workouts/${workoutId}/edit`)
   }
 
   function openPreview(workout, anchorEl, confirmIfDirty) {
@@ -297,7 +297,7 @@ export default function ProgramBuilder() {
     setSaving(false)
     if (saveError) { setError(saveError.message || 'Could not save the program'); return }
     setDirty(false)
-    navigate('/programs')
+    navigate('/plan/programs')
   }
 
   const weekData = Array.from({ length: weeks }, (_, i) => i + 1)

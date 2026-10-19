@@ -50,7 +50,7 @@ export default function ResetPassword() {
 
     const userId = data.user.id
     const { data: coachRow } = await supabase.from('coaches').select('id').eq('id', userId).single()
-    if (coachRow) { navigate('/dashboard'); return }
+    if (coachRow) { navigate('/today'); return }
 
     const { data: athleteRow } = await supabase.from('athletes').select('id').eq('user_id', userId).single()
     if (athleteRow) { navigate('/athlete'); return }

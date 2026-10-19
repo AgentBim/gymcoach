@@ -116,9 +116,9 @@ export default function AthleteProfile() {
     <Layout>
       {/* ── HEADER ── */}
       <div style={{ padding: isMobile ? `max(14px,calc(var(--sat)+6px)) 16px 10px` : '14px 20px', background: 'var(--s1)', borderBottom: '1px solid var(--br)', display: 'flex', alignItems: 'center', gap: 10, position: isMobile ? 'sticky' : 'static', top: 0, zIndex: 10 }}>
-        <button onClick={() => navigate('/roster')} style={{ background: 'var(--br)', border: 'none', borderRadius: 9, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mu)', fontSize: 14, cursor: 'pointer', flexShrink: 0 }}>←</button>
+        <button onClick={() => navigate('/athletes')} style={{ background: 'var(--br)', border: 'none', borderRadius: 9, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mu)', fontSize: 14, cursor: 'pointer', flexShrink: 0 }}>←</button>
         <span style={{ fontSize: 14, fontWeight: 700, flex: 1 }}>Athlete Profile</span>
-        <button onClick={() => navigate(`/roster/${id}/edit`)} style={{ background: 'var(--br)', border: 'none', borderRadius: 9, padding: '7px 13px', fontSize: 12, color: 'var(--mu2)', cursor: 'pointer', fontWeight: 500 }}>Edit</button>
+        <button onClick={() => navigate(`/athletes/${id}/edit`)} style={{ background: 'var(--br)', border: 'none', borderRadius: 9, padding: '7px 13px', fontSize: 12, color: 'var(--mu2)', cursor: 'pointer', fontWeight: 500 }}>Edit</button>
       </div>
 
       <div style={{ maxWidth: 600, margin: '0 auto', padding: isMobile ? '0 0 20px' : '20px 16px' }}>

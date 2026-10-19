@@ -6,7 +6,7 @@
 import { supabase } from './supabase'
 import { advanceStreakCache, isDueOnDate, displayStreak, todayLocal, shiftDateStr } from './streaks'
 
-async function fetchProgramDaysByProgramIds(programIds) {
+export async function fetchProgramDaysByProgramIds(programIds) {
   const map = new Map() // programId -> Map(cellKey -> { workout_id })
   if (programIds.length === 0) return map
   const { data } = await supabase
@@ -20,7 +20,7 @@ async function fetchProgramDaysByProgramIds(programIds) {
   return map
 }
 
-async function fetchCompletedDatesByAthleteIds(athleteIds) {
+export async function fetchCompletedDatesByAthleteIds(athleteIds) {
   const map = new Map() // athleteId -> Set(dateStr)
   if (athleteIds.length === 0) return map
   const { data } = await supabase
@@ -48,7 +48,16 @@ export async function batchComputeStreaks(athleteRows, programsById) {
     fetchProgramDaysByProgramIds(programIds),
     fetchCompletedDatesByAthleteIds(ids),
   ])
+  return computeStreaks(athleteRows, programsById, programDaysMap, completedMap)
+}
 
+/**
+ * Same as batchComputeStreaks but over rows the caller already fetched, so
+ * screens that need the raw data too (Today, Athletes) don't query twice.
+ * programDaysMap: Map(programId -> Map(cellKey -> { workout_id }))
+ * completedMap:   Map(athleteId -> Set('YYYY-MM-DD'))
+ */
+export function computeStreaks(athleteRows, programsById, programDaysMap, completedMap) {
   const today = todayLocal()
   const yesterday = shiftDateStr(today, -1)
   const result = new Map()

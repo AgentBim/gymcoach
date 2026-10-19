@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { ChalkUpLogo } from '../components/ChalkUpLogo'
 import Layout from '../components/Layout'
+import PlanTabs from '../components/PlanTabs'
 import AssignModal from '../components/AssignModal'
 import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
 import { SelectionBar, ConfirmDeleteSheet, Toast } from '../components/BulkDelete'
@@ -27,7 +28,7 @@ function getDayGreeting() {
 
 const GROUP_OPTIONS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 
-export default function Dashboard() {
+export default function Workouts() {
   const { user, coach } = useAuth()
   const [workouts, setWorkouts]           = useState([])
   const [athletes, setAthletes]           = useState([])
@@ -257,7 +258,7 @@ export default function Dashboard() {
                     {g.count} WORKOUT{g.count !== 1 ? 'S' : ''}{g.weeks ? ` · ${g.weeks} WEEK${g.weeks !== 1 ? 'S' : ''}` : ''}
                   </span>
                 </span>
-                <button onClick={() => navigate(`/programs/${g.id}`)}
+                <button onClick={() => navigate(`/plan/programs/${g.id}`)}
                   style={{ minHeight: isMobile ? 44 : 36, padding: '0 14px', borderRadius: 8, background: 'transparent', border: '1px solid var(--br)', color: 'var(--ac)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
                   Open
                 </button>
@@ -397,7 +398,7 @@ export default function Dashboard() {
                 </button>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => navigate(`/workout/${w.id}/edit`)}
+                <button onClick={() => navigate(`/plan/workouts/${w.id}/edit`)}
                   style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 32 }}>✏️ Edit</button>
                 <button onClick={() => duplicateWorkout(w)}
                   style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 32 }}>⧉ Copy</button>
@@ -452,6 +453,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
+      <PlanTabs />
       {/* ── MOBILE STICKY HEADER ── */}
       {isMobile && (
         <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10, paddingTop: 'var(--sat)' }}>
@@ -474,7 +476,7 @@ export default function Dashboard() {
             <button onClick={() => setFilterOpen(o => !o)} style={{ background: filterOpen || search || filterGroup !== 'All' ? 'rgba(199,228,92,.12)' : 'var(--br)', border: 'none', borderRadius: 8, color: filterOpen || search || filterGroup !== 'All' ? 'var(--ac)' : 'var(--mu)', padding: '7px 10px', fontSize: 13, cursor: 'pointer' }}>
               {filterOpen ? '✕' : '🔍'}
             </button>
-            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '7px 13px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
+            <button onClick={() => navigate('/plan/workouts/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '7px 13px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
           </div>
           )}
           {filterOpen && !selecting && (
@@ -547,7 +549,7 @@ export default function Dashboard() {
                   {selecting ? 'Done' : 'Select'}
                 </button>
               )}
-              <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New workout</button>
+              <button onClick={() => navigate('/plan/workouts/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New workout</button>
             </div>
           </div>
         )}
@@ -569,7 +571,7 @@ export default function Dashboard() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏋️</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)', marginBottom: 6 }}>No workouts yet</p>
             <p style={{ fontSize: 13, marginBottom: 20 }}>Create your first workout to get started</p>
-            <button onClick={() => navigate('/workout/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Create workout</button>
+            <button onClick={() => navigate('/plan/workouts/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Create workout</button>
           </div>
         ) : (
           <div style={{ padding: isMobile ? '4px 16px 16px' : 0 }}>
@@ -581,7 +583,7 @@ export default function Dashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(290px, 1fr))', gap: isMobile ? 10 : 14 }}>
               {filteredWorkouts.map((w, i) => (selecting ? renderSelectableCard(w, i) : <WorkoutCard key={w.id} w={w} idx={i} />))}
               {!isMobile && !selecting && (
-                <div onClick={() => navigate('/workout/new')} style={{ border: '1.5px dashed var(--br)', borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 160, gap: 8, cursor: 'pointer', color: 'var(--mu)', transition: 'border-color .15s' }}>
+                <div onClick={() => navigate('/plan/workouts/new')} style={{ border: '1.5px dashed var(--br)', borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 160, gap: 8, cursor: 'pointer', color: 'var(--mu)', transition: 'border-color .15s' }}>
                   <div style={{ width: 36, height: 36, background: 'var(--br)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>＋</div>
                   <span style={{ fontSize: 13 }}>New workout</span>
                 </div>
@@ -643,7 +645,7 @@ export default function Dashboard() {
           workoutId={previewPanel.workoutId}
           anchorRect={previewPanel.anchorRect}
           onClose={() => setPreviewPanel(null)}
-          onEdit={() => navigate(`/workout/${previewPanel.workoutId}/edit`)}
+          onEdit={() => navigate(`/plan/workouts/${previewPanel.workoutId}/edit`)}
         />
       )}
 
@@ -660,7 +662,7 @@ export default function Dashboard() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '14px 16px 4px' }}>
               {[
-                { icon: '✏️', label: 'Edit',       action: () => { setSheetWorkout(null); navigate(`/workout/${sheetWorkout.id}/edit`) } },
+                { icon: '✏️', label: 'Edit',       action: () => { setSheetWorkout(null); navigate(`/plan/workouts/${sheetWorkout.id}/edit`) } },
                 { icon: '⧉',  label: 'Duplicate',  action: () => { duplicateWorkout(sheetWorkout); setSheetWorkout(null) } },
                 { icon: '🔗', label: 'Copy link',  action: () => { copyWorkoutLink(sheetWorkout); setSheetWorkout(null) } },
                 { icon: '🗑', label: 'Delete', danger: true, action: () => { openDelete([sheetWorkout]); setSheetWorkout(null) } },

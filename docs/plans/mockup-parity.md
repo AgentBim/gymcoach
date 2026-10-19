@@ -2,7 +2,14 @@
 
 **Mockup:** https://claude.ai/artifact/YSnVSxDRrj7DqrrTqS5Zsf (23 clickable boards; press Play on any board). Private until the owner shares it.
 **Branch convention:** one PR per phase into `main`, as for Program Tools. `npm run build` is the only automated check today (see Phase 0 for adding tests).
-**Status:** plan only. No app code changed by this document.
+**Status (updated as phases land):**
+- [x] Phase 0: shared UI primitives, Vitest (roster-status tests)
+- [x] Phase 1: new shell + routes, Today
+- [ ] Phase 2: Plan
+- [ ] Phase 3: Athletes, Athlete hub, overrides, program save impact
+- [ ] Phase 4: Messaging and Inbox
+- [ ] Phase 5: Athlete portal
+- [ ] Phase 6: Cleanup
 
 ## 1. What the mockup is
 
@@ -46,25 +53,29 @@ Visual language: dark surface, lime accent `#C7E45C`, Big Shoulders Display / IB
 The live schema has no messaging, requests, overrides, phone number or archive flag. Proposed migrations, numbered after `0010`:
 
 1. **`0011_athlete_day_overrides`**: `athlete_day_overrides(athlete_id, date, day_type, workout_id, program_id, created_at)` unique on `(athlete_id, date)`. Keyed by *calendar date* so it survives Shift start and program changes. `streaks.js#isDueOnDate`, `streakData.js`, `AthleteProgram` and `AthleteToday` must all read it (one rule, as today). RLS: coach manages own athletes' rows; athlete reads own. Use a `SECURITY DEFINER` helper rather than cross-table inline policies (the 0006 recursion lesson).
-2. **`0012_messaging`**: `messages(id, coach_id, athlete_id, sender 'coach'|'athlete'|'system', kind 'text'|'feedback'|'schedule_change'|'request', body, channel 'in_app'|'sms'|'email', feedback_id, request_id, created_at, delivered_at, read_at, unsent_at)` and `schedule_requests(id, athlete_id, coach_id, from_date, to_date, note, status 'pending'|'approved'|'declined'|'suggested', suggested_date, resolved_at)`. One thread per athlete (the mockup has no group threads), so no `threads` table. A trigger inserts a `kind='feedback'` message when `submit_athlete_workout_feedback` runs, so Inbox is derived from existing data. RPCs: `send_message`, `unsend_message` (only while `read_at is null`), `resolve_schedule_request` (approve writes an override, adds a system line).
-3. **`0013_athlete_contact_and_prefs`**: `athletes.phone`, `athletes.preferred_channel`; `push_subscriptions(athlete_id, endpoint, keys)`.
+2. **`0012_messaging`**: `messages(id, coach_id, athlete_id, sender 'coach'|'athlete'|'system', kind 'text'|'feedback'|'schedule_change'|'request', body, feedback_id, request_id, created_at, delivered_at, read_at, unsent_at)` and `schedule_requests(id, athlete_id, coach_id, from_date, to_date, note, status 'pending'|'approved'|'declined'|'suggested', suggested_date, resolved_at)`. One thread per athlete (the mockup has no group threads), so no `threads` table. A trigger inserts a `kind='feedback'` message when `submit_athlete_workout_feedback` runs, so Inbox is derived from existing data. RPCs: `send_message`, `unsend_message` (only while `read_at is null`), `resolve_schedule_request` (approve writes an override, adds a system line).
+3. *(deferred)* `0013`: athlete phone, preferred channel and push subscriptions come with SMS/email/push.
 4. **`0014_workout_archive`**: `workouts.archived_at`. Archive hides the workout from lists and assignment but keeps `workout_feedback` (today a delete cascades it away; `delete_workouts` already has a keep-history mode, so this formalises it).
 5. **`0015_recovery_logs`**: `recovery_logs(athlete_id, date, program_day…)` for optional days. Streak rule change: a logged non-due day **adds 1 and never breaks** (today non-due days are skipped without looking at completions). Add `athletes.best_streak`.
 6. **`0016_program_apply_modes`**: extend `save_program` with `p_apply 'next'|'now'` and `p_adjustments 'keep'|'reset'`. *Leave this week* = before replacing `program_days`, write overrides for every affected athlete's current-week cells holding the **old** values; *Reset* deletes that athlete's overrides for the program. Add `assign_program_bulk(athlete_ids[], program_id, start_on)` and `get_today_overview()` / `get_athlete_week()` aggregate RPCs so Today and Athletes don't do N+1 client queries (Roster does this today in `batchComputeStreaks`).
 
-**Edge functions** (Supabase): `send-sms` (Twilio), `send-email` (Resend), `send-push` (Web Push; the app is already a PWA). Secrets live in function env, never in the client.
+**No edge functions in this scope** (SMS, email and push are deferred).
 
 **Derived metrics** (define once in a lib, used by Today, Athletes and the hub): *done this month* = distinct completed dates; *avg RPE* = mean of `workout_feedback.rpe` in range; *follow-through* = completed due days ÷ due days over the last 4 weeks; *needs attention* = missed ≥2 due days, or streak at risk (≥7 and nothing logged today), or unread feedback note, or open request.
 
-## 4. Decisions to confirm (defaults in bold)
+## 4. Decisions
 
-1. **SMS and Email: real or stubbed?** **Build the in-app channel fully; ship SMS/Email behind a flag with the Twilio/Resend functions, off until keys are provided.** The channel picker is visible but SMS/Email show "Connect in Settings" until enabled.
-2. **"You can unsend until they open it."** True for in-app. SMS/email cannot be recalled. **Hold SMS/email sends for 60 s in a queue (pg_cron + function) so Unsend works; reword the copy per channel.**
-3. **Schedule model for "Leave this week".** **Overrides keyed by date** (above) rather than versioning programs.
-4. **History page.** **Remove it**; its content lives in Athlete hub (feedback, logs) and Today (completed). Redirect `/history` to `/athletes`.
-5. **Mockup's "Meet" day type** is the DB's `competition`. **Keep the enum, show the label "Meet".** The mockup's exercise "Type" has strength/prehab only; the DB also has `mobility` (**show it as a third filter**). "Coaching cue" = `exercises.description`.
-6. **Group names** ("Adult gym", "Competitive") come from `athletes.group_name`; filters are generated from data, not hard-coded.
-7. **Add athlete** stays a page/dialog (the mockup only toasts "Add athlete form would open here"). **Reuse `AthleteForm` in a dialog on desktop.**
+Confirmed by the owner:
+1. **SMS and email are on the back burner.** Messaging is in-app only: no Twilio/Resend/push functions, no `phone` column, no 60 s send queue. The composer still shows the channel control from the mockup, with In-app as the only active option and SMS / Email shown as "Coming soon". "Unsend" is available until the athlete opens the message (`read_at is null`).
+2. **History is removed** and folded into the Athlete hub (recent feedback, logs, week) and Today (completed today). `/history` stays reachable only until the hub ships, then the page and route are deleted.
+3. **Scope is the mockup.** Build what the boards show, iterate afterwards.
+
+Defaults I'm applying (change any of these):
+- **Schedule model for "Leave this week":** overrides keyed by date (section 3), not program versioning.
+- The mockup's **"Meet"** day type is the DB's `competition`; the label shows "Meet". Exercises keep their third `mobility` category as an extra filter. "Coaching cue" = `exercises.description`.
+- **Group names** ("Adult gym", "Competitive") come from `athletes.group_name`; filters are generated from data.
+- **Add athlete** reuses `AthleteForm`.
+- **Live database changes** (migrations 0011+) are applied with Supabase `apply_migration` and committed as files, as for earlier migrations, one phase at a time and each probed with rolled-back RLS checks.
 
 ## 5. Phases
 

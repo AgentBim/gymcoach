@@ -319,7 +319,7 @@ export default function WorkoutBuilder() {
         }))
       )
     }
-    navigate('/dashboard')
+    navigate('/plan/workouts')
   }
 
   const inp = (val, onChange, w = 44) => ({
@@ -651,7 +651,7 @@ export default function WorkoutBuilder() {
         {/* Sticky header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--s1)', borderBottom: '1px solid var(--br)', paddingTop: 'var(--sat)' }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+            <button onClick={() => navigate('/plan/workouts')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Workout name..."
               style={{ flex: 1, background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '8px 12px', fontSize: 14, fontWeight: 600, outline: 'none' }} />
           </div>
@@ -780,7 +780,7 @@ export default function WorkoutBuilder() {
               <BuildList />
               {error && <p style={{ fontSize: 12, color: '#E2695A', marginTop: 12, textAlign: 'center' }}>{error}</p>}
               <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-                <button onClick={() => navigate('/dashboard')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer' }}>
+                <button onClick={() => navigate('/plan/workouts')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer' }}>
                   Cancel
                 </button>
                 <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
@@ -918,7 +918,7 @@ export default function WorkoutBuilder() {
           <div style={{ padding: '12px 20px', borderTop: '1px solid var(--br)', background: 'var(--s1)', display: 'flex', gap: 10, alignItems: 'center' }}>
             {error && <span style={{ fontSize: 12, color: '#E2695A' }}>{error}</span>}
             <div style={{ flex: 1 }} />
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 'var(--r)', color: 'var(--mu)', padding: '9px 16px', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+            <button onClick={() => navigate('/plan/workouts')} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 'var(--r)', color: 'var(--mu)', padding: '9px 16px', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
             <button onClick={save} disabled={saving} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', padding: '9px 20px', fontSize: 13, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: 'pointer' }}>
               {saving ? 'Saving...' : isEdit ? 'Update workout' : 'Save workout'}
             </button>

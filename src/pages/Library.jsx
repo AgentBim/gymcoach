@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
+import PlanTabs from '../components/PlanTabs'
 import { MUSCLE_COLORS as GROUP_COLORS, DIFF_COLORS, FOCUS_COLORS } from '../lib/theme'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
@@ -102,12 +103,13 @@ export default function Library() {
 
   return (
     <Layout>
+      <PlanTabs />
       {isMobile && (
         <div style={{ background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10, paddingTop: 'var(--sat)' }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--tx)', flex: 1 }}>Exercise Library</span>
             <span style={{ fontSize: 12, color: 'var(--mu)' }}>{filtered.length}</span>
-            <button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 7, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', minHeight: 32, whiteSpace: 'nowrap' }}>+ Custom</button>
+            <button onClick={() => navigate('/plan/exercises/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 7, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', minHeight: 32, whiteSpace: 'nowrap' }}>+ Custom</button>
           </div>
           <div style={{ padding: '0 16px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
@@ -133,7 +135,7 @@ export default function Library() {
                 <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 2 }}>Exercise library</h1>
                 <p style={{ fontSize: 13, color: 'var(--mu)' }}>{filtered.length} of {exercises.length} exercises</p>
               </div>
-              <button onClick={() => navigate('/library/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Custom exercise</button>
+              <button onClick={() => navigate('/plan/exercises/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Custom exercise</button>
             </div>
           </div>
         )}

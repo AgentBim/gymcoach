@@ -67,7 +67,7 @@ export default function Roster() {
               <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-.02em', fontFamily: 'var(--font-head,sans-serif)' }}>Roster</div>
               <div style={{ fontSize: 11, color: 'var(--mu2)', marginTop: 1 }}>{athletes.length} athletes</div>
             </div>
-            <button onClick={() => navigate('/roster/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Add</button>
+            <button onClick={() => navigate('/athletes/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Add</button>
           </div>
           <div style={{ padding: '0 16px 10px' }}>
             <div style={{ background: 'var(--br)', borderRadius: 10, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -94,7 +94,7 @@ export default function Roster() {
               <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', fontFamily: 'var(--font-head,sans-serif)' }}>Athlete roster</h1>
               <p style={{ fontSize: 13, color: 'var(--mu)', marginTop: 2 }}>{athletes.length} athletes</p>
             </div>
-            <button onClick={() => navigate('/roster/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Add athlete</button>
+            <button onClick={() => navigate('/athletes/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ Add athlete</button>
           </div>
         )}
 
@@ -118,7 +118,7 @@ export default function Roster() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>🤸</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)', marginBottom: 6 }}>No athletes yet</p>
             <p style={{ fontSize: 13, marginBottom: 20 }}>Add your first athlete to start assigning workouts</p>
-            <button onClick={() => navigate('/roster/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Add athlete</button>
+            <button onClick={() => navigate('/athletes/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Add athlete</button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -135,7 +135,7 @@ export default function Roster() {
                     const workoutCount = a.workout_assignments?.length || 0
                     const streak = streaks.get(a.id)?.streak || 0
                     return (
-                      <div key={a.id} onClick={() => navigate(`/roster/${a.id}`)}
+                      <div key={a.id} onClick={() => navigate(`/athletes/${a.id}`)}
                         style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
 
                         {/* Avatar */}
@@ -157,7 +157,7 @@ export default function Roster() {
 
                         {/* Actions */}
                         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                          <button onClick={() => navigate(`/roster/${a.id}/edit`)} style={{ background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--mu2)', fontSize: 12, padding: '7px 11px', cursor: 'pointer', minHeight: 34 }}>Edit</button>
+                          <button onClick={() => navigate(`/athletes/${a.id}/edit`)} style={{ background: 'var(--br)', border: 'none', borderRadius: 8, color: 'var(--mu2)', fontSize: 12, padding: '7px 11px', cursor: 'pointer', minHeight: 34 }}>Edit</button>
                           <button onClick={() => deleteAthlete(a.id)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 8, color: '#E2695A', fontSize: 12, padding: '7px 10px', cursor: 'pointer', minHeight: 34 }}>✕</button>
                         </div>
 
