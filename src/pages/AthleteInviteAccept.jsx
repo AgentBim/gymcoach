@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { ChalkUpLogo } from '../components/ChalkUpLogo'
+import { AuthShell, AuthField, AuthSubmit, AuthMessage, AuthLinkButton, AuthGoogleButton, AuthDivider } from '../components/AuthShell'
 import { PENDING_INVITE_KEY } from '../lib/athleteInvite'
+import { signInWithGoogle, googleErrorMessage } from '../lib/oauth'
 
 export default function AthleteInviteAccept() {
   const { token } = useParams()
@@ -16,6 +17,7 @@ export default function AthleteInviteAccept() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [needsConfirmation, setNeedsConfirmation] = useState(false)
+  const [googling, setGoogling] = useState(false)
 
   useEffect(() => { init() }, [token])
 
@@ -122,63 +124,46 @@ export default function AthleteInviteAccept() {
     setSubmitting(false)
   }
 
-  const inp = { width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '10px 12px', fontSize: 14, outline: 'none' }
+  // Back from Google, init() sees the session and claims the invite itself.
+  async function handleGoogle() {
+    setError(''); setGoogling(true)
+    const { error } = await signInWithGoogle(`/athlete/invite/${token}`)
+    if (error) { setError(googleErrorMessage(error)); setGoogling(false) }
+  }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--mu)' }}>Loading...</div>
+    <AuthShell side="athlete" eyebrow="Invite" title="One moment">
+      <AuthMessage tone="info">Loading your invite…</AuthMessage>
+    </AuthShell>
   )
 
   if (notFound) return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--mu)', textAlign: 'center', padding: 20 }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
-      <p style={{ fontSize: 16, fontWeight: 500, color: 'var(--tx)', marginBottom: 6 }}>Invite not found</p>
-      <p style={{ fontSize: 13 }}>This link is invalid or has already been used.</p>
-    </div>
+    <AuthShell side="athlete" eyebrow="Invite" title="Invite not found" subtitle="This link is invalid or has already been used. Ask your coach for a new one."
+      footer={<Link to="/athlete/login" style={{ color: 'var(--ac)', fontWeight: 600 }}>Already have a login? Log in →</Link>}>
+      <span />
+    </AuthShell>
   )
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 20 }}>
-      <div style={{ width: 340 }}>
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <ChalkUpLogo size={36} />
-            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--tx)', fontFamily: 'var(--font-head)' }}>chalkup</span>
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--mu)' }}>Welcome, {athlete.full_name.split(' ')[0]} — set up your portal login</p>
+    <AuthShell side="athlete" eyebrow="Invite" title={`Welcome, ${athlete.full_name.split(' ')[0]}`} subtitle="Set up your portal login to see your workouts and keep your streak."
+      footer={!needsConfirmation && <>Already set up? <Link to="/athlete/login" style={{ color: 'var(--ac)', fontWeight: 600 }}>Log in →</Link></>}>
+      {needsConfirmation ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <AuthMessage tone="ok">Check your email to confirm your account, then come back and log in to finish setup.</AuthMessage>
+          <AuthLinkButton onClick={() => navigate('/athlete/login')}>Go to log in</AuthLinkButton>
         </div>
-
-        <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 14, padding: 24 }}>
-          {needsConfirmation ? (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>📬</div>
-              <p style={{ fontSize: 13, color: 'var(--tx)', marginBottom: 6 }}>Check your email to confirm your account.</p>
-              <p style={{ fontSize: 12, color: 'var(--mu)' }}>Then come back and log in to finish setup.</p>
-              <button onClick={() => navigate('/athlete/login')}
-                style={{ marginTop: 16, width: '100%', padding: 12, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700 }}>
-                Go to login →
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 5 }}>Email</label>
-                <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 5 }}>Choose a password</label>
-                <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
-              </div>
-
-              {error && <p style={{ fontSize: 12, color: '#E2695A', textAlign: 'center' }}>{error}</p>}
-
-              <button type="submit" disabled={submitting}
-                style={{ width: '100%', padding: 12, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: submitting ? 0.7 : 1, marginTop: 4 }}>
-                {submitting ? 'Setting up...' : 'Create my login →'}
-              </button>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
+      ) : (
+        <>
+        <AuthGoogleButton onClick={handleGoogle} busy={googling}>Continue with Google</AuthGoogleButton>
+        <AuthDivider>or create a password</AuthDivider>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <AuthField label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoComplete="email" inputMode="email" required />
+          <AuthField label="Choose a password" type="password" value={password} onChange={setPassword} placeholder="At least 6 characters" autoComplete="new-password" required minLength={6} />
+          {error && <AuthMessage>{error}</AuthMessage>}
+          <AuthSubmit loading={submitting}>{submitting ? 'Setting up…' : 'Create my login'}</AuthSubmit>
+        </form>
+        </>
+      )}
+    </AuthShell>
   )
 }
