@@ -1,6 +1,6 @@
 // Shared building blocks taken from the redesign mockup: avatar, chip, pill,
 // segmented control, stat card, week dots, dialog/sheet and the undo toast.
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { avatarColor, initials } from '../../lib/theme'
 import { Icon } from './Icon'
@@ -220,5 +220,68 @@ export function EmptyState({ title, children }) {
       {title && <div style={{ color: 'var(--tx)', fontWeight: 600, marginBottom: 4 }}>{title}</div>}
       {children}
     </div>
+  )
+}
+
+// Standard page body: the mockup's 28/36 desktop padding, 16 on phones.
+export function Page({ children, gap = 18, style }) {
+  const isMobile = useIsMobile()
+  return (
+    <div style={{ padding: isMobile ? 'max(18px, calc(var(--sat) + 10px)) 16px 24px' : '28px 36px 36px', display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : gap, ...style }}>
+      {children}
+    </div>
+  )
+}
+
+// "⋯" popover menu. items: [{ label, icon, onClick, danger }]
+export function MoreMenu({ label, items }) {
+  const [open, setOpen] = useState(false)
+  const isMobile = useIsMobile()
+  return (
+    <div style={{ position: 'relative' }}>
+      <button type="button" aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
+        style={{ width: isMobile ? 44 : 34, height: isMobile ? 44 : 34, display: 'grid', placeItems: 'center', borderRadius: 8, border: '1px solid var(--br)', background: open ? 'var(--s2)' : 'transparent', color: 'var(--mu2)', cursor: 'pointer' }}>
+        <Icon name="more" />
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div role="menu" style={{ position: 'absolute', right: 0, top: isMobile ? 48 : 38, minWidth: 190, zIndex: 41, background: 'var(--s2)', border: '1px solid var(--br2)', borderRadius: 10, padding: 4, boxShadow: '0 12px 32px rgba(0,0,0,.45)' }}>
+            {items.map(it => (
+              <button key={it.label} type="button" role="menuitem" onClick={() => { setOpen(false); it.onClick() }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, minHeight: isMobile ? 44 : 36, padding: '0 12px', border: 'none', background: 'transparent', borderRadius: 8, fontSize: 13.5, fontWeight: 500, textAlign: 'left', cursor: 'pointer',
+                  color: it.danger ? '#E2695A' : 'var(--tx)' }}>
+                {it.icon && <Icon name={it.icon} size={16} />}{it.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// Overlapping avatar stack + "+N".
+export function AvatarStack({ names, max = 4, size = 24 }) {
+  const shown = names.slice(0, max)
+  return (
+    <span style={{ display: 'inline-flex' }}>
+      {shown.map((n, i) => <Avatar key={n + i} name={n} size={size} style={{ marginLeft: i ? -6 : 0, border: '1.5px solid var(--s1)' }} />)}
+      {names.length > max && <span style={{ width: size, height: size, borderRadius: Math.round(size * 0.28), marginLeft: -6, border: '1.5px solid var(--s1)', background: 'var(--br2)', display: 'grid', placeItems: 'center', fontSize: 10, color: 'var(--mu2)', fontWeight: 600 }}>+{names.length - max}</span>}
+    </span>
+  )
+}
+
+// Checkbox row used by assign dialogs.
+export function CheckRow({ checked, onChange, children, disabled }) {
+  return (
+    <button type="button" role="checkbox" aria-checked={checked} disabled={disabled} onClick={onChange}
+      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, minHeight: 52, padding: '0 14px', borderRadius: 12, cursor: 'pointer', textAlign: 'left', color: 'var(--tx)',
+        border: `1px solid ${checked ? 'rgba(199,228,92,.45)' : 'var(--br2)'}`, background: checked ? 'rgba(199,228,92,.07)' : 'transparent' }}>
+      <span style={{ width: 20, height: 20, borderRadius: 6, flexShrink: 0, display: 'grid', placeItems: 'center', background: checked ? 'var(--ac)' : 'transparent', border: checked ? 'none' : '1.5px solid var(--br2)', color: 'var(--ac-ink)' }}>
+        {checked && <Icon name="check" size={13} strokeWidth={3} />}
+      </span>
+      {children}
+    </button>
   )
 }

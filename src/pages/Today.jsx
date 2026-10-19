@@ -6,7 +6,8 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useRoster } from '../lib/useRoster'
 import { todayLocal } from '../lib/streaks'
-import { feelOf, mondayOfStr } from '../lib/rosterStatus'
+import { feelOf } from '../lib/rosterStatus'
+import { mondayOfStr } from '../lib/dates'
 import { Avatar, Button, Card, Chip, Dot, DotLegend, EmptyState, Icon, Label, SearchBox, StatCard } from '../components/ui'
 
 function greeting() {

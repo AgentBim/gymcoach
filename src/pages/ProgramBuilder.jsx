@@ -105,7 +105,7 @@ export default function ProgramBuilder() {
     if (!user) return
     // Program-generated workouts stay out of the picker unless they belong
     // to this program.
-    let query = supabase.from('workouts').select('id, name, program_generated').eq('coach_id', user.id)
+    let query = supabase.from('workouts').select('id, name, program_generated, archived_at').eq('coach_id', user.id)
     query = isEdit
       ? query.or(`program_generated.eq.false,source_program_id.eq.${id}`)
       : query.eq('program_generated', false)
@@ -301,7 +301,7 @@ export default function ProgramBuilder() {
   }
 
   const weekData = Array.from({ length: weeks }, (_, i) => i + 1)
-  const handBuilt = workouts.filter(w => !w.program_generated)
+  const handBuilt = workouts.filter(w => !w.program_generated && !w.archived_at)
   const programGenerated = workouts.filter(w => w.program_generated)
   const drafts = Object.values(draftWorkouts)
 

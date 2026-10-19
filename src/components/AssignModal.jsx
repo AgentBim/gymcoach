@@ -1,152 +1,93 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { AVATAR_PALETTE as AV_COLORS, initials } from '../lib/theme'
+import { Avatar, Button, CheckRow, Dialog, EmptyState, Icon } from './ui'
 
-export default function AssignModal({ workout, onClose }) {
+// Assign a workout to athletes (mockup "Assign workout"): toggle who has it,
+// Save applies the difference. mode="links" instead lists each assigned
+// athlete's own share link to copy (assignment tokens are per athlete).
+export default function AssignModal({ workout, mode = 'assign', onClose, onSaved }) {
   const { user } = useAuth()
   const [athletes, setAthletes] = useState([])
-  const [selected, setSelected] = useState([])
-  const [existing, setExisting] = useState([])
+  const [existing, setExisting] = useState(new Map()) // athleteId -> { id, token }
+  const [draft, setDraft] = useState(new Set())
   const [saving, setSaving] = useState(false)
-  const [done, setDone] = useState(false)
-  const [copied, setCopied] = useState([])
-  const [tokensByAthlete, setTokensByAthlete] = useState({})
+  const [error, setError] = useState('')
+  const [copied, setCopied] = useState(null)
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    (async () => {
+      const [{ data: aths }, { data: assigns }] = await Promise.all([
+        supabase.from('athletes').select('id, full_name, group_name').eq('coach_id', user.id).order('full_name'),
+        supabase.from('workout_assignments').select('id, athlete_id, assignment_token').eq('workout_id', workout.id).is('revoked_at', null),
+      ])
+      setAthletes(aths || [])
+      const map = new Map((assigns || []).map(a => [a.athlete_id, { id: a.id, token: a.assignment_token }]))
+      setExisting(map)
+      setDraft(new Set(map.keys()))
+    })()
+  }, [])
 
-  async function fetchData() {
-    const [{ data: aths }, { data: assigns }] = await Promise.all([
-      supabase.from('athletes').select('*').eq('coach_id', user.id).order('group_name').order('full_name'),
-      supabase.from('workout_assignments').select('athlete_id').eq('workout_id', workout.id),
-    ])
-    setAthletes(aths || [])
-    setExisting((assigns || []).map(a => a.athlete_id))
-  }
-
-  function toggleSelect(id) {
-    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-  }
-
-  async function assign() {
-    if (selected.length === 0) return
+  async function save() {
     setSaving(true)
-    const rows = selected.map(athlete_id => ({
-      workout_id: workout.id, athlete_id, coach_id: user.id
-    }))
-    const { data } = await supabase.from('workout_assignments')
-      .upsert(rows, { onConflict: 'workout_id,athlete_id' })
-      .select('athlete_id, assignment_token')
-    const map = {}
-    ;(data || []).forEach(r => { map[r.athlete_id] = r.assignment_token })
-    setTokensByAthlete(map)
+    setError('')
+    const added = [...draft].filter(id => !existing.has(id))
+    const removed = [...existing.keys()].filter(id => !draft.has(id))
+    if (added.length) {
+      const { error: e } = await supabase.from('workout_assignments')
+        .upsert(added.map(athlete_id => ({ workout_id: workout.id, athlete_id, coach_id: user.id, revoked_at: null })), { onConflict: 'workout_id,athlete_id' })
+      if (e) { setError(e.message); setSaving(false); return }
+    }
+    if (removed.length) {
+      const { error: e } = await supabase.from('workout_assignments').delete().eq('workout_id', workout.id).in('athlete_id', removed)
+      if (e) { setError(e.message); setSaving(false); return }
+    }
     setSaving(false)
-    setDone(true)
+    onSaved?.(draft.size, added.length || removed.length ? true : false)
+    onClose()
   }
 
-  // Each athlete gets their own assignment-scoped link — there's no single
-  // shared link per workout anymore (the backend locked that down; see
-  // workout_assignments.assignment_token).
-  function copyLink(athleteId) {
-    const token = tokensByAthlete[athleteId]
-    if (!token) return
-    const url = `${window.location.origin}/share/${token}`
-    navigator.clipboard.writeText(url)
-    setCopied(prev => [...prev, athleteId])
-    setTimeout(() => setCopied(prev => prev.filter(id => id !== athleteId)), 2000)
+  function copy(athleteId) {
+    const t = existing.get(athleteId)?.token
+    if (!t) return
+    navigator.clipboard.writeText(`${window.location.origin}/share/${t}`)
+    setCopied(athleteId)
+    setTimeout(() => setCopied(null), 2000)
   }
 
-  const groups = [...new Set(athletes.map(a => a.group_name).filter(Boolean))]
-  const grouped = athletes.reduce((acc, a) => {
-    const g = a.group_name || 'Ungrouped'
-    if (!acc[g]) acc[g] = []
-    acc[g].push(a)
-    return acc
-  }, {})
-
-  const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }
-  const sheet = { background: 'var(--s1)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }
+  if (mode === 'links') {
+    const list = athletes.filter(a => existing.has(a.id))
+    return (
+      <Dialog title="Athlete links" subtitle={`${workout.name}. Each athlete has their own link.`} onClose={onClose}
+        footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
+        {list.length === 0 && <EmptyState>Not assigned to anyone yet.</EmptyState>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {list.map(a => (
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', border: '1px solid var(--br2)', borderRadius: 12 }}>
+              <Avatar name={a.full_name} size={28} />
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{a.full_name}</span>
+              <Button size="sm" icon={copied === a.id ? 'check' : 'link'} onClick={() => copy(a.id)}>{copied === a.id ? 'Copied' : 'Copy link'}</Button>
+            </div>
+          ))}
+        </div>
+      </Dialog>
+    )
+  }
 
   return (
-    <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={sheet}>
-        {/* Header */}
-        <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--br)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)' }}>Assign workout</span>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 0 }}>✕</button>
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--mu)' }}>{workout.name}</div>
-        </div>
-
-        {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 18px' }}>
-          {athletes.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--mu)', fontSize: 13 }}>
-              No athletes in your roster yet.<br />Add athletes first from the Roster page.
-            </div>
-          ) : done ? (
-            <div style={{ padding: '10px 0' }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 12 }}>
-                Assigned to {selected.length} athlete{selected.length !== 1 ? 's' : ''} — copy their links
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-                {athletes.filter(a => selected.includes(a.id)).map(a => {
-                  const av = AV_COLORS[a.full_name.charCodeAt(0) % AV_COLORS.length]
-                  return (
-                    <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 10 }}>
-                      <div style={{ width: 30, height: 30, background: av.bg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: av.color, flexShrink: 0 }}>{initials(a.full_name)}</div>
-                      <span style={{ flex: 1, fontSize: 13, color: 'var(--tx)' }}>{a.full_name}</span>
-                      <button onClick={() => copyLink(a.id)} style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 6, color: copied.includes(a.id) ? 'var(--ac)' : 'var(--mu)', fontSize: 11, padding: '5px 10px', cursor: 'pointer' }}>
-                        {copied.includes(a.id) ? '✓ Copied' : '🔗 Copy'}
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-              <button onClick={onClose} style={{ width: '100%', padding: 11, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Done</button>
-            </div>
-          ) : (
-            <>
-              <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 10 }}>Select athletes to assign this workout to</div>
-              {Object.entries(grouped).map(([group, members]) => (
-                <div key={group} style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 7 }}>{group}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {members.map(a => {
-                      const av = AV_COLORS[a.full_name.charCodeAt(0) % AV_COLORS.length]
-                      const isSelected = selected.includes(a.id)
-                      const isExisting = existing.includes(a.id)
-                      return (
-                        <div key={a.id} onClick={() => !isExisting && toggleSelect(a.id)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: isSelected ? 'rgba(199,228,92,.05)' : 'var(--s2)', border: `1px solid ${isSelected ? 'rgba(199,228,92,.25)' : 'var(--br)'}`, borderRadius: 10, cursor: isExisting ? 'default' : 'pointer', opacity: isExisting ? 0.5 : 1 }}>
-                          <div style={{ width: 18, height: 18, background: isSelected ? 'var(--ac)' : 'var(--br)', border: isSelected ? 'none' : '1px solid var(--br2)', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'var(--ac-ink)', flexShrink: 0 }}>
-                            {isSelected ? '✓' : isExisting ? '✓' : ''}
-                          </div>
-                          <div style={{ width: 28, height: 28, background: av.bg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: av.color, flexShrink: 0 }}>{initials(a.full_name)}</div>
-                          <span style={{ flex: 1, fontSize: 13, color: 'var(--tx)' }}>{a.full_name}</span>
-                          {a.level && <span style={{ fontSize: 11, color: 'var(--mu)' }}>{a.level}</span>}
-                          {isExisting && <span style={{ fontSize: 10, color: 'var(--ac)', background: 'rgba(199,228,92,.1)', padding: '2px 7px', borderRadius: 20 }}>already assigned</span>}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-
-        {/* Footer */}
-        {!done && athletes.length > 0 && (
-          <div style={{ padding: '12px 18px', borderTop: '1px solid var(--br)', flexShrink: 0 }}>
-            <button onClick={assign} disabled={saving || selected.length === 0}
-              style={{ width: '100%', padding: 13, background: selected.length > 0 ? 'var(--ac)' : 'var(--br)', color: selected.length > 0 ? 'var(--ac-ink)' : 'var(--mu)', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: selected.length > 0 ? 'pointer' : 'default', opacity: saving ? 0.7 : 1 }}>
-              {saving ? 'Assigning...' : selected.length > 0 ? `Assign to ${selected.length} athlete${selected.length !== 1 ? 's' : ''}` : 'Select athletes'}
-            </button>
-          </div>
-        )}
+    <Dialog title={`Assign ${workout.name}`} subtitle="Pick who gets it. They see it in their portal today." onClose={onClose} busy={saving}
+      footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button></>}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {athletes.length === 0 && <EmptyState>No athletes yet. Add one from the Athletes page.</EmptyState>}
+        {athletes.map(a => (
+          <CheckRow key={a.id} checked={draft.has(a.id)} onChange={() => setDraft(d => { const n = new Set(d); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n })}>
+            <Avatar name={a.full_name} size={28} />
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{a.full_name}</span>
+            {a.group_name && <span style={{ fontSize: 12, color: 'var(--mu)' }}>{a.group_name}</span>}
+          </CheckRow>
+        ))}
       </div>
-    </div>
+      {error && <p role="alert" style={{ fontSize: 12.5, color: '#E2695A' }}>{error}</p>}
+    </Dialog>
   )
 }

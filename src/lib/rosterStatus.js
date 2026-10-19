@@ -2,21 +2,12 @@
 // coach screens show: week dots, streak, last trained, and the reasons an
 // athlete "needs you". Pure and React-free so Today, Athletes and the athlete
 // hub can't disagree. Due-ness always goes through streaks.js.
-import { isDueOnDate, resolveProgramCell, walkBackwardStreak, shiftDateStr, formatDateOnly } from './streaks'
+import { isDueOnDate, resolveProgramCell, walkBackwardStreak, shiftDateStr } from './streaks'
+import { mondayOfStr, weekdayShort } from './dates'
 
-const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+export { mondayOfStr, weekdayShort }
 const AT_RISK_MIN_STREAK = 5
 const NOTE_WINDOW_DAYS = 1 // feedback from today or yesterday still counts as "new"
-
-export function mondayOfStr(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-  return formatDateOnly(d)
-}
-
-export function weekdayShort(dateStr) {
-  return DAY_SHORT[(new Date(dateStr + 'T00:00:00').getDay() + 6) % 7]
-}
 
 function lastTrainedLabel(dateStr, today) {
   if (!dateStr) return 'Never'

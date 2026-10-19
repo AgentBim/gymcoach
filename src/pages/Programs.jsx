@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -7,21 +7,57 @@ import Layout from '../components/Layout'
 import PlanTabs from '../components/PlanTabs'
 import { SelectionBar, ConfirmDeleteSheet, Toast } from '../components/BulkDelete'
 import { describeSelection, fetchProgramImpact, programDeletePlan } from '../lib/bulkDelete'
+import { todayLocal } from '../lib/streaks'
+import { nextMondayStr, fmtShort } from '../lib/dates'
+import { Avatar, AvatarStack, Button, Card, CheckRow, Chip, Dialog, EmptyState, Icon, MoreMenu, Page, PageHeader, Pill, PillRow, SearchBox } from '../components/ui'
 
-const ACCENTS = ['var(--ac)', '#6BA9DE', '#A184E3', '#4FB88A', '#E7A23E']
+// Per-week thumbnail: one row per week, one cell per weekday.
+function cellKind(d) {
+  if (!d) return 'rest'
+  if (d.day_type === 'recovery') return 'recovery'
+  if (d.day_type === 'competition') return 'meet'
+  return d.workout_id || d.day_type === 'training' ? 'training' : 'rest'
+}
+const CELL = { training: 'var(--ac)', meet: '#E2695A', recovery: '#6BA9DE', rest: 'var(--br2)' }
+
+function Thumb({ program }) {
+  const byCell = new Map((program.program_days || []).map(d => [`${d.week_number}:${d.day_of_week}`, d]))
+  const weeks = Math.min(program.duration_weeks, 8)
+  return (
+    <div role="img" aria-label="Training days preview, one row per week" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {Array.from({ length: weeks }, (_, w) => (
+        <div key={w} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+          {Array.from({ length: 7 }, (_, d) => {
+            const k = cellKind(byCell.get(`${w + 1}:${d}`))
+            return <span key={d} style={{ height: 8, borderRadius: 3, background: CELL[k], opacity: k === 'rest' ? 0.5 : 1 }} />
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function sessionsPerWeek(program) {
+  return (program.program_days || []).filter(d => d.week_number === 1 && cellKind(d) === 'training').length
+}
 
 export default function Programs() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const [programs, setPrograms] = useState([])
-  const [loading, setLoading]   = useState(true)
-  // Bulk delete: select mode on the program list; deleteReq opens the
-  // confirmation sheet (also used for deleting a single program).
+  const [allAthletes, setAllAthletes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all')
+  const [query, setQuery] = useState('')
+  const [assignFor, setAssignFor] = useState(null)
+  const [draft, setDraft] = useState(new Set())
+  const [savingAssign, setSavingAssign] = useState(false)
+  // Select mode + delete confirmation (bulk delete from the earlier build).
   const [selecting, setSelecting]     = useState(false)
   const [selected, setSelected]       = useState(() => new Set())
   const [lastIdx, setLastIdx]         = useState(null)
-  const [deleteReq, setDeleteReq]     = useState(null) // [{ id, name }]
+  const [deleteReq, setDeleteReq]     = useState(null)
   const [impact, setImpact]           = useState(null)
   const [deleteError, setDeleteError] = useState('')
   const [deleting, setDeleting]       = useState(false)
@@ -33,18 +69,49 @@ export default function Programs() {
 
   async function fetchPrograms() {
     if (!user) return
-    const { data } = await supabase
-      .from('programs')
-      .select('*, program_days(id), athletes!athletes_active_program_id_fkey(id)')
-      .eq('coach_id', user.id)
-      .order('created_at', { ascending: false })
-    setPrograms(data || [])
+    const [pRes, aRes] = await Promise.all([
+      supabase.from('programs')
+        .select('*, program_days(week_number, day_of_week, day_type, workout_id), athletes!athletes_active_program_id_fkey(id, full_name)')
+        .eq('coach_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase.from('athletes').select('id, full_name, active_program_id').eq('coach_id', user.id).order('full_name'),
+    ])
+    setPrograms(pRes.data || [])
+    setAllAthletes(aRes.data || [])
     setLoading(false)
   }
 
-  // Every delete, one program or many, goes through the confirmation sheet
-  // and delete_programs (all or nothing). Each program's generated workouts
-  // go with it, except ones athletes have feedback or assignments on.
+  async function duplicate(p) {
+    const { error } = await supabase.rpc('duplicate_program', { p_program_id: p.id })
+    if (error) { setToast(error.message || 'Could not duplicate'); return }
+    setToast(`Duplicated ${p.name}`)
+    fetchPrograms()
+  }
+
+  // ── assign athletes (mockup "Assign" dialog) ──
+  const startDate = nextMondayStr(todayLocal())
+  function openAssign(p) {
+    setAssignFor(p)
+    setDraft(new Set((p.athletes || []).map(a => a.id)))
+  }
+  async function saveAssign() {
+    setSavingAssign(true)
+    const before = new Set((assignFor.athletes || []).map(a => a.id))
+    const added = [...draft].filter(id => !before.has(id))
+    const removed = [...before].filter(id => !draft.has(id))
+    const ops = []
+    if (added.length) ops.push(supabase.from('athletes').update({ active_program_id: assignFor.id, program_started_on: startDate }).in('id', added))
+    if (removed.length) ops.push(supabase.from('athletes').update({ active_program_id: null, program_started_on: null }).in('id', removed))
+    const results = await Promise.all(ops)
+    setSavingAssign(false)
+    const err = results.find(r => r.error)?.error
+    if (err) { setToast(err.message || 'Could not save'); return }
+    setToast(draft.size ? `Assigned to ${draft.size} athlete${draft.size === 1 ? '' : 's'}` : 'Nobody assigned')
+    setAssignFor(null)
+    fetchPrograms()
+  }
+
+  // ── delete ──
   async function openDelete(list) {
     if (!list.length) return
     const reqId = ++deleteReqId.current
@@ -58,43 +125,27 @@ export default function Programs() {
       if (reqId === deleteReqId.current) setDeleteError(err.message || 'Could not check what this delete changes')
     }
   }
-
-  function closeDelete() {
-    deleteReqId.current += 1
-    setDeleteReq(null)
-  }
-
+  function closeDelete() { deleteReqId.current += 1; setDeleteReq(null) }
   async function confirmDelete() {
     setDeleting(true)
     setDeleteError('')
     const { data, error: rpcError } = await supabase.rpc('delete_programs', { p_program_ids: deleteReq.map(p => p.id) })
     setDeleting(false)
     if (rpcError) { setDeleteError(rpcError.message || 'Could not delete'); return }
-    setToast(`${data} program${data === 1 ? '' : 's'} deleted`)
+    setToast(`${data} program${data === 1 ? '' : 's'} deleted. Athletes on ${data === 1 ? 'it' : 'them'} keep their history.`)
     setDeleteReq(null)
     stopSelecting()
     fetchPrograms()
   }
 
-  function startSelecting() {
-    setSelecting(true)
-    setSelected(new Set())
-    setLastIdx(null)
-  }
-
-  function stopSelecting() {
-    setSelecting(false)
-    setSelected(new Set())
-    setLastIdx(null)
-  }
-
-  // Click toggles; shift-click selects the range from the last clicked card.
+  function startSelecting() { setSelecting(true); setSelected(new Set()); setLastIdx(null) }
+  function stopSelecting() { setSelecting(false); setSelected(new Set()); setLastIdx(null) }
   function toggleSelected(idx, id, shiftKey) {
     setSelected(prev => {
       const next = new Set(prev)
       if (shiftKey && lastIdx !== null) {
         const [from, to] = [Math.min(lastIdx, idx), Math.max(lastIdx, idx)]
-        programs.slice(from, to + 1).forEach(p => next.add(p.id))
+        shown.slice(from, to + 1).forEach(p => next.add(p.id))
       } else if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
@@ -102,144 +153,128 @@ export default function Programs() {
     setLastIdx(idx)
   }
 
+  const inUse = p => (p.athletes?.length || 0) > 0
+  const q = query.trim().toLowerCase()
+  const shown = programs.filter(p =>
+    (filter === 'all' || (filter === 'use' ? inUse(p) : !inUse(p))) && (!q || p.name.toLowerCase().includes(q)))
+  const count = f => programs.filter(p => f === 'all' || (f === 'use' ? inUse(p) : !inUse(p))).length
+
   const selectedPrograms = programs.filter(p => selected.has(p.id))
-  const allSelected = programs.length > 0 && selectedPrograms.length === programs.length
   const selectedAthletes = selectedPrograms.reduce((n, p) => n + (p.athletes?.length || 0), 0)
+  const allSelected = shown.length > 0 && shown.every(p => selected.has(p.id))
   const deletePlan = deleteReq && impact ? programDeletePlan(deleteReq, impact) : null
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(programs.map(p => p.id)))
+
+  const programOf = id => programs.find(p => (p.athletes || []).some(a => a.id === id))
 
   return (
     <Layout>
       <PlanTabs />
-      {/* ── MOBILE HEADER ── */}
-      {isMobile && (
-        <div style={{ paddingTop: 'max(14px, calc(var(--sat) + 6px))', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 0, zIndex: 10 }}>
-          {selecting ? (
-            <div style={{ padding: '0 8px 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button onClick={stopSelecting} style={{ minHeight: 44, padding: '0 12px', background: 'none', border: 'none', color: 'var(--mu)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <span style={{ flex: 1, textAlign: 'center', fontSize: 15, fontWeight: 700, color: 'var(--tx)' }}>{selectedPrograms.length ? `${selectedPrograms.length} selected` : 'Select programs'}</span>
-              <button onClick={toggleAll} style={{ minHeight: 44, padding: '0 12px', background: 'none', border: 'none', color: 'var(--ac)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                {allSelected ? 'Deselect all' : 'Select all'}
-              </button>
-            </div>
-          ) : (
-            <div style={{ padding: '0 16px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-.02em', fontFamily: 'var(--font-head,sans-serif)' }}>Programs</div>
-                <div style={{ fontSize: 11, color: 'var(--mu2)', marginTop: 1 }}>Multi-week training plans</div>
-              </div>
-              {programs.length > 0 && (
-                <button onClick={startSelecting} style={{ background: 'var(--br)', border: 'none', borderRadius: 10, color: 'var(--tx)', padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Select</button>
-              )}
-              <button onClick={() => navigate('/plan/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
-            </div>
+      <Page>
+        <PageHeader eyebrow={`${programs.length} program${programs.length === 1 ? '' : 's'}`} title="Programs">
+          <SearchBox value={query} onChange={setQuery} placeholder="Search programs" label="Search programs" style={{ width: isMobile ? '100%' : 220 }} />
+          {programs.length > 0 && (
+            <Button onClick={selecting ? stopSelecting : startSelecting} aria-pressed={selecting}>{selecting ? 'Done' : 'Select'}</Button>
           )}
-        </div>
-      )}
+          <Button variant="primary" icon="plus" onClick={() => navigate('/plan/programs/new')}>New program</Button>
+        </PageHeader>
 
-      <div style={{ padding: isMobile ? '14px 16px' : '20px 24px' }}>
-        {/* ── DESKTOP HEADER ── */}
-        {!isMobile && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', fontFamily: 'var(--font-head,sans-serif)' }}>Training programs</h1>
-              <p style={{ fontSize: 13, color: 'var(--mu)', marginTop: 2 }}>Multi-week plans built from your workouts</p>
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {selecting && (
-                <button onClick={toggleAll} style={{ background: 'none', border: 'none', color: 'var(--ac)', padding: '9px 8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                  {allSelected ? 'Deselect all' : `Select all ${programs.length}`}
-                </button>
-              )}
-              {programs.length > 0 && (
-                <button onClick={selecting ? stopSelecting : startSelecting} aria-pressed={selecting}
-                  style={{ background: selecting ? 'rgba(199,228,92,.12)' : 'var(--s2)', border: `1px solid ${selecting ? 'rgba(199,228,92,.45)' : 'var(--br)'}`, color: selecting ? 'var(--ac)' : 'var(--tx)', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                  {selecting ? 'Done' : 'Select'}
-                </button>
-              )}
-              <button onClick={() => navigate('/plan/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New program</button>
-            </div>
-          </div>
-        )}
+        <PillRow label="Filter programs">
+          <Pill on={filter === 'all'} count={count('all')} onClick={() => setFilter('all')}>All</Pill>
+          <Pill on={filter === 'use'} count={count('use')} onClick={() => setFilter('use')}>In use</Pill>
+          <Pill on={filter === 'none'} count={count('none')} onClick={() => setFilter('none')}>Not assigned</Pill>
+        </PillRow>
 
         {loading ? (
-          <div style={{ color: 'var(--mu)', padding: 40, textAlign: 'center' }}>Loading…</div>
-        ) : programs.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mu)' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--tx)', marginBottom: 6 }}>No programs yet</p>
-            <p style={{ fontSize: 13, marginBottom: 20 }}>Build a multi-week plan from your saved workouts</p>
-            <button onClick={() => navigate('/plan/programs/new')} style={{ background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Create program</button>
-          </div>
+          <div style={{ color: 'var(--mu)', padding: 24 }}>Loading…</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(290px, 1fr))', gap: isMobile ? 10 : 14 }}>
-            {programs.map((p, idx) => {
-              const accent = ACCENTS[idx % ACCENTS.length]
-              const days = p.program_days?.length || 0
-              const activeFor = p.athletes?.length || 0
-              if (selecting) {
-                // The checkbox's change event toggles; its click only records
-                // Shift for range selection (see Dashboard's selectable card).
-                const on = selected.has(p.id)
+          <>
+            {shown.length === 0 && <Card><EmptyState>{programs.length === 0 ? 'No programs yet. Start one below.' : 'No programs match.'}</EmptyState></Card>}
+            <section style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))', gap: isMobile ? 12 : 16 }}>
+              {shown.map((p, idx) => {
+                const use = inUse(p)
+                const names = (p.athletes || []).map(a => a.full_name)
+                const per = sessionsPerWeek(p)
+                if (selecting) {
+                  const on = selected.has(p.id)
+                  return (
+                    <label key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 16, borderRadius: 14, cursor: 'pointer', userSelect: 'none', background: on ? 'rgba(199,228,92,.08)' : 'var(--s1)', border: `1px solid ${on ? 'rgba(199,228,92,.45)' : 'var(--br)'}` }}>
+                      <input type="checkbox" checked={on} aria-label={`Select ${p.name}`}
+                        onClick={e => { shiftClick.current = e.shiftKey }}
+                        onChange={() => toggleSelected(idx, p.id, shiftClick.current)}
+                        style={{ width: 20, height: 20, margin: '1px 0 0', flexShrink: 0, accentColor: 'var(--ac)', cursor: 'pointer' }} />
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{p.name}</span>
+                        <span style={{ display: 'block', fontSize: 12.5, color: 'var(--mu2)', marginTop: 2 }}>{p.duration_weeks} weeks · {per} sessions a week</span>
+                        {use && <span style={{ display: 'block', fontSize: 12, color: '#E7A23E', marginTop: 6 }}>Active for {names.length} athlete{names.length === 1 ? '' : 's'}</span>}
+                      </span>
+                    </label>
+                  )
+                }
                 return (
-                  <label key={p.id}
-                    style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 14, borderRadius: 14, cursor: 'pointer', userSelect: 'none',
-                      background: on ? 'rgba(199,228,92,.08)' : 'var(--s2)', border: `1px solid ${on ? 'rgba(199,228,92,.45)' : 'var(--br)'}` }}>
-                    <input type="checkbox" checked={on} aria-label={`Select ${p.name}`}
-                      onClick={e => { shiftClick.current = e.shiftKey }}
-                      onChange={() => toggleSelected(idx, p.id, shiftClick.current)}
-                      style={{ width: 20, height: 20, margin: '1px 0 0', flexShrink: 0, accentColor: 'var(--ac)', cursor: 'pointer' }} />
-                    <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                      <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'rgba(200,255,80,.1)', color: 'var(--ac)' }}>{p.duration_weeks} week{p.duration_weeks !== 1 ? 's' : ''}</span>
-                        <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'var(--br)', color: 'var(--mu2)' }}>{days} day{days !== 1 ? 's' : ''} planned</span>
-                        {activeFor > 0 && (
-                          <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'rgba(231,162,62,.14)', color: '#E7A23E' }}>Active for {activeFor} athlete{activeFor !== 1 ? 's' : ''}</span>
-                        )}
-                      </span>
-                    </span>
-                  </label>
+                  <Card as="article" key={p.id} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Link to={`/plan/programs/${p.id}`} style={{ fontSize: 16, fontWeight: 700, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</Link>
+                        <div style={{ fontSize: 12.5, color: 'var(--mu2)', marginTop: 2 }}>{p.duration_weeks} week{p.duration_weeks === 1 ? '' : 's'} · {per} sessions a week</div>
+                      </div>
+                      <Chip tone={use ? 'accent' : 'amber'}>{use ? 'In use' : 'Not assigned'}</Chip>
+                      <MoreMenu label={`More actions for ${p.name}`} items={[
+                        { label: 'Open and edit', icon: 'edit', onClick: () => navigate(`/plan/programs/${p.id}`) },
+                        { label: 'Duplicate', icon: 'copy', onClick: () => duplicate(p) },
+                        { label: 'Delete', icon: 'trash', danger: true, onClick: () => openDelete([p]) },
+                      ]} />
+                    </div>
+                    <Thumb program={p} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderTop: '1px solid var(--br)', paddingTop: 12, marginTop: 'auto' }}>
+                      {use ? (
+                        <button type="button" onClick={() => openAssign(p)} aria-label={`Edit athletes on ${p.name}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 36, background: 'none', border: 'none', color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', padding: 0 }}>
+                          <AvatarStack names={names} />{names.length} athlete{names.length === 1 ? '' : 's'}
+                        </button>
+                      ) : <span style={{ fontSize: 12.5, color: 'var(--mu)' }}>Not assigned</span>}
+                      <span style={{ flex: 1 }} />
+                      {!use && <Button size="sm" onClick={() => openAssign(p)}>Assign</Button>}
+                      <Link to={`/plan/programs/${p.id}`} style={{ fontSize: 13, fontWeight: 600, color: 'var(--ac)', padding: '0 4px' }}>Open</Link>
+                    </div>
+                  </Card>
                 )
-              }
+              })}
+              {!selecting && (
+                <Link to="/plan/programs/new" style={{ border: '1.5px dashed var(--br2)', borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 160, gap: 8, color: 'var(--mu2)', textAlign: 'center', padding: 16 }}>
+                  <span style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--s2)', display: 'grid', placeItems: 'center' }}><Icon name="plus" /></span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)' }}>New program</span>
+                  <span style={{ fontSize: 12.5, maxWidth: 260 }}>Start blank, or generate a full block from your exercise library inside the editor.</span>
+                </Link>
+              )}
+            </section>
+            <div style={{ display: 'flex', gap: 14, fontSize: 12, color: 'var(--mu2)' }}>
+              {[['training', 'Training'], ['recovery', 'Recovery'], ['rest', 'Rest']].map(([k, l]) => (
+                <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 8, borderRadius: 3, background: CELL[k], opacity: k === 'rest' ? 0.5 : 1 }} />{l}</span>
+              ))}
+            </div>
+          </>
+        )}
+      </Page>
+
+      {assignFor && (
+        <Dialog title={`Assign ${assignFor.name}`} subtitle={`New athletes start next Monday, ${fmtShort(startDate)}. People already on another program are moved over.`} onClose={() => setAssignFor(null)} busy={savingAssign}
+          footer={<><Button onClick={() => setAssignFor(null)}>Cancel</Button><Button variant="primary" onClick={saveAssign} disabled={savingAssign}>{savingAssign ? 'Saving…' : 'Save'}</Button></>}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {allAthletes.length === 0 && <EmptyState>No athletes yet.</EmptyState>}
+            {allAthletes.map(a => {
+              const other = programOf(a.id)
+              const elsewhere = other && other.id !== assignFor.id && !draft.has(a.id)
               return (
-                <div key={p.id} style={{ background: 'var(--s2)', border: '1px solid var(--br)', borderRadius: 14, padding: '14px 14px 12px', position: 'relative', overflow: 'hidden' }}>
-                  {/* Accent bar */}
-                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: accent, borderRadius: '3px 0 0 3px' }} />
-                  <div style={{ paddingLeft: 2 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--tx)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                    </div>
-                    {p.description && <div style={{ fontSize: 12, color: 'var(--mu2)', marginBottom: 8, lineHeight: 1.5 }}>{p.description}</div>}
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                      <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'rgba(200,255,80,.1)', color: 'var(--ac)' }}>
-                        {p.duration_weeks} week{p.duration_weeks !== 1 ? 's' : ''}
-                      </span>
-                      <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: 'var(--br)', color: 'var(--mu2)' }}>
-                        {days} day{days !== 1 ? 's' : ''} planned
-                      </span>
-                    </div>
-                    <div style={{ borderTop: '1px solid var(--br)', paddingTop: 10, display: 'flex', gap: 7 }}>
-                      <button onClick={() => navigate(`/plan/programs/${p.id}`)}
-                        style={{ flex: 1, background: 'rgba(200,255,80,.08)', border: '1px solid rgba(200,255,80,.2)', borderRadius: 9, color: 'var(--ac)', fontSize: 13, fontWeight: 600, padding: '9px 10px', cursor: 'pointer' }}>
-                        Open
-                      </button>
-                      <button onClick={() => openDelete([p])} aria-label={`Delete ${p.name}`}
-                        style={{ background: 'transparent', border: '1px solid var(--br)', borderRadius: 9, color: '#E2695A', fontSize: 13, padding: '9px 12px', cursor: 'pointer' }}>🗑</button>
-                    </div>
-                  </div>
-                </div>
+                <CheckRow key={a.id} checked={draft.has(a.id)} onChange={() => setDraft(d => { const n = new Set(d); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n })}>
+                  <Avatar name={a.full_name} size={28} />
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{a.full_name}</span>
+                  {elsewhere && <Chip tone="neutral">On {other.name}</Chip>}
+                </CheckRow>
               )
             })}
-            {!isMobile && !selecting && (
-              <div onClick={() => navigate('/plan/programs/new')} style={{ border: '1.5px dashed var(--br)', borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 160, gap: 8, cursor: 'pointer', color: 'var(--mu)' }}>
-                <div style={{ width: 36, height: 36, background: 'var(--br)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>＋</div>
-                <span style={{ fontSize: 13 }}>New program</span>
-              </div>
-            )}
           </div>
-        )}
-      </div>
+        </Dialog>
+      )}
 
       {selecting && (
         <SelectionBar

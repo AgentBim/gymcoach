@@ -30,9 +30,10 @@ export default function AthleteToday() {
     if (!athlete) return
     const { data } = await supabase
       .from('workout_assignments')
-      .select('workout_id, workouts(id, name)')
+      .select('workout_id, workouts(id, name, archived_at)')
       .eq('athlete_id', athlete.id)
-    setAssignedWorkouts((data || []).map(a => a.workouts).filter(Boolean))
+      .is('revoked_at', null)
+    setAssignedWorkouts((data || []).map(a => a.workouts).filter(w => w && !w.archived_at))
   }
 
   useEffect(() => {
