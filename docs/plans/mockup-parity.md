@@ -9,7 +9,7 @@
 - [x] Phase 3: Athletes table, Athlete hub, personal overrides (0012), program save options (0013)
 - [x] Phase 4: Messaging and Inbox, coach side (0014); the athlete side ships with Phase 5
 - [x] Phase 5: Athlete portal (Today, Run, Finish, Week, Progress, Coach)
-- [ ] Phase 6: Cleanup
+- [x] Phase 6: Cleanup (unused imports, dead StreakFlame, phone QA)
 
 ## 1. What the mockup is
 

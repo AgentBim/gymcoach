@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAthletePortal } from '../../hooks/useAthletePortal'
 import { useWorkoutPreview } from '../../lib/useWorkoutPreview'
 import { buildWeek, programWeekOf, weekRange } from '../../lib/athleteWeek'
-import { mondayOfStr, fmtShort, DAY_SHORT } from '../../lib/dates'
+import { mondayOfStr, fmtShort } from '../../lib/dates'
 import { shiftDateStr } from '../../lib/streaks'
 import { Button, Card, Chip, Dialog, Icon, Label, UndoToast } from '../../components/ui'
 

@@ -4,7 +4,7 @@ import { useAthleteAuth } from '../../hooks/useAthleteAuth'
 import { useAthletePortal } from '../../hooks/useAthletePortal'
 import { athleteStats } from '../../lib/athleteWeek'
 import { feelOf } from '../../lib/feel'
-import { fmtLong, shiftDateStr } from '../../lib/dates'
+import { fmtLong } from '../../lib/dates'
 import { resolveDay } from '../../lib/streaks'
 import { Button, Card, Chip, Label } from '../../components/ui'
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { Avatar, Button, CheckRow, Dialog, EmptyState, Icon } from './ui'
+import { Avatar, Button, CheckRow, Dialog, EmptyState } from './ui'
 
 // Assign a workout to athletes (mockup "Assign workout"): toggle who has it,
 // Save applies the difference. mode="links" instead lists each assigned

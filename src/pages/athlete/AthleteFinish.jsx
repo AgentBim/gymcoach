@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAthletePortal } from '../../hooks/useAthletePortal'
 import { useWorkoutPreview } from '../../lib/useWorkoutPreview'
