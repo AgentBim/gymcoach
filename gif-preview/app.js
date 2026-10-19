@@ -13,39 +13,90 @@ const chip=e=>`<span class="group-chip ${esc(e.group.toLowerCase())}">${esc(e.gr
 function toast(message){const n=document.getElementById('notice');n.textContent=message;n.hidden=false;clearTimeout(timer);timer=setTimeout(()=>n.hidden=true,3500);}
 const nav=()=>['Today','Athletes','Inbox','Plan'].map((n,i)=>`<button class="nav-item ${n==='Plan'?'active':''}" data-nav="${n}" ${n==='Plan'?'aria-current="page"':''}><span aria-hidden="true">${['◷','♧','▱','▤'][i]}</span>${n}</button>`).join('');
 host.innerHTML=`<aside class="sidebar"><div class="brand">chalkup</div><nav aria-label="Main">${nav()}</nav><div class="coach"><span class="avatar">C</span><div>Coach preview<small>Local design mockup</small></div></div></aside><main><nav class="plan-tabs" aria-label="Plan sections"><button data-tab="Programs">Programs</button><button data-tab="Workouts">Workouts <span id="workout-count"></span></button><button class="active" aria-current="page" data-tab="Exercises">Exercises</button></nav><section class="page"><header class="page-header"><div><p class="eyebrow" id="summary"></p><h1>Exercises</h1></div><div class="header-actions"><label class="search"><span aria-hidden="true">⌕</span><input type="search" id="search" placeholder="Search exercises" aria-label="Search exercises"></label><button class="primary" id="new-exercise">＋ New exercise</button></div></header><div class="filters"><div class="pills" id="categories" role="group" aria-label="Category"></div><div class="pills" id="groups" role="group" aria-label="Muscle group"></div></div><div class="library-layout"><section class="card exercise-list" aria-label="Exercise library"><div class="table-head"><span>Exercise</span><span>Muscle group</span><span>Type</span><span>Default</span><span>Used in</span><span></span></div><div id="rows"></div></section><aside class="detail-panel card" id="detail-panel" aria-label="Exercise details"></aside></div><footer class="preview-note">Design preview · 280 captured exercises · additions and workout selections stay in this browser.</footer></section></main><nav class="bottom-nav" aria-label="Mobile main">${nav()}</nav>`;
+function rememberFocus(){
+ const e=document.activeElement;
+ for(const key of ['exercise','category','group'])if(e?.dataset[key])return `[data-${key}="${CSS.escape(e.dataset[key])}"]`;
+ return null;
+}
+function restoreFocus(selector){if(selector)document.querySelector(selector)?.focus({preventScroll:true});}
+function matches(e){return (category==='all'||e.category===category)&&(group==='All'||e.group===group)&&e.name.toLowerCase().includes(query.trim().toLowerCase());}
 function filters(){
+ const focus=rememberFocus();
  document.getElementById('summary').textContent=`${all().length} exercises · ${additions.length} yours`;
  document.getElementById('categories').innerHTML=cats.map(c=>`<button class="pill ${category===c?'on':''}" aria-pressed="${category===c}" data-category="${c}">${cap(c)} <span>${all().filter(e=>c==='all'||e.category===c).length}</span></button>`).join('');
  document.getElementById('groups').innerHTML=groups.map(g=>`<button class="pill ${group===g?'on':''}" aria-pressed="${group===g}" data-group="${g}">${g}</button>`).join('');
+ restoreFocus(focus);
 }
 function renderRows(){
- const shown=all().filter(e=>(category==='all'||e.category===category)&&(group==='All'||e.group===group)&&e.name.toLowerCase().includes(query.trim().toLowerCase()));
- document.getElementById('rows').innerHTML=shown.length?shown.map(e=>`<button class="exercise-row ${selectedId===e.id?'selected':''}" data-exercise="${esc(e.id)}" aria-pressed="${selectedId===e.id}"><span class="name-cell"><strong>${esc(e.name)}</strong>${e.is_custom?'<span class="yours">Yours</span>':''}<small>${esc(e.difficulty)}</small></span><span class="muscle">${chip(e)}</span><span class="type">${cap(e.category)}</span><span class="dose">${esc(dose(e)[1])} × ${esc(dose(e)[2].replace(' reps',''))}</span><span class="used">${workout.includes(e.id)?'1 draft':'Not used'}</span><span class="arrow" aria-hidden="true">›</span></button>`).join(''):`<div class="empty">${category==='mobility'?'No mobility exercises yet.':'No exercises match.'}<small>${category==='mobility'?'This section is ready for your future library.':'Try another search or filter.'}</small></div>`;
+ const focus=rememberFocus(), shown=all().filter(matches);
+ document.getElementById('rows').innerHTML=shown.length?shown.map(e=>`<button class="exercise-row ${selectedId===e.id?'selected':''}" data-exercise="${esc(e.id)}" aria-pressed="${selectedId===e.id}"><span class="name-cell"><strong>${esc(e.name)}</strong>${e.is_custom?'<span class="yours">Yours</span>':''}<small>${esc(e.difficulty)}${category==='all'?`<span class="mobile-type"> · ${cap(e.category)}</span>`:''}</small></span><span class="muscle">${chip(e)}</span><span class="type">${cap(e.category)}</span><span class="dose">${esc(dose(e)[1])} × ${esc(dose(e)[2].replace(' reps',''))}</span><span class="used">${workout.includes(e.id)?'1 draft':'Not used'}</span><span class="arrow" aria-hidden="true">›</span></button>`).join(''):`<div class="empty">${category==='mobility'?'No mobility exercises yet.':'No exercises match.'}<small>${category==='mobility'?'This section is ready for your future library.':'Try another search or filter.'}</small></div>`;
+ restoreFocus(focus);
 }
-function stopMedia(){document.querySelectorAll('.demonstration').forEach(img=>img.src=img.dataset.poster);document.querySelectorAll('[data-playing]').forEach(b=>{b.dataset.playing='false';b.textContent='▶ Play demonstration';});}
-function detail(e){const d=dose(e);return `<div class="detail-title"><div><h2>${esc(e.name)}</h2><div class="tags">${chip(e)}<span class="chip">${cap(e.category)}</span><span class="chip">${esc(e.difficulty)}</span></div></div><button class="icon-button" data-close-detail aria-label="Close details">×</button></div>${e.media?`<div class="media"><img class="demonstration" src="${esc(e.media.poster)}" data-poster="${esc(e.media.poster)}" alt="${esc(e.name)} exercise demonstration"><button class="play" data-play="${esc(e.id)}">▶ Play demonstration</button></div>${e.demonstration_note?`<p class="technique">${esc(e.demonstration_note)}</p>`:''}`:'<div class="no-media">Demonstration not added yet</div>'}<div><p class="label">Coaching cue</p><p class="cue">${esc(e.description||'No cue yet.')}</p></div><div class="stats"><div><p class="label">Sets</p><strong>${esc(d[1])}</strong></div><div><p class="label">${/^[0-9]+s$/.test(d[2])?'Secs':'Reps'}</p><strong>${esc(d[2].replace(/ reps$|s$/g,''))}</strong></div><div><p class="label">Rest</p><strong>${esc(d[3])}s</strong></div></div><div><p class="label">Used in</p><p class="muted">${workout.includes(e.id)?'Preview workout draft':'Not in any workout yet.'}</p></div><button class="primary add-workout" data-add="${esc(e.id)}">${workout.includes(e.id)?'Added to workout':'Add to a workout'}</button>`;}
+function stopMedia(){document.querySelectorAll('.media video').forEach(v=>v.pause());}
+function disposeMedia(){stopMedia();document.querySelectorAll('.media video').forEach(v=>{v.removeAttribute('src');v.load();});mediaObserver.disconnect();}
+const mediaObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(!entry.isIntersecting)entry.target.querySelector('video')?.pause();}),{threshold:0.1});
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+reducedMotion.addEventListener('change',()=>{document.querySelectorAll('.media video').forEach(v=>{v.loop=!reducedMotion.matches;if(reducedMotion.matches)v.pause();});});
+function mediaError(box,message){
+ const v=box.querySelector('video');if(v){v.pause();v.hidden=true;}
+ box.querySelector('img').hidden=box.dataset.posterFailed==='true';
+ box.dataset.failed='true';box.querySelector('.media-status').textContent=message;
+ const b=box.querySelector('[data-play]');b.textContent='↻ Retry demonstration';b.disabled=false;
+}
+function bindMedia(){document.querySelectorAll('.media img').forEach(img=>{
+ const failed=()=>{const box=img.closest('.media');box.dataset.posterFailed='true';img.hidden=true;box.querySelector('.media-status').textContent='Preview image unavailable. You can still play the demonstration.';};
+ img.addEventListener('error',failed);if(img.complete&&!img.naturalWidth)failed();
+});}
+async function playMedia(button){
+ const e=all().find(e=>e.id===button.dataset.play),box=button.closest('.media');
+ let video=box.querySelector('video');
+ if(video&&!video.paused){video.pause();return;}
+ stopMedia();
+ if(box.dataset.failed==='true'){
+  if(video){mediaObserver.unobserve(video);video.removeAttribute('src');video.load();video.remove();video=null;}
+  delete box.dataset.failed;
+ }
+ if(!video){
+  video=document.createElement('video');video.className='demonstration';video.hidden=true;video.controls=true;video.muted=true;video.playsInline=true;video.loop=!reducedMotion.matches;video.preload='none';video.poster=e.media.poster;video.setAttribute('aria-label',e.name+' exercise demonstration');
+  video.addEventListener('error',()=>mediaError(box,'Demonstration could not load. Your coaching cue is still available. Try again.'));
+  video.addEventListener('waiting',()=>{if(box.isConnected)box.querySelector('.media-status').textContent='Loading demonstration…';});
+  video.addEventListener('playing',()=>{if(!box.isConnected)return;video.hidden=false;box.querySelector('img').hidden=true;box.querySelector('.media-status').textContent='';button.textContent='Ⅱ Pause demonstration';button.disabled=false;});
+  const paused=()=>{if(!box.isConnected||box.dataset.failed==='true')return;button.textContent='▶ Play demonstration';button.disabled=false;};
+  video.addEventListener('pause',paused);video.addEventListener('ended',paused);
+  video.src=e.media.video;box.querySelector('.media-stage').append(video);mediaObserver.observe(box.querySelector('.media-stage'));
+ }
+ button.textContent='Loading…';button.disabled=true;box.querySelector('.media-status').textContent='Loading demonstration…';
+ try{await video.play();}catch(error){if(!box.isConnected||error.name==='AbortError'){if(box.isConnected){button.disabled=false;button.textContent='▶ Play demonstration';box.querySelector('.media-status').textContent='';}return;}mediaError(box,'Demonstration could not play. Try again.');}
+}
+function updateWorkoutStatus(){
+ document.querySelectorAll('[data-workout-status]').forEach(el=>el.textContent=workout.includes(el.dataset.workoutStatus)?'Preview workout draft':'Not in any workout yet.');
+ document.querySelectorAll('[data-add]').forEach(b=>b.textContent=workout.includes(b.dataset.add)?'Added to workout':'Add to a workout');
+ document.getElementById('workout-count').textContent=workout.length?`(${workout.length})`:'';
+}
+function detail(e){const d=dose(e);return `<div class="detail-title"><div><h2>${esc(e.name)}</h2><div class="tags">${chip(e)}<span class="chip">${cap(e.category)}</span><span class="chip">${esc(e.difficulty)}</span></div></div><button class="icon-button" data-close-detail aria-label="Close details">×</button></div>${e.media?`<div class="media"><div class="media-stage"><img class="demonstration" src="${esc(e.media.poster)}" alt="${esc(e.name)} exercise demonstration preview"></div><button class="play" data-play="${esc(e.id)}">▶ Play demonstration</button><p class="media-status" role="status" aria-live="polite"></p></div>${e.demonstration_note?`<p class="technique">${esc(e.demonstration_note)}</p>`:''}`:'<div class="no-media">Demonstration not added yet</div>'}<div><p class="label">Coaching cue</p><p class="cue">${esc(e.description||'No cue yet.')}</p></div><div class="stats"><div><p class="label">Sets</p><strong>${esc(d[1])}</strong></div><div><p class="label">${/^[0-9]+s$/.test(d[2])?'Secs':'Reps'}</p><strong>${esc(d[2].replace(/ reps$|s$/g,''))}</strong></div><div><p class="label">Rest</p><strong>${esc(d[3])}s</strong></div></div><div><p class="label">Used in</p><p class="muted" data-workout-status="${esc(e.id)}">${workout.includes(e.id)?'Preview workout draft':'Not in any workout yet.'}</p></div><button class="primary add-workout" data-add="${esc(e.id)}">${workout.includes(e.id)?'Added to workout':'Add to a workout'}</button>`;}
 function renderDetail(){
- const e=all().find(e=>e.id===selectedId),p=document.getElementById('detail-panel'),d=document.getElementById('detail-dialog');stopMedia();p.innerHTML='';d.innerHTML='';
- if(!e){p.innerHTML='<h2>Pick an exercise</h2><p class="muted">See its cue, defaults, demonstration and the workouts that use it.</p>';return;}
+ const e=all().find(e=>e.id===selectedId),p=document.getElementById('detail-panel'),d=document.getElementById('detail-dialog');disposeMedia();p.innerHTML='';d.innerHTML='';
+ if(!e){if(d.open)d.close();p.innerHTML='<h2>Pick an exercise</h2><p class="muted">See its cue, defaults, demonstration and the workouts that use it.</p>';return;}
  if(matchMedia('(max-width:1000px)').matches){d.innerHTML=detail(e);if(!d.open)d.showModal();}else{if(d.open)d.close();p.innerHTML=detail(e);}
+ bindMedia();
 }
 function closeDetail(){stopMedia();const d=document.getElementById('detail-dialog');if(d.open)d.close();selectedId=null;renderRows();renderDetail();document.querySelector('[data-exercise="'+CSS.escape(lastTrigger?.dataset.exercise||'')+'"]')?.focus();}
-function syncFilter(){const u=new URL(location.href);u.searchParams.set('category',category);u.searchParams.set('group',group);history.replaceState(null,'',u);closeDetail();filters();renderRows();}
+function syncFilter(){const focus=rememberFocus();const u=new URL(location.href);u.searchParams.set('category',category);u.searchParams.set('group',group);history.replaceState(null,'',u);selectedId=null;renderDetail();filters();renderRows();restoreFocus(focus);}
 document.addEventListener('click',event=>{
  const b=event.target.closest('button');if(!b)return;
  if(b.dataset.category){category=b.dataset.category;syncFilter();}
  if(b.dataset.group){group=b.dataset.group;syncFilter();}
  if(b.dataset.exercise){selectedId=b.dataset.exercise;renderRows();lastTrigger=document.querySelector(`[data-exercise="${CSS.escape(selectedId)}"]`);renderDetail();}
  if(b.hasAttribute('data-close-detail'))closeDetail();
- if(b.dataset.play){const e=all().find(e=>e.id===b.dataset.play),img=b.parentElement.querySelector('img'),playing=b.dataset.playing==='true';stopMedia();img.src=playing?e.media.poster:e.media.gif;b.dataset.playing=String(!playing);b.textContent=playing?'▶ Play demonstration':'Ⅱ Pause demonstration';}
- if(b.dataset.add){if(!workout.includes(b.dataset.add))workout.push(b.dataset.add);renderRows();renderDetail();document.getElementById('workout-count').textContent=`(${workout.length})`;toast('Added to the local preview workout.');}
+ if(b.dataset.play)void playMedia(b);
+ if(b.dataset.add){if(!workout.includes(b.dataset.add))workout.push(b.dataset.add);renderRows();updateWorkoutStatus();toast('Added to the local preview workout.');}
  if(b.dataset.tab==='Workouts')showWorkout();else if(b.dataset.tab==='Programs')toast('Programs is outside this exercise-library design preview.');
  if(b.dataset.nav&&b.dataset.nav!=='Plan')toast(`${b.dataset.nav} is outside this exercise-library design preview.`);
  if(b.id==='new-exercise')showCreate();
  if(b.dataset.dismiss)document.getElementById(b.dataset.dismiss).close();
- if(b.dataset.remove){workout=workout.filter(id=>id!==b.dataset.remove);showWorkout();renderRows();document.getElementById('workout-count').textContent=workout.length?`(${workout.length})`:'';}
+ if(b.dataset.remove){workout=workout.filter(id=>id!==b.dataset.remove);showWorkout();renderRows();updateWorkoutStatus();document.querySelector('#workout-dialog [data-remove]')?.focus();}
 });
-document.getElementById('search').oninput=e=>{query=e.target.value;renderRows();};
+document.getElementById('search').oninput=e=>{query=e.target.value;if(selectedId&&!all().some(x=>x.id===selectedId&&matches(x))){selectedId=null;renderDetail();}renderRows();};
 document.getElementById('detail-dialog').addEventListener('cancel',e=>{e.preventDefault();closeDetail();});
 document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom){if(d.id==='detail-dialog')closeDetail();else d.close();}}}));
 function showCreate(){const d=document.getElementById('create-dialog');d.innerHTML=`<form><div class="detail-title"><h2 id="create-title">New exercise</h2><button type="button" class="icon-button" data-dismiss="create-dialog" aria-label="Close new exercise">×</button></div><p class="muted">It joins your local library and is available in the preview workout.</p><label>Name<input name="name" required maxlength="120" placeholder="e.g. Ring row" autofocus></label><label>Muscle group<select name="group">${groups.slice(1).map(g=>`<option>${g}</option>`).join('')}</select></label><label>Type<select name="category">${cats.slice(1).map(c=>`<option value="${c}" ${c===category?'selected':''}>${cap(c)}</option>`).join('')}</select></label><label>Coaching cue<textarea name="description" rows="3" maxlength="1500" placeholder="Add an optional cue"></textarea></label><div class="dialog-actions"><button type="button" class="secondary" data-dismiss="create-dialog">Cancel</button><button class="primary">Add exercise</button></div></form>`;
