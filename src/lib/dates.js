@@ -56,3 +56,13 @@ export function dayLabel(value, today) {
   const days = Math.round((new Date(today + 'T00:00:00') - new Date(d + 'T00:00:00')) / 86400000)
   return days < 7 ? weekdayShort(d) : fmtMonthDay(d)
 }
+
+/** 'Friday, Oct 16' */
+export function fmtLong(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+}
+
+/** Whole days from `from` to `to` (date-only strings). */
+export function daysBetween(from, to) {
+  return Math.round((new Date(to + 'T00:00:00') - new Date(from + 'T00:00:00')) / 86400000)
+}

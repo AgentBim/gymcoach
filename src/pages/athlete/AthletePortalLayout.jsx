@@ -1,58 +1,61 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { ChalkUpLogo } from '../../components/ChalkUpLogo'
-import { StreakFlame } from '../../components/StreakFlame'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAthleteAuth } from '../../hooks/useAthleteAuth'
-import { useAthleteStreak } from '../../hooks/useAthleteStreak'
+import { AthletePortalProvider, useAthletePortal } from '../../hooks/useAthletePortal'
+import { Icon } from '../../components/ui'
 
-export default function AthletePortalLayout() {
-  const { athlete, signOut } = useAthleteAuth()
-  const { streak, loading } = useAthleteStreak(athlete?.id)
-  const navigate = useNavigate()
+const TABS = [
+  { to: '/athlete', end: true, icon: 'today', label: 'Today' },
+  { to: '/athlete/week', icon: 'week', label: 'Week' },
+  { to: '/athlete/progress', icon: 'progress', label: 'Progress' },
+  { to: '/athlete/coach', icon: 'inbox', label: 'Coach', dot: true },
+]
 
-  async function handleSignOut() {
-    await signOut()
-    navigate('/athlete/login')
-  }
-
-  const tab = (to, label, exact = true) => (
-    <NavLink to={to} end={exact}
-      style={({ isActive }) => ({
-        flex: 1, textAlign: 'center', padding: '10px 4px', textDecoration: 'none',
-        fontSize: 12, fontWeight: isActive ? 700 : 500,
-        color: isActive ? 'var(--ac)' : 'var(--mu)',
-        borderBottom: `2px solid ${isActive ? 'var(--ac)' : 'transparent'}`,
-      })}>
-      {label}
-    </NavLink>
-  )
+function Shell() {
+  const portal = useAthletePortal()
+  const { pathname } = useLocation()
+  // The runner and the finish screen take over the whole phone.
+  const chromeless = pathname.startsWith('/athlete/run') || pathname.startsWith('/athlete/finish')
+  const onCoach = pathname.startsWith('/athlete/coach')
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{
-        background: 'var(--s1)', borderBottom: '1px solid var(--br)',
-        padding: '13px 16px', paddingTop: 'max(13px, calc(var(--sat) + 6px))',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        position: 'sticky', top: 0, zIndex: 10,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <ChalkUpLogo size={24} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ac)', fontFamily: 'var(--font-head)' }}>chalkup</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {!loading && <StreakFlame streak={streak} />}
-          <button onClick={handleSignOut} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 12, cursor: 'pointer' }}>Sign out</button>
-        </div>
+      {!chromeless && !onCoach && (
+        <header style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--s1)', borderBottom: '1px solid var(--br)', padding: '12px 16px', paddingTop: 'max(12px, calc(var(--sat) + 6px))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontFamily: 'var(--font-head)', fontWeight: 800, fontSize: 24, color: 'var(--ac)' }}>chalkup</span>
+          {!portal.loading && portal.streak > 0 && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 999, background: 'rgba(199,228,92,.12)', border: '1px solid rgba(199,228,92,.3)', color: 'var(--ac)', fontSize: 13, fontWeight: 700 }}>
+              <Icon name="flame" size={16} />{portal.streak} day streak
+            </span>
+          )}
+        </header>
+      )}
+
+      <div style={{ flex: 1, width: '100%', maxWidth: 600, margin: '0 auto', boxSizing: 'border-box', padding: chromeless || onCoach ? 0 : `18px 16px ${chromeless ? 0 : 96}px` }}>
+        {portal.loading ? <div style={{ color: 'var(--mu)', textAlign: 'center', padding: 40 }}>Loading…</div> : <Outlet />}
       </div>
 
-      <div style={{ display: 'flex', background: 'var(--s1)', borderBottom: '1px solid var(--br)', position: 'sticky', top: 'calc(var(--sat) + 51px)', zIndex: 9 }}>
-        {tab('/athlete', 'Today')}
-        {tab('/athlete/history', 'History')}
-        {tab('/athlete/program', 'Program', false)}
-      </div>
-
-      <div style={{ flex: 1, maxWidth: 600, width: '100%', margin: '0 auto', padding: '20px 16px', boxSizing: 'border-box' }}>
-        <Outlet context={{ athleteId: athlete?.id }} />
-      </div>
+      {!chromeless && (
+        <nav aria-label="Main" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: 'var(--s1)', borderTop: '1px solid var(--br)', padding: '6px 8px', paddingBottom: 'calc(6px + env(safe-area-inset-bottom))' }}>
+          <div style={{ maxWidth: 600, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+            {TABS.map(t => (
+              <NavLink key={t.to} to={t.to} end={t.end}
+                style={({ isActive }) => ({ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, minHeight: 52, fontSize: 11.5, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--ac)' : 'var(--mu2)' })}>
+                <Icon name={t.icon} size={22} />{t.label}
+                {t.dot && portal.coachUnread && <span aria-label="Unread" style={{ position: 'absolute', top: 6, left: 'calc(50% + 8px)', width: 9, height: 9, borderRadius: '50%', background: '#E2695A' }} />}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
+  )
+}
+
+export default function AthletePortalLayout() {
+  const { athlete } = useAthleteAuth()
+  return (
+    <AthletePortalProvider athlete={athlete}>
+      <Shell />
+    </AthletePortalProvider>
   )
 }

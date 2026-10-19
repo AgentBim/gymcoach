@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveDay, isDueOnDate, walkBackwardStreak } from '../streaks'
+import { resolveDay, isDueOnDate, walkBackwardStreak, advanceStreakCache, displayStreak, computeBestStreak } from '../streaks'
 
 // Program: Mon/Tue/Thu/Fri training, Sat recovery with a workout, Wed/Sun rest.
 // Fri 2026-10-16; started Mon 2026-10-05, so Oct 12-18 is week 2.
@@ -65,5 +65,35 @@ describe('streak walk', () => {
     expect(walkBackwardStreak('2026-10-16', completed, check())).toBe(0)
     const o = new Map([['2026-10-15', { day_type: 'rest', workout_id: null }]])
     expect(walkBackwardStreak('2026-10-16', completed, check(o))).toBe(2)
+  })
+})
+
+describe('optional days and best streak', () => {
+  const check = d => isDueOnDate(d, program, START, cells)
+
+  it('a logged recovery day counts toward the streak and a skipped one never breaks it', () => {
+    // Fri Oct 9 (due), Sat Oct 10 (recovery, logged), Mon Oct 12 (due)
+    const logged = new Set(['2026-10-08', '2026-10-09', '2026-10-10', '2026-10-12', '2026-10-13', '2026-10-15'])
+    expect(walkBackwardStreak('2026-10-16', logged, check)).toBe(6)
+    logged.delete('2026-10-10')
+    expect(walkBackwardStreak('2026-10-16', logged, check)).toBe(5)
+  })
+
+  it('the live streak adds today whenever it is logged, due or not', () => {
+    expect(displayStreak(14, true, true)).toBe(15)
+    expect(displayStreak(14, false, true)).toBe(15)
+    expect(displayStreak(14, true, false)).toBe(14)
+  })
+
+  it('advancing the cache counts a logged optional day', () => {
+    const r = advanceStreakCache({ cachedStreak: 3, lastComputedDate: '2026-10-09', throughDate: '2026-10-12', completedDates: new Set(['2026-10-10', '2026-10-12']), dueCheck: check })
+    expect(r.streak).toBe(5)
+  })
+
+  it('finds the longest run in the history', () => {
+    // Oct 5-6 done (2), Oct 8 missed (breaks), Oct 9, 12, 13 done (3), Oct 15 done (4), today due and unlogged
+    const logged = new Set(['2026-10-05', '2026-10-06', '2026-10-09', '2026-10-12', '2026-10-13', '2026-10-15'])
+    expect(computeBestStreak({ today: '2026-10-16', completedDates: logged, dueCheck: check })).toBe(4)
+    expect(computeBestStreak({ today: '2026-10-16', completedDates: new Set(), dueCheck: check })).toBe(0)
   })
 })

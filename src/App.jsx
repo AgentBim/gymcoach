@@ -23,9 +23,11 @@ import AthleteLogin from './pages/AthleteLogin'
 import AthleteInviteAccept from './pages/AthleteInviteAccept'
 import AthletePortalLayout from './pages/athlete/AthletePortalLayout'
 import AthleteToday from './pages/athlete/AthleteToday'
-import AthleteHistory from './pages/athlete/AthleteHistory'
-import AthleteProgram from './pages/athlete/AthleteProgram'
-import AthleteWorkoutPreview from './pages/athlete/AthleteWorkoutPreview'
+import AthleteRun from './pages/athlete/AthleteRun'
+import AthleteFinish from './pages/athlete/AthleteFinish'
+import AthleteWeek from './pages/athlete/AthleteWeek'
+import AthleteProgress from './pages/athlete/AthleteProgress'
+import AthleteCoach from './pages/athlete/AthleteCoach'
 
 // Old coach URLs (before the Today / Athletes / Inbox / Plan layout) keep
 // working so bookmarks and installed-PWA shortcuts don't break.
@@ -88,9 +90,15 @@ export default function App() {
             <Route path="/athlete/invite/:token" element={<AthleteInviteAccept />} />
             <Route path="/athlete" element={<ProtectedAthleteRoute><AthletePortalLayout /></ProtectedAthleteRoute>}>
               <Route index element={<AthleteToday />} />
-              <Route path="history" element={<AthleteHistory />} />
-              <Route path="program" element={<AthleteProgram />} />
-              <Route path="program/:workoutId" element={<AthleteWorkoutPreview />} />
+              <Route path="week" element={<AthleteWeek />} />
+              <Route path="progress" element={<AthleteProgress />} />
+              <Route path="coach" element={<AthleteCoach />} />
+              <Route path="run/:workoutId" element={<AthleteRun />} />
+              <Route path="finish/:workoutId" element={<AthleteFinish />} />
+              {/* Old portal URLs */}
+              <Route path="history" element={<Navigate to="/athlete/progress" replace />} />
+              <Route path="program" element={<Navigate to="/athlete/week" replace />} />
+              <Route path="program/:workoutId" element={<Navigate to="/athlete/week" replace />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/today" replace />} />

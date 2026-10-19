@@ -119,8 +119,8 @@ export function isDueOnDate(dateStr, activeProgram, programStartedOn, programDay
 }
 
 /**
- * Walk backward from `today` (exclusive) computing how many *elapsed* due
- * days in a row were logged, stopping at the first missed due day or when
+ * Walk backward from `today` (exclusive) computing how many *elapsed* days in
+ * a row were logged (due days must be; non-due days count only if logged), stopping at the first missed due day or when
  * running out of history. Does not look at today itself — callers layer
  * "is today due and already logged" on top separately, since today is never
  * a break condition.
@@ -137,7 +137,12 @@ export function walkBackwardStreak(today, completedDates, dueCheck, maxDays = 18
     cursor = addDays(cursor, -1)
     const dateStr = formatDateOnly(cursor)
     const { due } = dueCheck(dateStr)
-    if (!due) continue // skipped, doesn't break or extend
+    if (!due) {
+      // Not due: never breaks the streak, but a session the athlete chose to
+      // log anyway (an optional recovery day, an extra workout) counts.
+      if (completedDates.has(dateStr)) streak += 1
+      continue
+    }
     if (completedDates.has(dateStr)) streak += 1
     else break // due day, nothing logged -> streak stops here
   }
@@ -166,7 +171,10 @@ export function advanceStreakCache({ cachedStreak, lastComputedDate, throughDate
     cursor = addDays(cursor, 1)
     const dateStr = formatDateOnly(cursor)
     const { due } = dueCheck(dateStr)
-    if (!due) continue
+    if (!due) {
+      if (completedDates.has(dateStr)) streak += 1
+      continue
+    }
     if (completedDates.has(dateStr)) streak += 1
     else streak = 0
   }
@@ -180,5 +188,24 @@ export function advanceStreakCache({ cachedStreak, lastComputedDate, throughDate
  * added yet.
  */
 export function displayStreak(cachedStreak, todayDue, todayLogged) {
-  return cachedStreak + (todayDue && todayLogged ? 1 : 0)
+  return cachedStreak + (todayLogged ? 1 : 0)
+}
+
+/**
+ * The longest run the athlete has ever had, walking forward from their first
+ * logged day to `today` (inclusive) with the same rule as the live streak.
+ * Today itself never breaks a run.
+ */
+export function computeBestStreak({ today, completedDates, dueCheck }) {
+  if (completedDates.size === 0) return 0
+  const first = [...completedDates].sort()[0]
+  let best = 0
+  let run = 0
+  for (let d = first; d <= today; d = shiftDateStr(d, 1)) {
+    const { due } = dueCheck(d)
+    if (completedDates.has(d)) run += 1
+    else if (due && d < today) run = 0
+    if (run > best) best = run
+  }
+  return best
 }
