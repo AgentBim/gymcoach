@@ -26,10 +26,11 @@ export function useRoster(coachId) {
     const ids = athletes.map(a => a.id)
     const programIds = [...new Set(athletes.map(a => a.active_program_id).filter(Boolean))]
 
-    const [programsRes, daysByProgram, overridesMap, fbRes] = await Promise.all([
+    const [programsRes, daysByProgram, overridesMap, msgRes, fbRes] = await Promise.all([
       supabase.from('programs').select('id, name, duration_weeks').eq('coach_id', coachId),
       fetchProgramDaysByProgramIds(programIds),
       fetchOverridesByAthleteIds(ids),
+      supabase.from('messages').select('id, athlete_id, sender, created_at, unsent_at').eq('coach_id', coachId).eq('sender', 'coach').gte('created_at', new Date(Date.now() - 3 * 86400000).toISOString()),
       ids.length
         ? supabase.from('workout_feedback')
             .select('id, athlete_id, workout_id, completed_date, submitted_at, rpe, emoji_rating, notes, exercises_completed, exercises_total, workouts(name)')
@@ -50,7 +51,7 @@ export function useRoster(coachId) {
     })
 
     const streaks = computeStreaks(athletes, programsById, daysByProgram, completedMap, overridesMap)
-    const rows = buildRosterStatus({ athletes, programsById, daysByProgram, feedback, streaks, today, overridesMap })
+    const rows = buildRosterStatus({ athletes, programsById, daysByProgram, feedback, streaks, today, overridesMap, coachMessages: msgRes.data || [] })
     setState({ loading: false, rows, feedback, programs, error: null })
   }, [coachId])
 

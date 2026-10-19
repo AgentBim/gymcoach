@@ -10,6 +10,8 @@ import { nextMondayStr, fmtShort } from '../lib/dates'
 import { Avatar, Button, Card, Chip, Dialog, DotLegend, EmptyState, Icon, Label, Page, PageHeader, Pill, PillRow, SearchBox, Segmented, UndoToast, WeekDots } from '../components/ui'
 import AssignProgramDialog from '../components/AssignProgramDialog'
 import AssignWorkoutDialog from '../components/AssignWorkoutDialog'
+import ComposeDialog from '../components/ComposeDialog'
+import { templatesFor } from '../lib/templates'
 
 const COLS = '36px minmax(190px, 2fr) minmax(130px, 1.3fr) 76px 150px 100px 24px'
 
@@ -146,6 +148,7 @@ export default function Athletes() {
             {isMobile && <span style={{ flex: 1 }} />}
             <Button variant="primary" size="sm" onClick={() => setDialog('program')}>Assign program</Button>
             <Button size="sm" onClick={() => setDialog('workout')}>Assign workout</Button>
+            <Button size="sm" onClick={() => setDialog('message')}>Message</Button>
             <Button size="sm" onClick={clear}>Clear</Button>
           </Card>
         )}
@@ -158,6 +161,13 @@ export default function Athletes() {
       {dialog === 'workout' && (
         <AssignWorkoutDialog athletes={selected.map(r => r.athlete)} coachId={user.id} onClose={() => setDialog(null)}
           onDone={msg => { setToast(msg); clear(); reload() }} />
+      )}
+      {dialog === 'message' && (
+        <ComposeDialog athletes={selected.map(r => r.athlete)} title={`Message ${selected.length} athlete${selected.length === 1 ? '' : 's'}`}
+          why={`To ${selected.map(r => r.athlete.full_name).join(', ')}. Each person gets their own copy, not a group thread.`}
+          templates={[['Weekly check-in', 'Hi, quick check-in from your coach. How is training feeling this week?'], ['Schedule change', 'Heads up: I adjusted your schedule. Open your portal to see what moved.'], ['Great week', 'Great work this week. Keep it rolling.']].map(([label, text]) => ({ label, text }))}
+          initial="Hi, quick check-in from your coach. How is training feeling this week?"
+          onClose={() => setDialog(null)} onSent={sent => { setToast(`Sent in-app to ${sent.length} athlete${sent.length === 1 ? '' : 's'}`); clear(); reload() }} />
       )}
       {toast && <UndoToast message={toast} onClose={() => setToast('')} />}
     </Layout>

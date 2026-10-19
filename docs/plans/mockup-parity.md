@@ -7,7 +7,7 @@
 - [x] Phase 1: new shell + routes, Today
 - [x] Phase 2: Plan (lists, builders, program editor; save-confirm options land in Phase 3)
 - [x] Phase 3: Athletes table, Athlete hub, personal overrides (0012), program save options (0013)
-- [ ] Phase 4: Messaging and Inbox
+- [x] Phase 4: Messaging and Inbox, coach side (0014); the athlete side ships with Phase 5
 - [ ] Phase 5: Athlete portal
 - [ ] Phase 6: Cleanup
 

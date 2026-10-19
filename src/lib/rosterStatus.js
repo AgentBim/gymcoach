@@ -4,6 +4,9 @@
 // hub can't disagree. Due-ness always goes through streaks.js.
 import { isDueOnDate, resolveProgramCell, walkBackwardStreak, shiftDateStr } from './streaks'
 import { mondayOfStr, weekdayShort } from './dates'
+import { coachMessagedSince } from './inbox'
+
+export { feelOf } from './feel'
 
 export { mondayOfStr, weekdayShort }
 const AT_RISK_MIN_STREAK = 5
@@ -71,7 +74,7 @@ function joinDays(names) {
  * @param feedback   rows { athlete_id, completed_date, submitted_at, rpe, emoji_rating, notes, exercises_completed, exercises_total, workouts: { name } }
  * @param streaks    Map(athleteId -> { streak, todayDue, todayWorkoutId, todayLogged })
  */
-export function buildRosterStatus({ athletes, programsById, daysByProgram, feedback, streaks, today, overridesMap = new Map() }) {
+export function buildRosterStatus({ athletes, programsById, daysByProgram, feedback, streaks, today, overridesMap = new Map(), coachMessages = [] }) {
   const completedBy = new Map()
   const feedbackBy = new Map()
   feedback.forEach(f => {
@@ -103,7 +106,7 @@ export function buildRosterStatus({ athletes, programsById, daysByProgram, feedb
       const names = misses.length <= 3 ? joinDays(ordered.map(weekdayShort)) : `${misses.length} sessions in a row`
       const before = walkBackwardStreak(misses[misses.length - 1], completed, d => isDueOnDate(d, program, athlete.program_started_on, daysByCell, overrides))
       reasons.push({
-        kind: 'missed', count: misses.length, chip: `Missed ${misses.length}`, tone: 'coral',
+        kind: 'missed', count: misses.length, chip: `Missed ${misses.length}`, tone: 'coral', since: `${misses[0]}T00:00:00`,
         reason: `Missed ${names}.${before > 0 ? ` Streak ended at ${before} ${before === 1 ? 'day' : 'days'}.` : ''}`,
       })
     }
@@ -111,13 +114,20 @@ export function buildRosterStatus({ athletes, programsById, daysByProgram, feedb
     const recentNote = fb.find(f => f.notes && f.notes.trim() && f.completed_date && f.completed_date >= shiftDateStr(today, -NOTE_WINDOW_DAYS))
     if (recentNote) {
       reasons.push({
-        kind: 'note', chip: 'New note', tone: 'amber', badge: recentNote.rpe ? `RPE ${recentNote.rpe}` : '', feedbackId: recentNote.id,
+        kind: 'note', chip: 'New note', tone: 'amber', badge: recentNote.rpe ? `RPE ${recentNote.rpe}` : '', feedbackId: recentNote.id, since: recentNote.submitted_at,
         reason: `Note on ${recentNote.workouts?.name || 'your workout'}: "${recentNote.notes.trim()}"`,
       })
     }
     if (s.todayDue && !s.todayLogged && s.streak >= AT_RISK_MIN_STREAK) {
-      reasons.push({ kind: 'risk', chip: 'Streak at risk', tone: 'amber', reason: `${s.streak}-day streak, nothing logged yet today.` })
+      reasons.push({ kind: 'risk', chip: 'Streak at risk', tone: 'amber', since: `${today}T00:00:00`, reason: `${s.streak}-day streak, nothing logged yet today.` })
     }
+
+    // A reason is handled once the coach has written to the athlete since it arose.
+    reasons.forEach(r => {
+      const m = coachMessagedSince(coachMessages, athlete.id, r.since)
+      if (m) { r.handled = true; r.handledMessageId = m.id }
+    })
+    const open = reasons.filter(r => !r.handled)
 
     return {
       athlete,
@@ -133,18 +143,8 @@ export function buildRosterStatus({ athletes, programsById, daysByProgram, feedb
       week,
       lastDate,
       lastLabel: lastTrainedLabel(lastDate, today),
-      reasons,
-      needsAttention: reasons.length > 0,
+      reasons: open.length ? open : reasons,
+      needsAttention: open.length > 0,
     }
   })
-}
-
-const FEEL = {
-  easy: { label: 'Too easy', tone: 'blue' },
-  good: { label: 'Good', tone: 'teal' },
-  hard: { label: 'Challenging', tone: 'amber' },
-  veryhard: { label: 'Very hard', tone: 'coral' },
-}
-export function feelOf(emoji) {
-  return FEEL[emoji] || null
 }

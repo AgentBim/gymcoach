@@ -8,7 +8,10 @@ import { useRoster } from '../lib/useRoster'
 import { todayLocal } from '../lib/streaks'
 import { feelOf } from '../lib/rosterStatus'
 import { mondayOfStr } from '../lib/dates'
-import { Avatar, Button, Card, Chip, Dot, DotLegend, EmptyState, Icon, Label, SearchBox, StatCard } from '../components/ui'
+import ComposeDialog from '../components/ComposeDialog'
+import { templatesFor } from '../lib/templates'
+import { notifyInboxChanged } from '../hooks/useInboxCount'
+import { Avatar, Button, Card, Chip, Dot, DotLegend, EmptyState, Icon, Label, SearchBox, StatCard, UndoToast } from '../components/ui'
 
 function greeting() {
   const h = new Date().getHours()
@@ -20,14 +23,19 @@ function fmtTime(iso) {
 }
 
 const ACTION_FOR = { missed: 'Message', note: 'Reply', risk: 'Nudge' }
+const VERB_FOR = { missed: 'Message', note: 'Reply to', risk: 'Nudge' }
+const SECOND_FOR = { missed: 'Adjust week', note: 'Review' }
 
 export default function Today() {
   const { user, coach } = useAuth()
   const isMobile = useIsMobile()
   const navigate = useNavigate()
-  const { loading, rows, feedback, programs } = useRoster(user?.id)
+  const { loading, rows, feedback, programs, reload } = useRoster(user?.id)
   const [workouts, setWorkouts] = useState([])
   const [createOpen, setCreateOpen] = useState(false)
+  const [compose, setCompose] = useState(null) // { row, reason }
+  const [sent, setSent] = useState({}) // athleteId -> messageId, sent this session
+  const [toast, setToast] = useState(null)
   const today = todayLocal()
 
   useEffect(() => {
@@ -39,9 +47,21 @@ export default function Today() {
   const first = coach?.full_name?.split(' ')[0] || 'Coach'
   const dateLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
+  // Open items, plus anything handled this session so it can still be unsent.
   const needs = rows
-    .filter(r => r.needsAttention)
+    .filter(r => r.needsAttention || sent[r.athlete.id])
     .map(r => ({ row: r, reason: r.reasons[0] }))
+    .filter(x => x.reason)
+  const open = needs.filter(x => !sent[x.row.athlete.id])
+
+  async function unsend(athleteId) {
+    const { error } = await supabase.rpc('unsend_message', { p_message_id: sent[athleteId] })
+    setSent(s => { const n = { ...s }; delete n[athleteId]; return n })
+    notifyInboxChanged()
+    await reload()
+    const name = rows.find(r => r.athlete.id === athleteId)?.athlete.full_name.split(' ')[0]
+    setToast(error ? error.message : `Unsent. ${name} had not opened it.`)
+  }
   // Athletes without a portal login can't log a session, so they aren't "due".
   const dueToday = rows.filter(r => r.todayDue && (r.athlete.user_id || r.todayLogged))
   const trainedToday = dueToday.filter(r => r.todayLogged).length
@@ -57,7 +77,7 @@ export default function Today() {
   const sunday = new Date(monday + 'T00:00:00'); sunday.setDate(sunday.getDate() + 6)
   const weekRange = `${new Date(monday + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sunday.getDate()}`
 
-  const needTone = needs.length === 0 ? 'var(--teal)' : 'var(--coral)'
+  const needTone = open.length === 0 ? 'var(--teal)' : 'var(--coral)'
 
   const createItems = [
     { to: '/plan/workouts/new', label: 'New workout' },
@@ -109,7 +129,7 @@ export default function Today() {
   const stats = (
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: isMobile ? 8 : 14 }}>
       <StatCard label={isMobile ? 'Trained' : 'Trained today'} value={trainedToday} note={`of ${dueToday.length}${isMobile ? '' : ' due'}`} />
-      <StatCard label="Need you" value={needs.length} tone={needTone} border={needs.length ? 'rgba(226,105,90,.45)' : undefined} note={isMobile ? '' : needs.length === 0 ? 'all handled' : 'missed, flagged or at risk'} to="/athletes" />
+      <StatCard label="Need you" value={open.length} tone={needTone} border={open.length ? 'rgba(226,105,90,.45)' : undefined} note={isMobile ? '' : open.length === 0 ? 'all handled' : 'missed, flagged or at risk'} to="/athletes" />
       <StatCard label="No program" value={noProgram.length} note={isMobile ? '' : 'athletes to assign'} to="/athletes" />
     </section>
   )
@@ -118,24 +138,39 @@ export default function Today() {
     <Card>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '14px 16px' }}>
         <h2 style={{ fontSize: 16, fontWeight: 700 }}>Needs you</h2>
-        <Label>{needs.length} left</Label>
+        <Label>{open.length} left</Label>
       </div>
-      {needs.length === 0 && (
+      {open.length === 0 && needs.length === 0 && (
         <EmptyState title="All clear for today">Everyone is either on track or has heard from you.</EmptyState>
       )}
-      {needs.map(({ row, reason }) => (
-        <div key={row.athlete.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: '1px solid var(--br)', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-          <Avatar name={row.athlete.full_name} size={isMobile ? 40 : 36} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-              {row.athlete.full_name}
-              {reason.badge && <Chip mono>{reason.badge}</Chip>}
+      {needs.map(({ row, reason }) => {
+        const done = !!sent[row.athlete.id]
+        return (
+          <div key={row.athlete.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: '1px solid var(--br)', flexWrap: isMobile ? 'wrap' : 'nowrap', opacity: done ? 0.75 : 1 }}>
+            <Avatar name={row.athlete.full_name} size={isMobile ? 40 : 36} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                {row.athlete.full_name}
+                {reason.badge && <Chip mono>{reason.badge}</Chip>}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--mu2)', marginTop: 2, lineHeight: 1.4 }}>{reason.reason}</div>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--mu2)', marginTop: 2, lineHeight: 1.4 }}>{reason.reason}</div>
+            {done ? (
+              <>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#4FB88A', fontWeight: 600 }}><Icon name="check" size={16} />Sent in-app</span>
+                <Button size="sm" onClick={() => unsend(row.athlete.id)}>Unsend</Button>
+              </>
+            ) : (
+              <>
+                <Button size="sm" onClick={() => setCompose({ row, reason })}>{ACTION_FOR[reason.kind]}</Button>
+                {SECOND_FOR[reason.kind] && (
+                  <Link to={`/athletes/${row.athlete.id}`} style={{ minHeight: isMobile ? 44 : 32, padding: '0 14px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', fontSize: 13, fontWeight: 600, border: `1px solid ${reason.kind === 'note' ? 'var(--ac)' : 'var(--br2)'}`, background: reason.kind === 'note' ? 'var(--ac)' : 'transparent', color: reason.kind === 'note' ? 'var(--ac-ink)' : 'var(--tx)' }}>{SECOND_FOR[reason.kind]}</Link>
+                )}
+              </>
+            )}
           </div>
-          <Button size="sm" onClick={() => navigate(`/athletes/${row.athlete.id}`)}>{ACTION_FOR[reason.kind]}</Button>
-        </div>
-      ))}
+        )
+      })}
     </Card>
   )
 
@@ -240,6 +275,18 @@ export default function Today() {
           )}
         </>
       )}
+      {compose && (
+        <ComposeDialog
+          athletes={[compose.row.athlete]}
+          title={`${VERB_FOR[compose.reason.kind]} ${compose.row.athlete.full_name}`}
+          why={compose.reason.kind === 'missed' ? `${compose.reason.reason} Ask first, adjust second.` : compose.reason.reason}
+          templates={templatesFor(compose.reason.kind === 'note' ? 'reply' : compose.reason.kind, compose.row.athlete, { streak: compose.row.streak })}
+          initial={templatesFor(compose.reason.kind === 'note' ? 'reply' : compose.reason.kind, compose.row.athlete, { streak: compose.row.streak })[0].text}
+          onClose={() => setCompose(null)}
+          onSent={([m]) => { setSent(x => ({ ...x, [m.athleteId]: m.id })); setToast(`Sent in-app to ${compose.row.athlete.full_name}`); reload() }}
+        />
+      )}
+      {toast && <UndoToast message={toast} onClose={() => setToast(null)} />}
     </Layout>
   )
 }

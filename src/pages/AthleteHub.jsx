@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Layout from '../components/Layout'
 import AssignWorkoutDialog from '../components/AssignWorkoutDialog'
+import ComposeDialog from '../components/ComposeDialog'
+import { templatesFor } from '../lib/templates'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -51,6 +53,9 @@ export default function AthleteHub() {
   const [overrides, setOverrides] = useState(new Map())
   const [feedback, setFeedback] = useState([])
   const [assignments, setAssignments] = useState([])
+  const [coachMessages, setCoachMessages] = useState([])
+  const [compose, setCompose] = useState(null) // { title, why, kind, initial }
+  const [nudged, setNudged] = useState(false)
   const [workoutOptions, setWorkoutOptions] = useState([])
   const [names, setNames] = useState({})
   const [offset, setOffset] = useState(0) // weeks from the current one
@@ -70,7 +75,7 @@ export default function AthleteHub() {
     if (!user) return
     const { data: a } = await supabase.from('athletes').select('*').eq('id', id).single()
     if (!a) { setLoading(false); return }
-    const [progRes, daysRes, ovRes, fbRes, asRes, woRes] = await Promise.all([
+    const [progRes, daysRes, ovRes, fbRes, asRes, woRes, msgRes] = await Promise.all([
       supabase.from('programs').select('id, name, duration_weeks').eq('coach_id', user.id).order('name'),
       a.active_program_id
         ? supabase.from('program_days').select('week_number, day_of_week, day_type, workout_id, notes, workouts(id, name)').eq('program_id', a.active_program_id)
@@ -81,6 +86,7 @@ export default function AthleteHub() {
         .eq('athlete_id', id).order('submitted_at', { ascending: false }),
       supabase.from('workout_assignments').select('id, assigned_at, assignment_token, workouts(id, name)').eq('athlete_id', id).is('revoked_at', null).order('assigned_at', { ascending: false }),
       supabase.from('workouts').select('id, name').eq('coach_id', user.id).eq('program_generated', false).is('archived_at', null).order('name'),
+      supabase.from('messages').select('id, sender, body, created_at, unsent_at').eq('athlete_id', id).eq('sender', 'coach').is('unsent_at', null).order('created_at'),
     ])
     const cellMap = new Map()
     const nm = {}
@@ -101,6 +107,7 @@ export default function AthleteHub() {
     setOverrides(ovMap)
     setFeedback(fbRes.data || [])
     setAssignments(asRes.data || [])
+    setCoachMessages(msgRes.data || [])
     setWorkoutOptions(woRes.data || [])
     setNames(nm)
     setLoading(false)
@@ -315,7 +322,10 @@ export default function AthleteHub() {
               <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{pick.status === 'rest' ? 'Rest day' : titleOf(pick)}</div>
               <div style={{ fontSize: 13, color: 'var(--mu2)', marginTop: 2 }}>{sub}</div>
             </div>
-            {(pick.workoutId || pick.log?.workout_id) && <Button size="sm" onClick={() => setShowList(s => !s)}>{showList ? 'Hide workout' : 'Preview workout'}</Button>}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {pick.status === 'due' && <Button size="sm" disabled={nudged} onClick={() => setCompose({ title: `Nudge ${athlete.full_name}`, why: `${first} has not logged today${streak ? ` and has a ${streak}-day streak on the line` : ''}.`, kind: 'nudge', extra: { workout: titleOf(pick), streak } })}>{nudged ? 'Nudge sent' : `Nudge ${first}`}</Button>}
+              {(pick.workoutId || pick.log?.workout_id) && <Button size="sm" onClick={() => setShowList(s => !s)}>{showList ? 'Hide workout' : 'Preview workout'}</Button>}
+            </div>
           </div>
 
           {pick.log && (
@@ -355,10 +365,14 @@ export default function AthleteHub() {
 
   const feedbackCard = (
     <Card style={{ padding: 16 }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Recent feedback</h2>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700 }}>Recent feedback</h2>
+        <Link to={`/inbox/${id}`} style={{ fontSize: 12.5, color: 'var(--ac)' }}>Open in Inbox</Link>
+      </div>
       {feedback.length === 0 && <EmptyState>Nothing logged yet.</EmptyState>}
       {feedback.slice(0, 5).map(f => {
         const fl = feelOf(f.emoji_rating)
+        const reply = coachMessages.find(m => new Date(m.created_at) > new Date(f.submitted_at))
         return (
           <div key={f.id} style={{ display: 'flex', gap: 14, padding: '12px 0', borderTop: '1px solid var(--br)' }}>
             <div style={{ width: 40, flexShrink: 0 }}><Label>{f.completed_date ? new Date(f.completed_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }) : ''}</Label></div>
@@ -367,7 +381,9 @@ export default function AthleteHub() {
                 {f.workouts?.name || 'Workout'}{fl && <Chip tone={fl.tone}>{fl.label}</Chip>}{f.rpe && <Chip mono>RPE {f.rpe}</Chip>}
               </div>
               <p style={{ fontSize: 13.5, color: f.notes ? 'var(--mu2)' : 'var(--mu)', marginTop: 4, lineHeight: 1.5 }}>{f.notes ? `"${f.notes}"` : 'No note'}</p>
+              {reply && <p style={{ fontSize: 13, marginTop: 8, padding: '8px 10px', borderRadius: 10, background: 'var(--s2)', lineHeight: 1.5 }}><span style={{ display: 'block', fontSize: 11.5, color: 'var(--mu)', marginBottom: 2 }}>You replied in-app</span>{reply.body}</p>}
             </div>
+            {f.notes && !reply && <Button size="sm" onClick={() => setCompose({ title: `Reply to ${athlete.full_name}`, why: `Replying to their note on ${f.workouts?.name || 'a workout'}: "${f.notes}"`, kind: 'reply' })}>Reply</Button>}
           </div>
         )
       })}
@@ -472,6 +488,7 @@ export default function AthleteHub() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
+            <Button onClick={() => setCompose({ title: `Message ${athlete.full_name}`, why: `${first} sees it in their portal inbox.`, kind: 'message' })}>Message</Button>
             <Button onClick={() => navigate(`/athletes/${id}/edit`)}>Edit profile</Button>
           </div>
         </header>
@@ -546,6 +563,14 @@ export default function AthleteHub() {
 
       {dialog === 'assign' && (
         <AssignWorkoutDialog athletes={[athlete]} coachId={user.id} onClose={() => setDialog(null)} onDone={msg => { setToast(msg); load() }} />
+      )}
+
+      {compose && (
+        <ComposeDialog athletes={[athlete]} title={compose.title} why={compose.why}
+          templates={templatesFor(compose.kind, athlete, compose.extra)}
+          initial={compose.kind === 'message' ? '' : templatesFor(compose.kind, athlete, compose.extra)[0].text}
+          onClose={() => setCompose(null)}
+          onSent={() => { if (compose.kind === 'nudge') setNudged(true); setToast(`Sent in-app to ${athlete.full_name}`); load() }} />
       )}
 
       {toast && <UndoToast message={toast} onClose={() => setToast('')} />}
