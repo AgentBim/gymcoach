@@ -6,7 +6,7 @@
 - [x] Phase 0: shared UI primitives, Vitest (roster-status tests)
 - [x] Phase 1: new shell + routes, Today
 - [x] Phase 2: Plan (lists, builders, program editor; save-confirm options land in Phase 3)
-- [ ] Phase 3: Athletes, Athlete hub, overrides, program save impact
+- [x] Phase 3: Athletes table, Athlete hub, personal overrides (0012), program save options (0013)
 - [ ] Phase 4: Messaging and Inbox
 - [ ] Phase 5: Athlete portal
 - [ ] Phase 6: Cleanup

@@ -94,6 +94,9 @@ export default function ProgramBuilder() {
   const [fullOpen, setFullOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
+  const [applyFrom, setApplyFrom] = useState('next') // 'next' = leave this week, 'now' = update now
+  const [keepAdj, setKeepAdj] = useState('keep')
+  const [adjusted, setAdjusted] = useState([]) // [{ athlete_id, date }] upcoming personal changes
   const [toast, setToast] = useState('')
   const errorRef = useRef(null)
 
@@ -310,8 +313,13 @@ export default function ProgramBuilder() {
     if (!name.trim()) { setError('Program name is required'); return }
     if (!dirty) { setToast('Nothing to save'); return }
     setError('')
-    if (isEdit && onProgram.length > 0) setConfirmOpen(true)
-    else save()
+    if (isEdit && onProgram.length > 0) {
+      setAdjusted([])
+      supabase.from('athlete_day_overrides').select('athlete_id, date')
+        .in('athlete_id', onProgram.map(a => a.id)).gte('date', today)
+        .then(({ data }) => setAdjusted(data || []))
+      setConfirmOpen(true)
+    } else save()
   }
 
   // One transaction (save_program): the program, its new generated workouts
@@ -321,20 +329,24 @@ export default function ProgramBuilder() {
     setConfirmOpen(false)
     setSaving(true); setError('')
     const { p_days, p_workouts } = buildSavePayload(days, draftWorkouts, weeks)
-    const { data, error: saveError } = await supabase.rpc('save_program', {
+    const withAthletes = isEdit && onProgram.length > 0
+    const { data, error: saveError } = await supabase.rpc('save_program_with_options', {
       p_program_id: id || null,
       p_name: name.trim(),
       p_description: description,
       p_weeks: weeks,
       p_workouts,
       p_days,
+      p_today: today,
+      p_apply: withAthletes ? applyFrom : 'now',
+      p_adjustments: withAthletes ? keepAdj : 'keep',
     })
     setSaving(false)
     if (saveError) { setError(saveError.message || 'Could not save the program'); return }
     setDirty(false)
     if (!isEdit) { navigate(`/plan/programs/${data}`, { replace: true }); return }
     await Promise.all([fetchProgram(), fetchWorkouts()])
-    setToast(onProgram.length ? `Saved. ${onProgram.length} athlete${onProgram.length === 1 ? ' sees' : 's see'} it in their portal.` : 'Saved.')
+    setToast(onProgram.length ? `Saved. ${onProgram.length} athlete${onProgram.length === 1 ? '' : 's'} on it ${applyFrom === 'now' ? 'see it now' : 'see it from their next pass'}.` : 'Saved.')
   }
 
   // ── athletes on this program (applies immediately, separate from the draft) ──
@@ -448,6 +460,10 @@ export default function ProgramBuilder() {
         <div style={{ padding: '10px 12px', borderRadius: 12, background: impactTone[1], border: `1px solid ${impactTone[2]}`, fontSize: 13, lineHeight: 1.5 }}>
           <Label style={{ color: impactTone[0] }}>{impact.head}</Label>
           <div style={{ marginTop: 3 }}>{impact.text}</div>
+          {impact.live && (
+            <Segmented label="When to apply" style={{ marginTop: 10 }} value={applyFrom} onChange={setApplyFrom}
+              options={[{ value: 'next', label: 'Leave this week' }, { value: 'now', label: 'Update now' }]} />
+          )}
         </div>
       )}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -666,15 +682,33 @@ export default function ProgramBuilder() {
         </Dialog>
       )}
 
-      {confirmOpen && (
-        <Dialog title={`Save ${name.trim() || 'program'}?`} subtitle={`${changedDays} day${changedDays === 1 ? '' : 's'} changed across the ${weeks} weeks.`} onClose={() => setConfirmOpen(false)}
-          footer={<><Button onClick={() => setConfirmOpen(false)}>Keep editing</Button><Button variant="primary" onClick={save}>Save program</Button></>}>
-          <div style={{ border: '1px solid var(--br2)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13.5, lineHeight: 1.5 }}>
-            <div><Label style={{ marginBottom: 3 }}>Who sees it</Label>{onProgram.map(a => a.full_name).join(', ')}, in their portal</div>
-            <div><Label style={{ marginBottom: 3 }}>When</Label>Right away. Athletes see the new schedule the next time they open their portal.</div>
-          </div>
-        </Dialog>
-      )}
+      {confirmOpen && (() => {
+        const perAthlete = onProgram
+          .map(a => ({ a, n: adjusted.filter(x => x.athlete_id === a.id).length }))
+          .filter(x => x.n > 0)
+        return (
+          <Dialog title={`Save ${name.trim() || 'program'}?`} subtitle={`${changedDays} day${changedDays === 1 ? '' : 's'} changed across the ${weeks} weeks.`} onClose={() => setConfirmOpen(false)}
+            footer={<><Button onClick={() => setConfirmOpen(false)}>Keep editing</Button><Button variant="primary" onClick={save}>Save program</Button></>}>
+            <div style={{ border: '1px solid var(--br2)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13.5, lineHeight: 1.5 }}>
+              <div><Label style={{ marginBottom: 3 }}>Who sees it</Label>{onProgram.map(a => a.full_name).join(', ')}, in their portal</div>
+              <div>
+                <Label style={{ marginBottom: 3 }}>When</Label>
+                {applyFrom === 'now' ? 'Right now, including the week athletes are in.' : 'Athletes keep the week they are in. The change shows the next time they reach those days.'}
+                <Segmented label="When to apply" style={{ marginTop: 8 }} value={applyFrom} onChange={setApplyFrom}
+                  options={[{ value: 'next', label: 'Leave this week' }, { value: 'now', label: 'Update now' }]} />
+              </div>
+              {perAthlete.length > 0 && (
+                <div>
+                  <Label style={{ marginBottom: 3 }}>Personal adjustments</Label>
+                  {perAthlete.map(({ a, n }) => `${a.full_name} has ${n} adjusted day${n === 1 ? '' : 's'} coming up.`).join(' ')}
+                  <Segmented label="Personal adjustments" style={{ marginTop: 8 }} value={keepAdj} onChange={setKeepAdj}
+                    options={[{ value: 'keep', label: 'Keep their adjustments' }, { value: 'reset', label: 'Reset to the program' }]} />
+                </div>
+              )}
+            </div>
+          </Dialog>
+        )
+      })()}
 
       {previewPanel && (
         <WorkoutPreviewPanel

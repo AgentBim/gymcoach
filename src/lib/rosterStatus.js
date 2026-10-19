@@ -30,7 +30,7 @@ function programWeekLabel(athlete, program, today) {
  * Mon..Sun state for the week containing `today`.
  * done | miss | rest | today | future | none
  */
-export function weekStates({ athlete, program, daysByCell, completed, today }) {
+export function weekStates({ athlete, program, daysByCell, completed, today, overrides }) {
   const monday = mondayOfStr(today)
   const startsLater = program && athlete.program_started_on && athlete.program_started_on > today
   return Array.from({ length: 7 }, (_, i) => {
@@ -38,7 +38,7 @@ export function weekStates({ athlete, program, daysByCell, completed, today }) {
     const logged = completed.has(date)
     if (startsLater) return 'future'
     if (program && athlete.program_started_on && date < athlete.program_started_on && !logged) return 'none'
-    const { due } = isDueOnDate(date, program, athlete.program_started_on, daysByCell)
+    const { due } = isDueOnDate(date, program, athlete.program_started_on, daysByCell, overrides)
     if (date > today) return due ? 'future' : 'rest'
     if (date === today) return logged ? 'done' : due ? 'today' : 'rest'
     return logged ? 'done' : due ? 'miss' : 'rest'
@@ -46,12 +46,12 @@ export function weekStates({ athlete, program, daysByCell, completed, today }) {
 }
 
 // Consecutive missed due days ending yesterday (most recent first).
-function recentMisses({ athlete, program, daysByCell, completed, today }) {
+function recentMisses({ athlete, program, daysByCell, completed, today, overrides }) {
   const misses = []
   for (let i = 1; i <= 14; i++) {
     const date = shiftDateStr(today, -i)
     if (program && athlete.program_started_on && date < athlete.program_started_on) break
-    const { due } = isDueOnDate(date, program, athlete.program_started_on, daysByCell)
+    const { due } = isDueOnDate(date, program, athlete.program_started_on, daysByCell, overrides)
     if (!due) continue
     if (completed.has(date)) break
     misses.push(date)
@@ -71,7 +71,7 @@ function joinDays(names) {
  * @param feedback   rows { athlete_id, completed_date, submitted_at, rpe, emoji_rating, notes, exercises_completed, exercises_total, workouts: { name } }
  * @param streaks    Map(athleteId -> { streak, todayDue, todayWorkoutId, todayLogged })
  */
-export function buildRosterStatus({ athletes, programsById, daysByProgram, feedback, streaks, today }) {
+export function buildRosterStatus({ athletes, programsById, daysByProgram, feedback, streaks, today, overridesMap = new Map() }) {
   const completedBy = new Map()
   const feedbackBy = new Map()
   feedback.forEach(f => {
@@ -88,7 +88,8 @@ export function buildRosterStatus({ athletes, programsById, daysByProgram, feedb
     const program = athlete.active_program_id ? programsById.get(athlete.active_program_id) || null : null
     const daysByCell = program ? daysByProgram.get(program.id) || new Map() : new Map()
     const completed = completedBy.get(athlete.id) || new Set()
-    const ctx = { athlete, program, daysByCell, completed, today }
+    const overrides = overridesMap.get(athlete.id)
+    const ctx = { athlete, program, daysByCell, completed, today, overrides }
     const s = streaks.get(athlete.id) || { streak: athlete.current_streak || 0, todayDue: false, todayWorkoutId: null, todayLogged: false }
 
     const week = weekStates(ctx)
@@ -100,7 +101,7 @@ export function buildRosterStatus({ athletes, programsById, daysByProgram, feedb
     if (misses.length >= 2) {
       const ordered = [...misses].reverse()
       const names = misses.length <= 3 ? joinDays(ordered.map(weekdayShort)) : `${misses.length} sessions in a row`
-      const before = walkBackwardStreak(misses[misses.length - 1], completed, d => isDueOnDate(d, program, athlete.program_started_on, daysByCell))
+      const before = walkBackwardStreak(misses[misses.length - 1], completed, d => isDueOnDate(d, program, athlete.program_started_on, daysByCell, overrides))
       reasons.push({
         kind: 'missed', count: misses.length, chip: `Missed ${misses.length}`, tone: 'coral',
         reason: `Missed ${names}.${before > 0 ? ` Streak ended at ${before} ${before === 1 ? 'day' : 'days'}.` : ''}`,

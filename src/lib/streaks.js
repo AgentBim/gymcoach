@@ -67,28 +67,55 @@ export function resolveProgramCell(programStartedOn, durationWeeks, dateStr) {
 }
 
 /**
- * Was `dateStr` a due day for this athlete?
+ * What does the schedule say for `dateStr`? One place decides, in this order:
+ *   1. a personal override for that date (athlete_day_overrides),
+ *   2. the athlete's program cell for that weekday,
+ *   3. no program: every day is a plain due day.
+ * kind: 'due' (training day, breaks the streak if missed), 'optional' (recovery
+ * day with a workout: counts if logged, never breaks), 'rest'.
  *
- * @param dateStr 'YYYY-MM-DD'
- * @param activeProgram { id, duration_weeks } or null/undefined
- * @param programStartedOn 'YYYY-MM-DD' or null — required if activeProgram is set
- * @param programDaysByCell Map keyed by `${week_number}:${day_of_week}` -> { workout_id }
+ * @param programDaysByCell Map keyed by `${week_number}:${day_of_week}` -> { workout_id, day_type?, notes? }
  *   (only cells for the athlete's active program need to be present)
- * @returns { due: boolean, workoutId: string|null }
+ * @param overridesByDate Map keyed by 'YYYY-MM-DD' -> { day_type, workout_id, notes } (optional)
+ * @returns { kind, source: 'override'|'program'|'free', dayType, workoutId, notes }
  */
-export function isDueOnDate(dateStr, activeProgram, programStartedOn, programDaysByCell) {
+export function resolveDay(dateStr, activeProgram, programStartedOn, programDaysByCell, overridesByDate) {
+  const ov = overridesByDate && overridesByDate.get(dateStr)
+  if (ov) return classify(ov, 'override')
+
   if (!activeProgram || !programStartedOn) {
-    return { due: true, workoutId: null } // no program = plain daily streak
+    return { kind: 'due', source: 'free', dayType: 'training', workoutId: null, notes: null } // no program = plain daily streak
   }
   // Dates before the athlete started this program aren't evaluated against
   // it (v1 simplification — see spec's "program changes mid-stream" note).
   if (toDateOnly(dateStr) < toDateOnly(programStartedOn)) {
-    return { due: true, workoutId: null }
+    return { kind: 'due', source: 'free', dayType: 'training', workoutId: null, notes: null }
   }
   const { week_number, day_of_week } = resolveProgramCell(programStartedOn, activeProgram.duration_weeks, dateStr)
   const cell = programDaysByCell.get(`${week_number}:${day_of_week}`)
-  if (cell && cell.workout_id) return { due: true, workoutId: cell.workout_id }
-  return { due: false, workoutId: null } // rest day, or a day with nothing attached
+  if (!cell) return { kind: 'rest', source: 'program', dayType: 'rest', workoutId: null, notes: null }
+  return classify(cell, 'program')
+}
+
+function classify(cell, source) {
+  const dayType = cell.day_type || 'training'
+  const workoutId = cell.workout_id || null
+  const notes = cell.notes || null
+  if (workoutId && dayType === 'training') return { kind: 'due', source, dayType, workoutId, notes }
+  if (workoutId && dayType === 'recovery') return { kind: 'optional', source, dayType, workoutId, notes }
+  return { kind: 'rest', source, dayType, workoutId: null, notes }
+}
+
+/**
+ * Was `dateStr` a due day for this athlete?
+ * @param dateStr 'YYYY-MM-DD'
+ * @param activeProgram { id, duration_weeks } or null/undefined
+ * @param programStartedOn 'YYYY-MM-DD' or null — required if activeProgram is set
+ * @returns { due: boolean, workoutId: string|null }
+ */
+export function isDueOnDate(dateStr, activeProgram, programStartedOn, programDaysByCell, overridesByDate) {
+  const d = resolveDay(dateStr, activeProgram, programStartedOn, programDaysByCell, overridesByDate)
+  return d.kind === 'due' ? { due: true, workoutId: d.workoutId } : { due: false, workoutId: null }
 }
 
 /**

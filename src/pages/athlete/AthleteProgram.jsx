@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAthleteAuth } from '../../hooks/useAthleteAuth'
 import { supabase } from '../../lib/supabase'
-import { resolveProgramCell, todayLocal } from '../../lib/streaks'
+import { resolveProgramCell, todayLocal, shiftDateStr } from '../../lib/streaks'
+import { mondayOfStr } from '../../lib/dates'
 import { DAY_TYPE_COLORS } from '../../lib/theme'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -13,6 +14,7 @@ export default function AthleteProgram() {
   const [program, setProgram] = useState(null)
   const [daysByCell, setDaysByCell] = useState(new Map())
   const [workoutsById, setWorkoutsById] = useState(new Map())
+  const [overrides, setOverrides] = useState(new Map())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { if (athlete) fetchProgram() }, [athlete])
@@ -30,6 +32,15 @@ export default function AthleteProgram() {
       if (d.workouts) wMap.set(d.workouts.id, d.workouts)
     })
 
+    // Personal changes from the coach replace the program's day for that date.
+    const { data: ovs } = await supabase.from('athlete_day_overrides').select('date, day_type, workout_id, notes, workouts(id, name)').eq('athlete_id', athlete.id)
+    const ovMap = new Map()
+    ;(ovs || []).forEach(o => {
+      ovMap.set(o.date, o)
+      if (o.workouts) wMap.set(o.workouts.id, o.workouts)
+    })
+
+    setOverrides(ovMap)
     setProgram(prog)
     setDaysByCell(cellMap)
     setWorkoutsById(wMap)
@@ -60,7 +71,8 @@ export default function AthleteProgram() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {DAYS.map((label, dayIdx) => {
-          const cell = daysByCell.get(`${currentWeek}:${dayIdx}`)
+          const date = shiftDateStr(mondayOfStr(today), dayIdx)
+          const cell = overrides.get(date) || daysByCell.get(`${currentWeek}:${dayIdx}`)
           const workout = cell?.workout_id ? workoutsById.get(cell.workout_id) : null
           const dayType = cell?.day_type || 'rest'
           const meta = DAY_TYPE_COLORS[dayType] || DAY_TYPE_COLORS.rest

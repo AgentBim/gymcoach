@@ -12,10 +12,9 @@ import Library from './pages/Library'
 import Workouts from './pages/Workouts'
 import WorkoutBuilder from './pages/WorkoutBuilder'
 import AthleteView from './pages/AthleteView'
-import Roster from './pages/Roster'
+import Athletes from './pages/Athletes'
 import AthleteForm from './pages/AthleteForm'
-import AthleteProfile from './pages/AthleteProfile'
-import History from './pages/History'
+import AthleteHub from './pages/AthleteHub'
 import Programs from './pages/Programs'
 import ProgramBuilder from './pages/ProgramBuilder'
 import CustomExercise from './pages/CustomExercise'
@@ -50,9 +49,9 @@ export default function App() {
             <Route path="/share/:token" element={<AthleteView />} />
 
             <Route path="/today" element={guard(<Today />)} />
-            <Route path="/athletes" element={guard(<Roster />)} />
+            <Route path="/athletes" element={guard(<Athletes />)} />
             <Route path="/athletes/new" element={guard(<AthleteForm />)} />
-            <Route path="/athletes/:id" element={guard(<AthleteProfile />)} />
+            <Route path="/athletes/:id" element={guard(<AthleteHub />)} />
             <Route path="/athletes/:id/edit" element={guard(<AthleteForm />)} />
             <Route path="/inbox" element={guard(<Inbox />)} />
             <Route path="/inbox/:athleteId" element={guard(<Inbox />)} />
@@ -68,8 +67,8 @@ export default function App() {
             <Route path="/plan/exercises/new" element={guard(<CustomExercise />)} />
             <Route path="/plan/exercises/:id/edit" element={guard(<CustomExercise />)} />
 
-            {/* Removed in the redesign: History is folded into Athlete hub and Today. */}
-            <Route path="/history" element={guard(<History />)} />
+            {/* History is folded into the Athlete hub (feedback, week) and Today (completed). */}
+            <Route path="/history" element={<Navigate to="/today" replace />} />
 
             <Route path="/dashboard" element={<Navigate to="/today" replace />} />
             <Route path="/roster" element={<Navigate to="/athletes" replace />} />

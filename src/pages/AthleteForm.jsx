@@ -41,6 +41,13 @@ export default function AthleteForm() {
     } else {
       await supabase.from('athletes').insert(payload)
     }
+    navigate(isEdit ? `/athletes/${id}` : '/athletes')
+  }
+
+  async function remove() {
+    if (!window.confirm(`Remove ${fullName || 'this athlete'} from your roster? Their history is deleted with them.`)) return
+    const { error: e } = await supabase.from('athletes').delete().eq('id', id)
+    if (e) { setError(e.message); return }
     navigate('/athletes')
   }
 
@@ -88,6 +95,11 @@ export default function AthleteForm() {
               {saving ? 'Saving...' : isEdit ? 'Update athlete' : 'Add to roster'}
             </button>
           </div>
+          {isEdit && (
+            <button onClick={remove} style={{ marginTop: 8, background: 'transparent', border: '1px solid rgba(226,105,90,.4)', borderRadius: 10, color: '#E2695A', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 46 }}>
+              Remove athlete
+            </button>
+          )}
         </div>
       </div>
     </Layout>
