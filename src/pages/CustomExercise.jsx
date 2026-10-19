@@ -83,7 +83,7 @@ export default function CustomExercise() {
     } else {
       await supabase.from('exercises').insert(payload)
     }
-    navigate('/library')
+    navigate('/plan/exercises')
   }
 
   const inp = { background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '10px 12px', fontSize: 14, outline: 'none', width: '100%', fontFamily: 'var(--font-sans)', boxSizing: 'border-box' }
@@ -92,7 +92,7 @@ export default function CustomExercise() {
     <Layout>
       <div style={{ maxWidth: 540, margin: '0 auto', padding: '24px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <button onClick={() => navigate('/library')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+          <button onClick={() => navigate('/plan/exercises')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700 }}>{isEdit ? 'Edit exercise' : 'Create custom exercise'}</h1>
             <p style={{ fontSize: 12, color: 'var(--mu)', marginTop: 2 }}>Visible only to your account · marked ★ in the library</p>
@@ -172,7 +172,7 @@ export default function CustomExercise() {
           {error && <p style={{ fontSize: 12, color: '#E2695A' }}>{error}</p>}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-            <button onClick={() => navigate('/library')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 48 }}>Cancel</button>
+            <button onClick={() => navigate('/plan/exercises')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 48 }}>Cancel</button>
             <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, minHeight: 48 }}>
               {saving ? 'Saving...' : isEdit ? 'Update exercise' : 'Add to library'}
             </button>

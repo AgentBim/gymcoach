@@ -1,68 +1,49 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { ChalkUpLogo } from './ChalkUpLogo'
+import { useInboxCount } from '../hooks/useInboxCount'
+import { Avatar, Icon } from './ui'
 
-const s = {
-  sidebar: { width: 200, minWidth: 200, background: 'var(--s1)', borderRight: '1px solid var(--br)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0 },
-  logo: { padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--br)' },
-  logoIcon: { width: 28, height: 28, background: 'var(--ac)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 },
-  logoText: { fontSize: 17, fontWeight: 700, color: 'var(--tx)', letterSpacing: '0.2px', fontFamily: 'var(--font-head)' },
-  nav: { flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2 },
-  link: { display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--r)', fontSize: 13, fontWeight: 500, color: 'var(--mu)', transition: 'all .15s', textDecoration: 'none', position: 'relative' },
-  cta: { margin: '6px 8px', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--r)', fontSize: 13, color: 'var(--ac)', background: 'rgba(199,228,92,.08)', border: '1px solid rgba(199,228,92,.2)', textDecoration: 'none' },
-  avatar: { padding: '12px 16px', borderTop: '1px solid var(--br)', display: 'flex', alignItems: 'center', gap: 10 },
-  avatarIcon: { width: 30, height: 30, background: 'rgba(199,228,92,.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--ac)', flexShrink: 0 },
-}
+// The four coach destinations from the redesign mockup. Shared with BottomNav.
+export const COACH_NAV = [
+  { to: '/today', icon: 'today', label: 'Today' },
+  { to: '/athletes', icon: 'athletes', label: 'Athletes' },
+  { to: '/inbox', icon: 'inbox', label: 'Inbox', badge: true },
+  { to: '/plan', icon: 'plan', label: 'Plan' },
+]
 
 export default function Sidebar() {
   const { coach, signOut } = useAuth()
   const navigate = useNavigate()
-
-  const initials = coach?.full_name
-    ? coach.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : 'GC'
+  const unread = useInboxCount()
 
   async function handleSignOut() {
     await signOut()
     navigate('/login')
   }
 
-  const activeStyle = { color: 'var(--tx)', background: 'var(--s2)' }
-  const accentBar = <span style={{ position: 'absolute', left: -8, top: 8, bottom: 8, width: 3, borderRadius: 2, background: 'var(--ac)' }} />
-
-  const navItem = (to, icon, label) => (
-    <NavLink to={to} style={({ isActive }) => ({ ...s.link, ...(isActive ? activeStyle : {}) })}>
-      {({ isActive }) => <>{isActive && accentBar}{icon} {label}</>}
-    </NavLink>
-  )
-
   return (
-    <aside style={s.sidebar}>
-      <div style={s.logo}>
-        <ChalkUpLogo size={28} />
-        <span style={s.logoText}>chalkup</span>
-      </div>
+    <aside style={{ width: 220, minWidth: 220, background: 'var(--s1)', borderRight: '1px solid var(--br)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, padding: '20px 14px' }}>
+      <div style={{ fontFamily: 'var(--font-head)', fontWeight: 800, fontSize: 26, color: 'var(--ac)', letterSpacing: '.01em', padding: '0 12px 18px' }}>chalkup</div>
 
-      <nav style={s.nav}>
-        {navItem('/dashboard', '🏠', 'Dashboard')}
-        {navItem('/roster', '🤸', 'Roster')}
-        {navItem('/programs', '📅', 'Programs')}
-        {navItem('/history', '📊', 'History')}
-        {navItem('/library', '📚', 'Exercise library')}
-        <NavLink to="/workout/new" style={({ isActive }) => ({ ...s.cta, ...(isActive ? { opacity: 0.8 } : {}) })}>
-          ＋ New workout
-        </NavLink>
+      <nav aria-label="Main" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+        {COACH_NAV.map(item => (
+          <NavLink key={item.to} to={item.to}
+            style={({ isActive }) => ({ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, fontSize: 14, fontWeight: isActive ? 600 : 500,
+              color: isActive ? 'var(--ac)' : 'var(--mu2)', background: isActive ? 'rgba(199,228,92,.12)' : 'transparent' })}>
+            <Icon name={item.icon} />
+            {item.label}
+            {item.badge && unread > 0 && (
+              <span style={{ marginLeft: 'auto', minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, background: '#E2695A', color: '#1A0E0C', fontSize: 11, fontWeight: 700, display: 'grid', placeItems: 'center' }}>{unread}</span>
+            )}
+          </NavLink>
+        ))}
       </nav>
 
-      <div style={s.avatar}>
-        <div style={s.avatarIcon}>{initials}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {coach?.full_name || 'Coach'}
-          </div>
-          <button onClick={handleSignOut} style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--mu)', padding: 0, cursor: 'pointer' }}>
-            Sign out
-          </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, borderTop: '1px solid var(--br)' }}>
+        <Avatar name={coach?.full_name || 'Coach'} size={32} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{coach?.full_name || 'Coach'}</div>
+          <button onClick={handleSignOut} style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--mu2)', cursor: 'pointer' }}>Sign out</button>
         </div>
       </div>
     </aside>

@@ -67,33 +67,60 @@ export function resolveProgramCell(programStartedOn, durationWeeks, dateStr) {
 }
 
 /**
- * Was `dateStr` a due day for this athlete?
+ * What does the schedule say for `dateStr`? One place decides, in this order:
+ *   1. a personal override for that date (athlete_day_overrides),
+ *   2. the athlete's program cell for that weekday,
+ *   3. no program: every day is a plain due day.
+ * kind: 'due' (training day, breaks the streak if missed), 'optional' (recovery
+ * day with a workout: counts if logged, never breaks), 'rest'.
  *
- * @param dateStr 'YYYY-MM-DD'
- * @param activeProgram { id, duration_weeks } or null/undefined
- * @param programStartedOn 'YYYY-MM-DD' or null — required if activeProgram is set
- * @param programDaysByCell Map keyed by `${week_number}:${day_of_week}` -> { workout_id }
+ * @param programDaysByCell Map keyed by `${week_number}:${day_of_week}` -> { workout_id, day_type?, notes? }
  *   (only cells for the athlete's active program need to be present)
- * @returns { due: boolean, workoutId: string|null }
+ * @param overridesByDate Map keyed by 'YYYY-MM-DD' -> { day_type, workout_id, notes } (optional)
+ * @returns { kind, source: 'override'|'program'|'free', dayType, workoutId, notes }
  */
-export function isDueOnDate(dateStr, activeProgram, programStartedOn, programDaysByCell) {
+export function resolveDay(dateStr, activeProgram, programStartedOn, programDaysByCell, overridesByDate) {
+  const ov = overridesByDate && overridesByDate.get(dateStr)
+  if (ov) return classify(ov, 'override')
+
   if (!activeProgram || !programStartedOn) {
-    return { due: true, workoutId: null } // no program = plain daily streak
+    return { kind: 'due', source: 'free', dayType: 'training', workoutId: null, notes: null } // no program = plain daily streak
   }
   // Dates before the athlete started this program aren't evaluated against
   // it (v1 simplification — see spec's "program changes mid-stream" note).
   if (toDateOnly(dateStr) < toDateOnly(programStartedOn)) {
-    return { due: true, workoutId: null }
+    return { kind: 'due', source: 'free', dayType: 'training', workoutId: null, notes: null }
   }
   const { week_number, day_of_week } = resolveProgramCell(programStartedOn, activeProgram.duration_weeks, dateStr)
   const cell = programDaysByCell.get(`${week_number}:${day_of_week}`)
-  if (cell && cell.workout_id) return { due: true, workoutId: cell.workout_id }
-  return { due: false, workoutId: null } // rest day, or a day with nothing attached
+  if (!cell) return { kind: 'rest', source: 'program', dayType: 'rest', workoutId: null, notes: null }
+  return classify(cell, 'program')
+}
+
+function classify(cell, source) {
+  const dayType = cell.day_type || 'training'
+  const workoutId = cell.workout_id || null
+  const notes = cell.notes || null
+  if (workoutId && dayType === 'training') return { kind: 'due', source, dayType, workoutId, notes }
+  if (workoutId && dayType === 'recovery') return { kind: 'optional', source, dayType, workoutId, notes }
+  return { kind: 'rest', source, dayType, workoutId: null, notes }
 }
 
 /**
- * Walk backward from `today` (exclusive) computing how many *elapsed* due
- * days in a row were logged, stopping at the first missed due day or when
+ * Was `dateStr` a due day for this athlete?
+ * @param dateStr 'YYYY-MM-DD'
+ * @param activeProgram { id, duration_weeks } or null/undefined
+ * @param programStartedOn 'YYYY-MM-DD' or null — required if activeProgram is set
+ * @returns { due: boolean, workoutId: string|null }
+ */
+export function isDueOnDate(dateStr, activeProgram, programStartedOn, programDaysByCell, overridesByDate) {
+  const d = resolveDay(dateStr, activeProgram, programStartedOn, programDaysByCell, overridesByDate)
+  return d.kind === 'due' ? { due: true, workoutId: d.workoutId } : { due: false, workoutId: null }
+}
+
+/**
+ * Walk backward from `today` (exclusive) computing how many *elapsed* days in
+ * a row were logged (due days must be; non-due days count only if logged), stopping at the first missed due day or when
  * running out of history. Does not look at today itself — callers layer
  * "is today due and already logged" on top separately, since today is never
  * a break condition.
@@ -110,7 +137,12 @@ export function walkBackwardStreak(today, completedDates, dueCheck, maxDays = 18
     cursor = addDays(cursor, -1)
     const dateStr = formatDateOnly(cursor)
     const { due } = dueCheck(dateStr)
-    if (!due) continue // skipped, doesn't break or extend
+    if (!due) {
+      // Not due: never breaks the streak, but a session the athlete chose to
+      // log anyway (an optional recovery day, an extra workout) counts.
+      if (completedDates.has(dateStr)) streak += 1
+      continue
+    }
     if (completedDates.has(dateStr)) streak += 1
     else break // due day, nothing logged -> streak stops here
   }
@@ -139,7 +171,10 @@ export function advanceStreakCache({ cachedStreak, lastComputedDate, throughDate
     cursor = addDays(cursor, 1)
     const dateStr = formatDateOnly(cursor)
     const { due } = dueCheck(dateStr)
-    if (!due) continue
+    if (!due) {
+      if (completedDates.has(dateStr)) streak += 1
+      continue
+    }
     if (completedDates.has(dateStr)) streak += 1
     else streak = 0
   }
@@ -153,5 +188,24 @@ export function advanceStreakCache({ cachedStreak, lastComputedDate, throughDate
  * added yet.
  */
 export function displayStreak(cachedStreak, todayDue, todayLogged) {
-  return cachedStreak + (todayDue && todayLogged ? 1 : 0)
+  return cachedStreak + (todayLogged ? 1 : 0)
+}
+
+/**
+ * The longest run the athlete has ever had, walking forward from their first
+ * logged day to `today` (inclusive) with the same rule as the live streak.
+ * Today itself never breaks a run.
+ */
+export function computeBestStreak({ today, completedDates, dueCheck }) {
+  if (completedDates.size === 0) return 0
+  const first = [...completedDates].sort()[0]
+  let best = 0
+  let run = 0
+  for (let d = first; d <= today; d = shiftDateStr(d, 1)) {
+    const { due } = dueCheck(d)
+    if (completedDates.has(d)) run += 1
+    else if (due && d < today) run = 0
+    if (run > best) best = run
+  }
+  return best
 }

@@ -25,7 +25,7 @@ export default function Login() {
     if (tab === 'login') {
       const { error } = await signIn(email, password)
       if (error) setError(error.message)
-      else navigate('/dashboard')
+      else navigate('/today')
     } else {
       if (!name.trim()) { setError('Full name is required'); setLoading(false); return }
       const { error } = await signUp(email, password, name)

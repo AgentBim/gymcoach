@@ -8,7 +8,7 @@ const DANGER = '#E2695A'
 const DANGER_INK = '#1A0E0C'
 
 // Replaces the bottom nav on mobile while selecting; floats over the page on
-// desktop (centered on the area right of the 200px sidebar).
+// desktop (centered on the area right of the 220px sidebar).
 export function SelectionBar({ hint, hintTone = 'muted', count, deleteLabel, onDelete }) {
   const isMobile = useIsMobile()
   const on = count > 0
@@ -31,7 +31,7 @@ export function SelectionBar({ hint, hintTone = 'muted', count, deleteLabel, onD
     )
   }
   return (
-    <div style={{ position: 'fixed', bottom: 24, left: 'calc(50% + 100px)', transform: 'translateX(-50%)', zIndex: 150, width: 560, maxWidth: 'calc(100vw - 260px)', boxSizing: 'border-box',
+    <div style={{ position: 'fixed', bottom: 24, left: 'calc(50% + 110px)', transform: 'translateX(-50%)', zIndex: 150, width: 560, maxWidth: 'calc(100vw - 280px)', boxSizing: 'border-box',
       display: 'flex', alignItems: 'center', gap: 12, padding: '10px 10px 10px 18px', borderRadius: 14, background: 'var(--s2)', border: '1px solid var(--br2)', boxShadow: '0 12px 32px rgba(0,0,0,.45)' }}>
       {hintText}
       {button}
@@ -120,7 +120,7 @@ export function Toast({ message, onClose }) {
 
   return (
     <div role="status"
-      style={{ position: 'fixed', bottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom))' : 24, left: isMobile ? 16 : 'calc(50% + 100px)', right: isMobile ? 16 : 'auto',
+      style={{ position: 'fixed', bottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom))' : 24, left: isMobile ? 16 : 'calc(50% + 110px)', right: isMobile ? 16 : 'auto',
         transform: isMobile ? 'none' : 'translateX(-50%)', zIndex: 450, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px 10px 14px', borderRadius: 12,
         background: '#ECEEE9', color: '#171C0E', boxShadow: '0 8px 24px rgba(0,0,0,.4)', maxWidth: isMobile ? 'none' : 480 }}>
       <span style={{ fontSize: 15 }}>✓</span>

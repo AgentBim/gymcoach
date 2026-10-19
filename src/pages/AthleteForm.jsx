@@ -41,7 +41,14 @@ export default function AthleteForm() {
     } else {
       await supabase.from('athletes').insert(payload)
     }
-    navigate('/roster')
+    navigate(isEdit ? `/athletes/${id}` : '/athletes')
+  }
+
+  async function remove() {
+    if (!window.confirm(`Remove ${fullName || 'this athlete'} from your roster? Their history is deleted with them.`)) return
+    const { error: e } = await supabase.from('athletes').delete().eq('id', id)
+    if (e) { setError(e.message); return }
+    navigate('/athletes')
   }
 
   const inp = { background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '10px 12px', fontSize: 14, outline: 'none', width: '100%', fontFamily: 'var(--font-sans)' }
@@ -50,7 +57,7 @@ export default function AthleteForm() {
     <Layout>
       <div style={{ maxWidth: 500, margin: '0 auto', padding: '24px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <button onClick={() => navigate('/roster')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+          <button onClick={() => navigate('/athletes')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <h1 style={{ fontSize: 20, fontWeight: 700 }}>{isEdit ? 'Edit athlete' : 'Add athlete'}</h1>
         </div>
 
@@ -83,11 +90,16 @@ export default function AthleteForm() {
           {error && <p style={{ fontSize: 12, color: '#E2695A' }}>{error}</p>}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-            <button onClick={() => navigate('/roster')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 46 }}>Cancel</button>
+            <button onClick={() => navigate('/athletes')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 46 }}>Cancel</button>
             <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, minHeight: 46 }}>
               {saving ? 'Saving...' : isEdit ? 'Update athlete' : 'Add to roster'}
             </button>
           </div>
+          {isEdit && (
+            <button onClick={remove} style={{ marginTop: 8, background: 'transparent', border: '1px solid rgba(226,105,90,.4)', borderRadius: 10, color: '#E2695A', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 46 }}>
+              Remove athlete
+            </button>
+          )}
         </div>
       </div>
     </Layout>

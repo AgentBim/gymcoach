@@ -6,21 +6,35 @@
 import { supabase } from './supabase'
 import { advanceStreakCache, isDueOnDate, displayStreak, todayLocal, shiftDateStr } from './streaks'
 
-async function fetchProgramDaysByProgramIds(programIds) {
+export async function fetchProgramDaysByProgramIds(programIds) {
   const map = new Map() // programId -> Map(cellKey -> { workout_id })
   if (programIds.length === 0) return map
   const { data } = await supabase
     .from('program_days')
-    .select('program_id, week_number, day_of_week, workout_id')
+    .select('program_id, week_number, day_of_week, workout_id, day_type, notes')
     .in('program_id', programIds)
   ;(data || []).forEach(d => {
     if (!map.has(d.program_id)) map.set(d.program_id, new Map())
-    map.get(d.program_id).set(`${d.week_number}:${d.day_of_week}`, { workout_id: d.workout_id })
+    map.get(d.program_id).set(`${d.week_number}:${d.day_of_week}`, { workout_id: d.workout_id, day_type: d.day_type, notes: d.notes })
   })
   return map
 }
 
-async function fetchCompletedDatesByAthleteIds(athleteIds) {
+export async function fetchOverridesByAthleteIds(athleteIds) {
+  const map = new Map() // athleteId -> Map('YYYY-MM-DD' -> { day_type, workout_id, notes })
+  if (athleteIds.length === 0) return map
+  const { data } = await supabase
+    .from('athlete_day_overrides')
+    .select('athlete_id, date, day_type, workout_id, notes')
+    .in('athlete_id', athleteIds)
+  ;(data || []).forEach(r => {
+    if (!map.has(r.athlete_id)) map.set(r.athlete_id, new Map())
+    map.get(r.athlete_id).set(r.date, { day_type: r.day_type, workout_id: r.workout_id, notes: r.notes })
+  })
+  return map
+}
+
+export async function fetchCompletedDatesByAthleteIds(athleteIds) {
   const map = new Map() // athleteId -> Set(dateStr)
   if (athleteIds.length === 0) return map
   const { data } = await supabase
@@ -44,11 +58,22 @@ async function fetchCompletedDatesByAthleteIds(athleteIds) {
 export async function batchComputeStreaks(athleteRows, programsById) {
   const ids = athleteRows.map(a => a.id)
   const programIds = [...new Set(athleteRows.map(a => a.active_program_id).filter(Boolean))]
-  const [programDaysMap, completedMap] = await Promise.all([
+  const [programDaysMap, completedMap, overridesMap] = await Promise.all([
     fetchProgramDaysByProgramIds(programIds),
     fetchCompletedDatesByAthleteIds(ids),
+    fetchOverridesByAthleteIds(ids),
   ])
+  return computeStreaks(athleteRows, programsById, programDaysMap, completedMap, overridesMap)
+}
 
+/**
+ * Same as batchComputeStreaks but over rows the caller already fetched, so
+ * screens that need the raw data too (Today, Athletes) don't query twice.
+ * programDaysMap: Map(programId -> Map(cellKey -> { workout_id }))
+ * completedMap:   Map(athleteId -> Set('YYYY-MM-DD'))
+ * overridesMap:   Map(athleteId -> Map('YYYY-MM-DD' -> { day_type, workout_id, notes })), optional
+ */
+export function computeStreaks(athleteRows, programsById, programDaysMap, completedMap, overridesMap = new Map()) {
   const today = todayLocal()
   const yesterday = shiftDateStr(today, -1)
   const result = new Map()
@@ -57,7 +82,8 @@ export async function batchComputeStreaks(athleteRows, programsById) {
   for (const a of athleteRows) {
     const program = a.active_program_id ? programsById.get(a.active_program_id) : null
     const cellMap = program ? (programDaysMap.get(a.active_program_id) || new Map()) : new Map()
-    const dueCheck = (dateStr) => isDueOnDate(dateStr, program, a.program_started_on, cellMap)
+    const overrides = overridesMap.get(a.id)
+    const dueCheck = (dateStr) => isDueOnDate(dateStr, program, a.program_started_on, cellMap, overrides)
     const completedDates = completedMap.get(a.id) || new Set()
 
     const advance = advanceStreakCache({
