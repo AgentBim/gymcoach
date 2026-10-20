@@ -8,6 +8,8 @@ import { AuthShell, AuthMessage } from '../components/AuthShell'
 // way round. Check which kind of account this is and route (or bounce) it.
 const COACH_ON_ATHLETE = 'This Google account isn’t linked to an athlete profile. Use the email your coach invited, or ask them for a new invite link.'
 const ATHLETE_ON_COACH = 'This is an athlete account. Log in at the athlete portal instead.'
+const GOOGLE_CANCELLED = 'Google sign-in was cancelled.'
+const GOOGLE_FAILED = 'Google sign-in didn’t finish. Try again.'
 
 export default function AuthCallback() {
   const [params] = useSearchParams()
@@ -23,8 +25,9 @@ export default function AuthCallback() {
     // Google/Supabase report problems (access_denied, cancelled consent) in the
     // query string or the hash depending on the flow.
     const hash = new URLSearchParams(window.location.hash.slice(1))
+    // Never show that text itself: anyone can craft a link to this page, so only fixed messages go on screen.
     const err = params.get('error_description') || params.get('error') || hash.get('error_description') || hash.get('error')
-    if (err) { bounce(err.replace(/\+/g, ' ')); return }
+    if (err) { bounce(/access_denied/i.test(err) ? GOOGLE_CANCELLED : GOOGLE_FAILED); return }
 
     async function route(session) {
       if (done) return
@@ -34,6 +37,9 @@ export default function AuthCallback() {
       const { data: athleteRow } = await supabase.from('athletes').select('id').eq('user_id', uid).maybeSingle()
       if (role === 'athlete') {
         if (athleteRow) { navigate('/athlete', { replace: true }); return }
+        // Google sign-in gave this person an empty coach profile; drop it now so a
+        // later invite isn't refused as "a coach". Safe to fail: the invite claim cleans up too.
+        await supabase.rpc('discard_unused_coach_stub')
         await supabase.auth.signOut()
         navigate(home, { replace: true, state: { error: COACH_ON_ATHLETE } })
       } else {
