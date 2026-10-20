@@ -126,7 +126,7 @@ function ThreadView({ thread, today, onBack, onChanged, setToast }) {
   const reqTitle = req ? `Move ${fmtShort(req.from_date)}${fromPlan?.name ? ` (${fromPlan.name})` : ''}${req.to_date ? ` to ${fmtShort(req.to_date)}` : ''}` : ''
 
   return (
-    <Card style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1, minWidth: 0, minHeight: isMobile ? 'calc(100vh - 210px)' : 640 }}>
+    <Card style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: isMobile ? 'none' : 1, minWidth: 0, minHeight: 420, height: isMobile ? 'calc(100dvh - 104px - env(safe-area-inset-bottom, 0px))' : 'calc(100vh - 134px)' }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid var(--br)' }}>
         {onBack && <button type="button" onClick={onBack} aria-label="Back to inbox" style={{ width: 40, height: 40, background: 'none', border: 'none', color: 'var(--mu2)' }}><Icon name="back" size={22} /></button>}
         <Avatar name={athlete.full_name} size={36} />

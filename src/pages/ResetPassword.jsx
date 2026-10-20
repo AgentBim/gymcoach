@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ChalkUpLogo } from '../components/ChalkUpLogo'
+import { AuthShell, AuthField, AuthSubmit, AuthMessage, AuthLinkButton } from '../components/AuthShell'
 import { supabase } from '../lib/supabase'
 
 // Landing page for the link in a "reset your password" email. Coaches and
@@ -59,53 +59,29 @@ export default function ResetPassword() {
     setLoading(false)
   }
 
-  const inp = { width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '10px 12px', fontSize: 14, outline: 'none' }
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-      <div style={{ width: 340 }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <ChalkUpLogo size={36} />
-            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--tx)', fontFamily: 'var(--font-head)' }}>chalkup</span>
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--mu)' }}>Choose a new password</p>
+    <AuthShell side="coach" eyebrow="Password reset" title="Choose a new password"
+      subtitle={ready && !done ? 'Use at least 6 characters.' : undefined}>
+      {checking ? (
+        <AuthMessage tone="info">Verifying your link…</AuthMessage>
+      ) : done ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <AuthMessage tone="ok">Password updated. Log in to continue.</AuthMessage>
+          <AuthLinkButton onClick={() => navigate('/login')}>Go to log in</AuthLinkButton>
         </div>
-
-        <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 14, padding: 24 }}>
-          {checking ? (
-            <p style={{ fontSize: 13, color: 'var(--mu)', textAlign: 'center' }}>Verifying link...</p>
-          ) : done ? (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
-              <p style={{ fontSize: 13, color: 'var(--tx)' }}>Password updated. Log in to continue.</p>
-            </div>
-          ) : !ready ? (
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--tx)', marginBottom: 6 }}>This link is invalid or has expired.</p>
-              <p style={{ fontSize: 12, color: 'var(--mu)' }}>Request a new one from the <Link to="/forgot-password" style={{ color: 'var(--ac)' }}>coach login</Link> or <Link to="/athlete/forgot-password" style={{ color: 'var(--ac)' }}>athlete portal</Link>.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 5 }}>New password</label>
-                <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 5 }}>Confirm password</label>
-                <input style={inp} type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="••••••••" required minLength={6} />
-              </div>
-
-              {error && <p style={{ fontSize: 12, color: '#E2695A', textAlign: 'center' }}>{error}</p>}
-
-              <button type="submit" disabled={loading}
-                style={{ width: '100%', padding: 12, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: loading ? 0.7 : 1, marginTop: 4 }}>
-                {loading ? 'Saving...' : 'Set new password →'}
-              </button>
-            </form>
-          )}
+      ) : !ready ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <AuthMessage>This link is invalid or has expired.</AuthMessage>
+          <p style={{ fontSize: 14, color: 'var(--mu2)', lineHeight: 1.5 }}>Request a new one from the <Link to="/forgot-password" style={{ color: 'var(--ac)', fontWeight: 600 }}>coach login</Link> or the <Link to="/athlete/forgot-password" style={{ color: 'var(--ac)', fontWeight: 600 }}>athlete portal</Link>.</p>
         </div>
-      </div>
-    </div>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <AuthField label="New password" type="password" value={password} onChange={setPassword} placeholder="At least 6 characters" autoComplete="new-password" required minLength={6} />
+          <AuthField label="Confirm password" type="password" value={confirm} onChange={setConfirm} placeholder="Type it again" autoComplete="new-password" required minLength={6} />
+          {error && <AuthMessage>{error}</AuthMessage>}
+          <AuthSubmit loading={loading}>{loading ? 'Saving…' : 'Set new password'}</AuthSubmit>
+        </form>
+      )}
+    </AuthShell>
   )
 }

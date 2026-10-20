@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAthletePortal } from '../../hooks/useAthletePortal'
 import { feelOf } from '../../lib/feel'
@@ -16,7 +16,6 @@ export default function AthleteCoach() {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
-  const end = useRef(null)
   const coachFirst = p.coachName.split(' ')[0]
 
   // Opening the thread marks it read.
@@ -28,7 +27,8 @@ export default function AthleteCoach() {
     ...p.messages.map(m => ({ type: 'message', id: m.id, at: m.created_at, m })),
     ...p.feedback.slice(0, 20).map(f => ({ type: 'feedback', id: 'f' + f.id, at: f.submitted_at, f })),
   ].sort((a, b) => new Date(a.at) - new Date(b.at))
-  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [items.length])
+  // The page scrolls (the composer and tab bar are fixed), so go to the very bottom.
+  useEffect(() => { window.scrollTo({ top: document.documentElement.scrollHeight }) }, [items.length])
 
   async function send(text) {
     const body = (text ?? draft).trim()
@@ -43,7 +43,7 @@ export default function AthleteCoach() {
 
   let lastDay = ''
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 150 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 'calc(210px + env(safe-area-inset-bottom))' }}>
       <header style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--s1)', borderBottom: '1px solid var(--br)', padding: '12px 16px', paddingTop: 'max(12px, calc(var(--sat) + 6px))', display: 'flex', alignItems: 'center', gap: 12 }}>
         <Avatar name={p.coachName} size={40} />
         <div><h1 style={{ fontSize: 17, fontWeight: 700 }}>Coach {coachFirst}</h1><div style={{ fontSize: 12.5, color: 'var(--mu2)' }}>Messages show up here and in your portal</div></div>
@@ -84,7 +84,6 @@ export default function AthleteCoach() {
           }
           return <div key={it.id} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{head}{node}</div>
         })}
-        <div ref={end} />
       </div>
 
       <div style={{ position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + env(safe-area-inset-bottom))', background: 'var(--s1)', borderTop: '1px solid var(--br)', padding: '10px 16px' }}>

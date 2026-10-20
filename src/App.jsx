@@ -4,6 +4,7 @@ import { AthleteAuthProvider } from './hooks/useAthleteAuth'
 import ProtectedRoute from './components/ProtectedRoute'
 import ProtectedAthleteRoute from './components/ProtectedAthleteRoute'
 import Login from './pages/Login'
+import AuthCallback from './pages/AuthCallback'
 import ForgotPassword from './pages/ForgotPassword'
 import AthleteForgotPassword from './pages/AthleteForgotPassword'
 import ResetPassword from './pages/ResetPassword'
@@ -45,6 +46,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/athlete/forgot-password" element={<AthleteForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />

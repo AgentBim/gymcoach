@@ -1,14 +1,17 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { ChalkUpLogo } from '../components/ChalkUpLogo'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { AuthShell, AuthField, AuthSubmit, AuthMessage, AuthGoogleButton, AuthDivider } from '../components/AuthShell'
 import { useAthleteAuth } from '../hooks/useAthleteAuth'
 import { supabase } from '../lib/supabase'
 import { PENDING_INVITE_KEY } from '../lib/athleteInvite'
+import { signInWithGoogle, googleErrorMessage } from '../lib/oauth'
 
 export default function AthleteLogin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const location = useLocation()
+  const [error, setError] = useState(location.state?.error || '')
+  const [googling, setGoogling] = useState(false)
   const [loading, setLoading] = useState(false)
   const { signIn } = useAthleteAuth()
   const navigate = useNavigate()
@@ -36,45 +39,25 @@ export default function AthleteLogin() {
     navigate('/athlete')
   }
 
-  const inp = { width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '10px 12px', fontSize: 14, outline: 'none' }
+  async function handleGoogle() {
+    setError(''); setGoogling(true)
+    const { error } = await signInWithGoogle('/auth/callback?role=athlete')
+    if (error) { setError(googleErrorMessage(error)); setGoogling(false) }
+  }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-      <div style={{ width: 340 }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <ChalkUpLogo size={36} />
-            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--tx)', fontFamily: 'var(--font-head)' }}>chalkup</span>
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--mu)' }}>Your training portal</p>
-        </div>
+    <AuthShell side="athlete" eyebrow="Athlete portal" title="Let’s train" subtitle="Log in to see today’s workout and your streak."
+      footer={<>New here? Ask your coach for an invite link.<br /><Link to="/login" style={{ color: 'var(--mu2)', fontSize: 13, display: 'inline-block', marginTop: 10 }}>Coach? Log in here</Link></>}>
+      <AuthGoogleButton onClick={handleGoogle} busy={googling} />
+      <AuthDivider>or use email</AuthDivider>
 
-        <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 14, padding: 24 }}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <label style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 5 }}>Email</label>
-              <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
-            </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                <label style={{ fontSize: 11, color: 'var(--mu)' }}>Password</label>
-                <Link to="/athlete/forgot-password" style={{ fontSize: 11, color: 'var(--mu)' }}>Forgot?</Link>
-              </div>
-              <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
-            </div>
-
-            {error && <p style={{ fontSize: 12, color: '#E2695A', textAlign: 'center' }}>{error}</p>}
-
-            <button type="submit" disabled={loading}
-              style={{ width: '100%', padding: 12, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: loading ? 0.7 : 1, marginTop: 4 }}>
-              {loading ? 'Please wait...' : 'Log in →'}
-            </button>
-          </form>
-          <p style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', marginTop: 16 }}>
-            New here? Ask your coach for an invite link.
-          </p>
-        </div>
-      </div>
-    </div>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <AuthField label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoComplete="email" inputMode="email" required />
+        <AuthField label="Password" type="password" value={password} onChange={setPassword} placeholder="Your password" required minLength={6} autoComplete="current-password"
+          action={<Link to="/athlete/forgot-password" style={{ fontSize: 13, color: 'var(--mu2)' }}>Forgot?</Link>} />
+        {error && <AuthMessage>{error}</AuthMessage>}
+        <AuthSubmit loading={loading}>{loading ? 'Please wait…' : 'Log in'}</AuthSubmit>
+      </form>
+    </AuthShell>
   )
 }

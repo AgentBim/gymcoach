@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChalkUpLogo } from '../components/ChalkUpLogo'
+import { AuthShell, AuthField, AuthSubmit, AuthMessage } from '../components/AuthShell'
 import { supabase } from '../lib/supabase'
 
 export default function ForgotPassword() {
@@ -25,46 +25,18 @@ export default function ForgotPassword() {
     else setSent(true)
   }
 
-  const inp = { width: '100%', background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--r)', color: 'var(--tx)', padding: '10px 12px', fontSize: 14, outline: 'none' }
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-      <div style={{ width: 340 }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <ChalkUpLogo size={36} />
-            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--tx)', fontFamily: 'var(--font-head)' }}>chalkup</span>
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--mu)' }}>Reset your coach account password</p>
-        </div>
-
-        <div style={{ background: 'var(--s1)', border: '1px solid var(--br)', borderRadius: 14, padding: 24 }}>
-          {sent ? (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>📬</div>
-              <p style={{ fontSize: 13, color: 'var(--tx)', marginBottom: 6 }}>If an account exists for that email, we've sent a reset link.</p>
-              <p style={{ fontSize: 12, color: 'var(--mu)' }}>Check your inbox and follow the link to choose a new password.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 5 }}>Email</label>
-                <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
-              </div>
-
-              {error && <p style={{ fontSize: 12, color: '#E2695A', textAlign: 'center' }}>{error}</p>}
-
-              <button type="submit" disabled={loading}
-                style={{ width: '100%', padding: 12, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 'var(--r)', fontSize: 14, fontWeight: 700, opacity: loading ? 0.7 : 1, marginTop: 4 }}>
-                {loading ? 'Sending...' : 'Send reset link →'}
-              </button>
-            </form>
-          )}
-          <p style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', marginTop: 16 }}>
-            <Link to="/login" style={{ color: 'var(--mu)' }}>← Back to log in</Link>
-          </p>
-        </div>
-      </div>
-    </div>
+    <AuthShell side="coach" eyebrow="Password reset" title="Forgot your password?" subtitle="Enter your coach email and we’ll send a link to choose a new one."
+      footer={<Link to="/login" style={{ color: 'var(--mu2)' }}>← Back to log in</Link>}>
+      {sent ? (
+        <AuthMessage tone="ok">If an account exists for that email, we’ve sent a reset link. Check your inbox and follow it to choose a new password.</AuthMessage>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <AuthField label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoComplete="email" inputMode="email" required />
+          {error && <AuthMessage>{error}</AuthMessage>}
+          <AuthSubmit loading={loading}>{loading ? 'Sending…' : 'Send reset link'}</AuthSubmit>
+        </form>
+      )}
+    </AuthShell>
   )
 }

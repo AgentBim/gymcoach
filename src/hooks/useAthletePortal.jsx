@@ -28,7 +28,7 @@ export function AthletePortalProvider({ athlete, children }) {
       supabase.from('messages').select('id, sender, kind, body, request_id, created_at').eq('athlete_id', athlete.id).order('created_at'),
       supabase.from('thread_state').select('athlete_read_at').eq('athlete_id', athlete.id).maybeSingle(),
       supabase.from('schedule_requests').select('id, from_date, to_date, status, note, created_at').eq('athlete_id', athlete.id).order('created_at'),
-      supabase.from('coaches').select('full_name').eq('id', athlete.coach_id).maybeSingle(),
+      supabase.rpc('athlete_coach_name'),
     ])
 
     const program = progRes.data || null
@@ -64,7 +64,7 @@ export function AthletePortalProvider({ athlete, children }) {
     setToday(t)
     setData({
       program, cells, overrides, meta, assigned, feedback, feedbackByDate, completed, messages, requests: reqRes.data || [],
-      coachName: coachRes.data?.full_name || 'Your coach',
+      coachName: coachRes.data || 'Your coach',
       streak: streakInfo.streak, best, todayLogged: streakInfo.todayLogged,
       coachUnread: messages.some(m => m.sender !== 'athlete' && new Date(m.created_at).getTime() > readAt),
     })
