@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { AuthShell, AuthField, AuthSubmit, AuthMessage, AuthGoogleButton, AuthDivider } from '../components/AuthShell'
 import { useAthleteAuth } from '../hooks/useAthleteAuth'
-import { supabase } from '../lib/supabase'
-import { PENDING_INVITE_KEY } from '../lib/athleteInvite'
 import { signInWithGoogle, googleErrorMessage } from '../lib/oauth'
 
 export default function AthleteLogin() {
@@ -25,14 +23,6 @@ export default function AthleteLogin() {
       setError(error.message)
       setLoading(false)
       return
-    }
-
-    // If they arrived here after signing up from an invite link but email
-    // confirmation delayed getting a session, finish claiming the invite now.
-    const pendingToken = localStorage.getItem(PENDING_INVITE_KEY)
-    if (pendingToken) {
-      await supabase.rpc('claim_athlete_invite', { p_invite_token: pendingToken, p_email: email })
-      localStorage.removeItem(PENDING_INVITE_KEY)
     }
 
     setLoading(false)

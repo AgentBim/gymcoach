@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { finishPendingAthleteInvite, PENDING_INVITE_KEY } from '../lib/athleteInvite'
 
 const AthleteAuthContext = createContext(null)
 
@@ -50,10 +51,26 @@ export function AthleteAuthProvider({ children }) {
     // identical from here unless we actually check, and wrongly telling
     // someone "you're a coach" sends them chasing the wrong problem.
     const { data: coachRow } = await supabase.from('coaches').select('id').eq('id', data.user.id).single()
-    await supabase.auth.signOut()
     if (coachRow) {
+      await supabase.auth.signOut()
       return { error: { message: 'This is a coach account. Log in at the coach dashboard instead.' } }
     }
+
+    let token = null
+    try { token = localStorage.getItem(PENDING_INVITE_KEY) } catch { /* Storage may be unavailable. */ }
+    const linked = await finishPendingAthleteInvite({
+      token,
+      email: data.user.email,
+      claim: (inviteToken, accountEmail) => supabase.rpc('claim_athlete_invite', { p_invite_token: inviteToken, p_email: accountEmail }),
+      findAthlete: () => supabase.from('athletes').select('*').eq('user_id', data.user.id).single(),
+      clear: () => { try { localStorage.removeItem(PENDING_INVITE_KEY) } catch { /* Linking already succeeded. */ } },
+    })
+    if (linked.athlete) {
+      setAthlete(linked.athlete)
+      return { error: null }
+    }
+    await supabase.auth.signOut()
+    if (linked.error) return { error: linked.error }
     return { error: { message: "Your invite hasn't finished linking to your coach's roster. Ask your coach to resend your invite link, or try the original invite link again." } }
   }
 
