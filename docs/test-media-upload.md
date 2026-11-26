@@ -1,0 +1,11 @@
+# Isolated pilot upload without exporting a server key
+
+The test upload bridge is an operator tool, never imported by the app and never deployed by a Vite build. It is pinned to ChalkUp Test (`vlladyjynzmkswvnelku`), 40 exact approved version IDs, and a short-lived random upload capability. The function reads the platform's server key internally; the key is never returned or copied to this computer. Requests require the gateway's valid test-project JWT plus the operator capability. The deployed config contains only the capability hash. Keep the local capability outside the repository and out of logs.
+
+Deploy a wrapper using a pinned Supabase SDK and `createUploadBridge`, with `verify_jwt:true`. Provide config with projectRef, versionIds, capabilitySha256 and expiresAt (at most one hour from deployment). All operations recheck the complete approval set. The bridge configures only the exercise-library public bucket (5 MiB; MP4/WebP only), signs immutable approved paths without upsert, and verifies downloaded bytes/MIME before marking a version verified. It cannot publish, change exercise prescriptions, or accept arbitrary paths. Signed upload tokens may remain valid until their provider expiry; no file replacements are permitted.
+
+Run the existing approval-gated uploader through `upload-through-test-bridge.mjs <upload-plan> <40-version-ids> <local-capability-json> <report-json>`. Capability JSON contains projectRef, expiresAt, token and the test project's public anonKey. No service-role key is used by the client. All local media hashes are checked before the first upload. Never run this against production.
+
+After verification (or failure), replace the temporary function with a handler that returns 410 and contains no upload implementation or capability hash. Publish the verified test versions separately using the existing service-only publication function. Keep production disabled until the complete pilot is reviewed.
+
+Validation: `node scripts/media/test-test-upload-bridge.mjs` checks authorization, expiry, wrong project, approved paths, pending approval, bad remote bytes/MIME and review changes. The underlying uploader tests cover partial transfers and immutable reuse. Hosted delivery and application flows still need verification.
