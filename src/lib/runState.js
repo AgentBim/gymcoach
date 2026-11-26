@@ -22,7 +22,7 @@ export function clearRun(athleteId, date, workoutId) {
 /** The runner's rows: prehab first, then the main workout. */
 export function runItems(exercises, prehabExercises) {
   const row = (group, x, prefix) => ({
-    key: prefix + x.id, group, name: x.exercises?.name || 'Exercise', sets: x.sets,
+    key: prefix + x.id, group, exercise: x.exercises || null, name: x.exercises?.name || 'Exercise', sets: x.sets,
     dose: `${x.sets} × ${x.reps || (x.duration_seconds ? x.duration_seconds + 's' : '–')}`,
     rest: x.rest_seconds || 0, cue: x.exercises?.description || '',
   })

@@ -6,6 +6,7 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import PlanTabs from '../components/PlanTabs'
 import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
+import { hydrateExerciseMedia } from '../lib/exerciseMedia'
 import GenerateProgramModal from '../components/GenerateProgramModal'
 import CopyWeeksModal from '../components/CopyWeeksModal'
 import ProgramToolsSheet from '../components/ProgramToolsSheet'
@@ -171,7 +172,7 @@ export default function ProgramBuilder() {
     setPoolError('')
     const { data, error: poolFetchError } = await supabase.from('exercises').select('*')
     if (poolFetchError) { setPoolError(poolFetchError.message); return }
-    setPool(data || [])
+    setPool(await hydrateExerciseMedia(data || []))
   }
 
   function setCell(key, updates) {

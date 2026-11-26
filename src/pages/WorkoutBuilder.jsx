@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import PlanTabs from '../components/PlanTabs'
+import ExerciseMedia from '../components/ExerciseMedia'
+import { hydrateExerciseMedia } from '../lib/exerciseMedia'
 import AIGeneratorModal from '../components/AIGeneratorModal'
 import { MUSCLE_COLORS } from '../lib/theme'
 import { Button, Card, Chip, Dialog, EmptyState, Icon, Label, Pill, PillRow, SearchBox, UndoToast } from '../components/ui'
@@ -86,7 +88,7 @@ export default function WorkoutBuilder() {
     supabase.from('exercises').select('*')
       .or(user ? `coach_id.is.null,coach_id.eq.${user.id}` : 'coach_id.is.null')
       .order('muscle_group').order('name')
-      .then(({ data }) => setAllExercises(data || []))
+      .then(async ({ data }) => setAllExercises(await hydrateExerciseMedia(data || [])))
   }, [user])
 
   useEffect(() => { if (id) fetchWorkout() }, [id])
@@ -96,8 +98,10 @@ export default function WorkoutBuilder() {
       .select('*, workout_exercises(*, exercises(*)), workout_prehab(*, exercises(*))')
       .eq('id', id).single()
     if (!data) return
+    const hydrated = await hydrateExerciseMedia([...(data.workout_exercises || []), ...(data.workout_prehab || [])].map(r => r.exercises).filter(Boolean))
+    const byId = new Map(hydrated.map(e => [e.id, e]))
     const conv = rows => (rows || []).sort((a, b) => a.position - b.position)
-      .map(r => ({ exercise: r.exercises, sets: r.sets, reps: r.reps || '', duration_seconds: r.duration_seconds || '', rest_seconds: r.rest_seconds }))
+      .map(r => ({ exercise: byId.get(r.exercises?.id) || r.exercises, sets: r.sets, reps: r.reps || '', duration_seconds: r.duration_seconds || '', rest_seconds: r.rest_seconds }))
     setName(data.name)
     setIsAi(!!data.is_ai_generated)
     setSourceProgram(data.source_program_id || null)
@@ -196,7 +200,8 @@ export default function WorkoutBuilder() {
         {library.map(e => {
           const has = tab === 'strength' ? inMain.has(e.id) : inPrehab.has(e.id)
           return (
-            <button key={e.id} type="button" onClick={() => addFromLibrary(e)} aria-label={`${has ? 'Already added: ' : 'Add '}${e.name}`}
+            <div key={e.id}>
+            <button type="button" onClick={() => addFromLibrary(e)} aria-label={`${has ? 'Already added: ' : 'Add '}${e.name}`}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, minHeight: 56, padding: '8px 14px', border: 'none', borderTop: '1px solid var(--br)', background: 'transparent', color: has ? 'var(--mu)' : 'var(--tx)', textAlign: 'left', cursor: has ? 'default' : 'pointer' }}>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: 'block', fontSize: 14, fontWeight: 600 }}>{e.name}</span>
@@ -204,6 +209,8 @@ export default function WorkoutBuilder() {
               </span>
               <Icon name={has ? 'check' : 'plus'} size={18} style={{ color: has ? 'var(--ac)' : 'var(--mu2)' }} />
             </button>
+            <ExerciseMedia exercise={e} compact />
+            </div>
           )
         })}
       </div>
@@ -239,6 +246,7 @@ export default function WorkoutBuilder() {
                 </>
               )}
             </div>
+            {open && <ExerciseMedia exercise={it.exercise} compact />}
             {open && (
               <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', padding: '0 16px 14px 50px', alignItems: 'flex-end' }}>
                 <Stepper label="Sets" value={it.sets} onDown={() => patch(i, { sets: clamp(it.sets - 1, 1, 10) })} onUp={() => patch(i, { sets: clamp(it.sets + 1, 1, 10) })} />
@@ -272,10 +280,11 @@ export default function WorkoutBuilder() {
       </div>
       {prehab.map((it, i) => (
         <div key={it.exercise.id + i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: '1px solid var(--br)' }}>
-          <span style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: 'block', fontSize: 14, fontWeight: 600 }}>{it.exercise.name}</span>
+            <ExerciseMedia exercise={it.exercise} compact />
             <span style={{ display: 'block', fontSize: 12.5, color: 'var(--mu2)' }}>{doseOf(it)} · rest {it.rest_seconds}s</span>
-          </span>
+          </div>
           <button type="button" aria-label={`Remove ${it.exercise.name}`} onClick={() => remove(i, 'prehab')} style={iconBtn}><Icon name="close" size={16} /></button>
         </div>
       ))}

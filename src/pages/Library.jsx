@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import PlanTabs from '../components/PlanTabs'
+import ExerciseMedia from '../components/ExerciseMedia'
+import { hydrateExerciseMedia } from '../lib/exerciseMedia'
 import { MUSCLE_COLORS } from '../lib/theme'
 import { Button, Card, Chip, Dialog, EmptyState, Icon, Label, Page, PageHeader, Pill, PillRow, SearchBox, Segmented } from '../components/ui'
 
@@ -44,6 +46,7 @@ function Detail({ ex, usedIn, onClose }) {
         </div>
         {onClose && <button type="button" aria-label="Close details" onClick={onClose} style={{ width: 36, height: 36, background: 'none', border: 'none', color: 'var(--mu2)', cursor: 'pointer' }}><Icon name="close" /></button>}
       </div>
+      <ExerciseMedia exercise={ex} />
       <div>
         <Label style={{ marginBottom: 6 }}>Coaching cue</Label>
         <p style={{ fontSize: 14, lineHeight: 1.55, color: ex.description ? 'var(--tx)' : 'var(--mu)' }}>{ex.description || 'No cue yet.'}</p>
@@ -94,7 +97,7 @@ export default function Library() {
       supabase.from('workout_exercises').select('exercise_id, workouts(id, name, program_generated, archived_at)'),
       supabase.from('workout_prehab').select('exercise_id, workouts(id, name, program_generated, archived_at)'),
     ])
-    setExercises(exRes.data || [])
+    setExercises(await hydrateExerciseMedia(exRes.data || []))
     const map = new Map()
     ;[...(weRes.data || []), ...(wpRes.data || [])].forEach(r => {
       const w = r.workouts
@@ -129,6 +132,11 @@ export default function Library() {
   const count = c => exercises.filter(e => c === 'all' || catOf(e) === c).length
   const sel = exercises.find(e => e.id === selId) || null
   const custom = exercises.filter(e => e.is_custom).length
+  useEffect(() => {
+    if (selId && !exercises.some(e => e.id === selId &&
+      (cat === 'all' || catOf(e) === cat) && (group === 'All' || e.muscle_group === group) &&
+      (!query.trim() || e.name.toLowerCase().includes(query.trim().toLowerCase())))) setSelId(null)
+  }, [exercises, cat, group, query, selId])
 
   return (
     <Layout>
@@ -162,7 +170,7 @@ export default function Library() {
                       <span style={{ fontSize: 14.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
                       {e.is_custom && <Chip tone="accent">Yours</Chip>}
                     </span>
-                    <span style={{ display: 'block', fontSize: 12, color: 'var(--mu)', marginTop: 2 }}>{e.difficulty}</span>
+                    <span style={{ display: 'block', fontSize: 12, color: 'var(--mu)', marginTop: 2 }}>{e.difficulty}{isMobile && cat === 'all' ? ` · ${cap(catOf(e))}` : ''}</span>
                   </span>
                 )
                 return (

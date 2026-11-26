@@ -1,4 +1,5 @@
 import { MUSCLE_COLORS } from '../lib/theme'
+import ExerciseMedia from './ExerciseMedia'
 
 // Read-only rendering of a workout's contents: title, muscle-group tag
 // chips derived from its exercises, a prehab section if it has one, and
@@ -32,7 +33,7 @@ export default function WorkoutPreviewCard({ workout, exercises, prehabExercises
           <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ac)', marginBottom: 8 }}>🛡 Prehab · {prehabExercises.length}</div>
           {prehabExercises.map(wp => (
             <div key={wp.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 12.5, color: 'var(--tx)' }}>
-              <span>{wp.exercises?.name}</span>
+              <div><span>{wp.exercises?.name}</span><ExerciseMedia exercise={wp.exercises} compact /></div>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--mu)' }}>{wp.sets}×{wp.reps || `${wp.duration_seconds}s`}</span>
             </div>
           ))}
@@ -55,6 +56,7 @@ export default function WorkoutPreviewCard({ workout, exercises, prehabExercises
                   {we.sets} × {we.reps || `${we.duration_seconds}s`} · Rest {we.rest_seconds}s
                 </div>
                 <div style={{ fontSize: 11.5, color: 'var(--mu)', lineHeight: 1.4 }}>{ex?.description}</div>
+                <ExerciseMedia exercise={ex} compact />
               </div>
             </div>
           )

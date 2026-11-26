@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAthletePortal } from '../../hooks/useAthletePortal'
 import { useWorkoutPreview } from '../../lib/useWorkoutPreview'
+import ExerciseMedia from '../../components/ExerciseMedia'
 import { readRun, runItems, runTotals, writeRun } from '../../lib/runState'
 import { Button, Icon, Label } from '../../components/ui'
 
@@ -91,6 +92,7 @@ export default function AthleteRun() {
                 <div style={{ border: '1px solid rgba(199,228,92,.4)', background: 'var(--s2)', borderRadius: 16, padding: 16, marginBottom: 8 }}>
                   <div style={{ fontSize: 20, fontWeight: 700 }}>{it.name}</div>
                   <div style={{ fontSize: 13.5, color: 'var(--mu2)', margin: '3px 0 10px' }}>{it.dose}{it.rest ? ` · rest ${it.rest}s` : ''}</div>
+                  <ExerciseMedia exercise={it.exercise} compact />
                   {it.cue && <p style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--tx)', margin: '0 0 14px' }}>{it.cue}</p>}
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {Array.from({ length: it.sets }, (_, k) => k + 1).map(n => {

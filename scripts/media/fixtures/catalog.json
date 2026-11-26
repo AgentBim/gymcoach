@@ -1,0 +1,2802 @@
+[
+  {
+    "id": "64f673fa-0695-42c8-8eb0-31ecf4b6277e",
+    "name": "Archer Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "Wide hand placement, shift weight to one arm as you lower, keeping other arm extended. Alternate sides.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "e2eb7bc4-610e-4f43-ad22-35b8ee325527",
+    "name": "Assisted One-Arm Pull-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "One hand on bar, other hand grips same wrist for assistance. Lower the assistance over time.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7d5a0fc4-aee8-4042-90b6-4873117df724",
+    "name": "Band Tricep Pushdown",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Anchor band overhead, grip with both hands, extend elbows driving hands toward thighs. Full lockout.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "f4ba6bf9-f2c9-428c-8912-3a11b5a943e8",
+    "name": "Band-Assisted Muscle-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "With resistance band for assistance, pull explosively from hang to push-up position above bar.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "c97bb77c-e326-485b-90b8-8076432008ce",
+    "name": "Bar Hang (Active)",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Dead hang from bar with active shoulder depression and retraction. No passive shrugging.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "115c85e7-3f7a-4336-987e-c39444098453",
+    "name": "Chin-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Supinated grip, pull chin above bar from dead hang. Lower with control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "74d6c299-2e8a-48cc-9901-904565068f7f",
+    "name": "Clap Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Explosive push-up, clap hands at top before landing. Builds upper body power.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "24419789-09de-4591-b024-2cd7ecea021d",
+    "name": "Close-Grip Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Hands shoulder-width or narrower, lower chest between hands. Emphasizes triceps and inner chest.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "343449f9-8c87-4564-ae94-0e9bcd2e81d4",
+    "name": "Commando Pull-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Hands staggered on bar, pull chin to one side then alternate. Works biceps and lats unevenly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "6cdcd251-393e-4ea9-96c7-8bb07fcfed5e",
+    "name": "Diamond Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Hands close together forming a diamond, lower chest to hands. Press up.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "01778c3f-54b7-4d14-85be-3e16581c3ffe",
+    "name": "Elbow Plank to Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Alternate between forearm plank and push-up top position one arm at a time. Control the transition.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "f4fdebcf-4028-45cd-9044-b30dd3de39b9",
+    "name": "Fingertip Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Push-up on fingertips only. Builds grip strength and finger tendon resilience for bar work.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "c0a55378-89c3-4a35-a490-779443c1a531",
+    "name": "Forearm Curl",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Kneel, forearms on bench, wrists hanging off edge, curl weight through full wrist range of motion.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "24374e18-3e8a-44cb-9be5-09af42c9f6fb",
+    "name": "Gymnastic Ring Push-up Hold",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Hold top position of ring push-up with rings turned out 45 degrees. Builds ring stability.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "de3c7038-cefe-42b3-9a2e-0cca4f333f87",
+    "name": "Hang to Row",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "From dead hang, perform inverted row pulling chest to bar. Smooth transition between movements.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5460826c-0b86-4b3d-a500-6ea757feef2b",
+    "name": "Hollow Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Maintain hollow body position throughout push-up movement. No hip sag, back flat.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "18b1fc6e-c3fe-4ab0-8d5b-d1fb6284d069",
+    "name": "L-Pull-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "Maintain L-sit position (legs parallel to floor) throughout entire pull-up movement. Extreme core demand.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "adf8a7bf-d3ed-48ed-a75f-f92300957deb",
+    "name": "Negative Pull-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Jump to top position, lower yourself as slowly as possible (5-10 seconds). Build pull strength eccentrically.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "ef7f95c3-5e11-4134-9780-d0fec928fc11",
+    "name": "Neutral-Grip Pull-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Parallel grip (palms facing each other), pull chin to bar level. Easier on shoulders than pronated grip.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0931d10f-5ef5-4bf2-aef0-7600a43b32d8",
+    "name": "One-Arm Push-up Progression",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "Full wide-leg one-arm push-up, lower chest to floor with control. Keep hips square.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a7eec115-bc03-47cd-8c21-73605bdd6339",
+    "name": "Pike Handstand Push-up Negative",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "From handstand against wall, lower head slowly toward floor over 5 seconds. Press back up.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "aa16fd2a-83f4-42bb-bfc8-ae6598a4e52b",
+    "name": "Pike Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "In inverted V position, bend elbows and lower crown toward floor. Press back up.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "19e417db-cfee-4452-8f03-d2509af09c18",
+    "name": "Planche Lean",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "In push-up position, lean forward shifting shoulders past hands. Hold body rigid. Build planche strength.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "e647eda9-8570-4da3-8f84-a1f46a5fa8b3",
+    "name": "Pseudo Planche Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "Hands near hips, lean forward and perform push-up keeping body rigid.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "6294405c-5106-4b42-8f78-7a645c835c3e",
+    "name": "Reverse Grip Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Hands turned outward 180 degrees (fingers pointing toward feet). Unusual bicep and forearm load.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7a6651f3-e31f-4a1f-8e06-48371c094206",
+    "name": "Ring Bicep Curl",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Stand facing anchor point, lean back with rings at hip level, curl rings to forehead. Adjust angle.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "d3a60767-0844-4b5c-8ef7-537b11a6d02b",
+    "name": "Ring Dip",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "On gymnastic rings, lower body until upper arms parallel to floor. Press back to lockout, turn rings out.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "48b82521-0083-40ba-a22c-26c99144d0c6",
+    "name": "Ring Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Push-up with hands on gymnastic rings, keep rings stable throughout movement.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "3141b9e6-235e-49f0-a9a4-553e54f6af04",
+    "name": "Rope Climb (arms only)",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "Climb rope using only arm strength, no leg wrapping allowed.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "2ff5ebfb-cf94-4ac0-8ce8-10b8699d70c7",
+    "name": "Scapular Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "In push-up top position, protract and retract scapulae without bending elbows. Serratus anterior work.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "93321361-d74e-496c-b35c-9226c7c5c05c",
+    "name": "Straddle Planche Lean",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "Legs straddled wide, lean forward on hands shifting center of mass over wrists. Advanced planche prep.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "29283d80-767f-4dcd-8a09-41d08e142857",
+    "name": "Superman Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "Explosive push-up launching hands and feet off ground simultaneously. Land softly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1eff83ed-c3f1-422e-8366-f2764bdf3c63",
+    "name": "Towel Pull-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Drape towels over bar, grip one in each hand, perform pull-up. Challenges grip and forearm strength.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "3b2d7d3d-f73d-4af4-a1c7-59f1efa42085",
+    "name": "Tricep Dips",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "On parallel bars or chair, lower body by bending elbows. Press back to straight.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "45dd2112-224b-4a2f-becd-aee0f9f58347",
+    "name": "Tricep Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Hands directly under shoulders, elbows track straight back as you lower. Press back up keeping elbows tight to body.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "ddf0ee2a-38e4-4352-ad2e-d869298926ef",
+    "name": "Tuck Front Lever Row",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "In tuck front lever position on bar, perform rowing motion pulling chest to bar.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "37b0772b-82bd-4676-8d7e-ec4ba71ff6cc",
+    "name": "Typewriter Pull-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Hard",
+    "description": "Pull up, then slide body to one side keeping chin above bar, across and down the other side.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "4e558b88-5979-4a9a-a704-e370e9730906",
+    "name": "Wide-Grip Pull-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Medium",
+    "description": "Hands wider than shoulder-width, pull chest toward bar. Emphasizes lat width over bicep.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "f9f511f3-42cb-4443-a620-5aa50d0c6469",
+    "name": "Wrist Push-up",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Push-up on back of wrists (fists facing down). Builds wrist flexor strength and conditioning.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "993a5ceb-92e3-41c4-87dc-8f734248d003",
+    "name": "Wrist Roller",
+    "category": "strength",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Hold roller at shoulder height, wind and unwind weight using only wrists.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9f2aacca-4d5f-4af2-9735-0c10ff7e2388",
+    "name": "Arch Body Rock",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "In arch body position (prone, arms and legs raised), rock forward and back maintaining shape.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1faa035d-416e-4786-b06c-19e2e2c77621",
+    "name": "Arch Pulls",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Hang from bar in arched position, pull with scapula retraction and depression.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "ddde3c5b-a813-48f1-85fd-046b83688ed9",
+    "name": "Arch to Hollow on Bar",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Hang from bar, alternate between arch position and hollow position in a controlled swing cycle.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "3fd63bff-81b8-4e27-8fb7-dd8d249b8c39",
+    "name": "Back Extension",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "On GHD or prone on floor, hinge at hips to lower and raise torso.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "024902b9-ba25-4756-b016-1eef98d8fcb4",
+    "name": "Band Pull-Down",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Anchor band overhead, face anchor, pull band to chest keeping arms slightly bent. Full lat contraction.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9fe595f7-ea68-4d11-a1bb-61171cb93690",
+    "name": "Banded Good Morning",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Band anchored under feet and over shoulders, hinge at hips maintaining flat back, stand tall.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "84ab69ec-417a-421f-b769-01ed777d065e",
+    "name": "Bear Hug Carry",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Hug a heavy bag or medicine ball to chest, walk for distance maintaining upright posture.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7fdb7bd7-5d3b-4019-ad99-4d1cc269f3ab",
+    "name": "Chest-to-Bar Pull-up",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Hard",
+    "description": "Full pull-up driving chest to touch the bar. Requires greater range and lat strength.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "d5993f46-a0d9-40f1-abc9-b1d21f95b73e",
+    "name": "Close-Grip Pull-up",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Hands close together on bar, pull chin over. More bicep involvement than wide grip.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "271b5e50-0231-4496-8331-7438a2c4bd33",
+    "name": "Dead Hang Shrug",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "From dead hang, depress shoulders pulling body up without bending elbows. Pure scapular control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "449b2563-ee70-4b1c-88e8-9d453895c298",
+    "name": "Face Pull",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Anchor band at face height, pull toward face with elbows flared high. External rotation and rear delt.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "96bacd52-be95-4b0a-b016-ccedf1b77f01",
+    "name": "Front Lever Progression",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Hard",
+    "description": "Straddle front lever hold — legs open wide, body horizontal on bar with arms straight.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "6775ad9f-5a29-4076-adf4-e095d018a9b6",
+    "name": "Front Lever Tuck Hold",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Hard",
+    "description": "On bar, pull into tucked horizontal hold with arms straight, body parallel to floor.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7ccd308e-e1bf-4445-8ac0-242b6e722231",
+    "name": "GHD Raise",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "On glute-ham developer, lower torso below parallel and raise back up. Full range hip extension.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9f1d42a0-b05d-42e2-8c63-3b2d3ac078eb",
+    "name": "Good Morning",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Feet hip-width, hinge at hips with flat back until torso parallel to floor. Drive hips forward to stand.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "065e53b9-9857-4fcd-83f4-9865331af7e5",
+    "name": "Hollow Body Pull-up",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Hard",
+    "description": "Maintain strict hollow body (no arch) throughout pull-up. Gymnastics-specific pulling pattern.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1b26cde7-11d3-482f-8704-12860007daad",
+    "name": "Horizontal Pull-up",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Hard",
+    "description": "Feet elevated to make body horizontal, pull chest to bar from fully horizontal position. Max lat load.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a417c7f7-994a-471c-801b-df4d8c165c09",
+    "name": "Inverted Hang",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Hang inverted from bar (toes to bar then extend inverted), hold still. Builds inverted body awareness.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "2a8cf07f-b547-4fa9-8af0-11096822a220",
+    "name": "Inverted Row",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Hang below bar with straight body, pull chest to bar. Lower with control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0b64f93c-3c75-4b0d-8592-883344677dbe",
+    "name": "Kipping Pull-up",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Use hip drive to generate momentum, then pull explosively. Gymnastics conditioning tool for volume.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a03e47e4-c95e-4013-a937-00026957c253",
+    "name": "Mixed Grip Pull-up",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "One hand pronated, one supinated on bar. Pull-up targets bicep and lat differently each set.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "28a823f1-eb85-410a-96c7-145b63c7bbcc",
+    "name": "Muscle-up Negative",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Hard",
+    "description": "Start at top of muscle-up (in dip position above bar), lower slowly through transition to hang.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "19457790-f911-400c-a770-5fa66ee4a0b6",
+    "name": "Negative Front Lever",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Hard",
+    "description": "From inverted hang, lower body slowly to horizontal position. Resist throughout the descent.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9da4925e-5bad-407f-ae11-3d745b41a229",
+    "name": "Prone Cobra",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Lie face down, place hands by hips, press up through hands lifting chest. Hold at top.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "db4ab174-692a-4361-9897-dada7b3cd721",
+    "name": "Prone T Raise",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Lie face down, raise arms to T position (directly to sides) squeezing rear delts. Lower slowly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "397b9f27-c53b-4ac1-bdfb-b2901b55de11",
+    "name": "Pull-up",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Pronated grip, pull chin above bar from dead hang. Controlled lower.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "93c1573d-f670-4330-bd93-52e230955c2d",
+    "name": "Renegade Row",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "In push-up position with weights, row one arm at a time. Keep hips square throughout.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "ec26957b-e9d5-4cc4-88ce-7651ee1edcd1",
+    "name": "Reverse Hyperextension",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Lie on elevated surface, hang legs off edge, raise legs to horizontal using glutes and lower back.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "bf6e6747-2372-4a65-837d-91ebf3d7b6a7",
+    "name": "Reverse Snow Angel",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Lie face down arms at sides, trace arms from hips to overhead and back, keeping arms off floor.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "35fdc487-6fff-4d2a-bd92-1d2d012eae88",
+    "name": "Ring Pull-up",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Pull-up using gymnastic rings. Rings allowed to rotate naturally. More shoulder-friendly than bar.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "76774fa1-085f-4cc4-abef-76568117453f",
+    "name": "Ring Row",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Heels on floor, body straight, pull chest to rings. Adjust angle for difficulty.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "fd354402-4240-4ef1-ba76-f985a7ba5f17",
+    "name": "Scapular Pull-up",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "From dead hang, retract scapulae to raise body slightly. No elbow bend.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "c08cde3b-7852-4dbb-abf2-1092ba6ee654",
+    "name": "Seated Cable Row",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Sit facing anchor point, feet braced, row handles to lower ribs. Squeeze scapulae at finish.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "21e88ca9-f0b2-42ae-9ef7-8f0d5bb96588",
+    "name": "Single-Arm Row",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "One hand and knee on bench, row dumbbell or band to hip with other arm. Squeeze at top.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "12f8e0c9-a7ea-4a4f-8a09-e0b5affe1295",
+    "name": "Skin the Cat",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Hard",
+    "description": "Hang from bar or rings, pike legs through to German hang. Return with control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "c597e0ad-c526-4310-98b5-db8b5c3bb9f1",
+    "name": "Stiff-Leg Deadlift",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Hinge at hips with minimal knee bend, lower weights to mid-shin, drive hips to stand. Hamstring and back.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1f588fe0-f74f-4524-b77a-e56cc27995b4",
+    "name": "Straight-Arm Pulldown",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Stand facing anchor, arms straight, pull hands from overhead to hips. Lats only, no elbow bend.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "f2cdf601-7272-42e8-82a3-e62cdb0ee75c",
+    "name": "Superman Hold",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Lie prone, extend arms and legs and lift all four limbs off floor. Hold.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "4e5c8548-e9e7-4044-a9f8-c996bfea827c",
+    "name": "Thoracic Extension",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Sit upright, hands behind head, extend upper back over a foam roller or the edge of a bench.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "119f811e-acca-4a90-98b0-3d7de7c195b8",
+    "name": "Y-T-W Raise",
+    "category": "strength",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Prone on floor, raise arms into Y, then T, then W position. Hits all three lower trap fibers.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9acfda03-3d50-41cc-bb2a-990688740043",
+    "name": "Ankle Hops",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Small rapid hops using only ankle plantarflexion, knees mostly straight. Builds ankle stiffness.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "842e30af-4098-4f06-b2f6-a42f8efe8435",
+    "name": "Box Jump",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Jump onto box or raised surface, land in squat position. Step or jump down.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "4bcebf95-7a05-4ba6-a547-ed044f315967",
+    "name": "Broad Jump",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "From standing, swing arms and jump as far forward as possible. Land balanced.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "05c61cf5-f18c-4657-84d1-bb28d4e0322f",
+    "name": "Broad Jump Series",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Hard",
+    "description": "Three consecutive broad jumps for maximum distance. Emphasizes horizontal power and landing.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "070c77aa-d70c-4970-a843-8009f8e3d5b2",
+    "name": "Cossack Squat",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Wide stance, shift weight fully to one side into deep squat while extending opposite leg out flat.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9f902712-76ae-4e53-82c5-2015efe212ad",
+    "name": "Depth Jump",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Hard",
+    "description": "Step off box, land and immediately jump as high as possible. Minimal ground contact time.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "87ad3543-f295-43b7-9c1b-115d8dc8d723",
+    "name": "Drop Squat",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "From standing drop explosively into deep squat position landing softly. Builds reactive strength.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "8d906cdf-79f4-41dd-8346-5aabb9feeb61",
+    "name": "Glute Bridge",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Lie on back knees bent, drive hips to ceiling squeezing glutes at top. Lower with control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "f62ff626-baba-4bb8-8c48-1a902dbbf4b6",
+    "name": "Hip Flexor March",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Standing, drive knees up to hip height alternately with control. Targets hip flexors and balance.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "e40fcee2-2b84-49a2-9eae-9dab917b741b",
+    "name": "Hip Thrust",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Shoulders on bench, hips hinged toward floor, drive hips to full extension squeezing glutes hard.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7261aa89-c0e4-4f71-aeb8-965d67fc6960",
+    "name": "Ice Skater",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Lateral bounds with exaggerated lean, trailing leg sweeps behind. Continuous side-to-side.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9bde7355-c557-4409-975d-d8198a7efe0e",
+    "name": "Jump Squat",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Squat to parallel, explode upward, land softly through full foot. Reset.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "84743714-6f72-4f51-90a5-8b68ecf76a1c",
+    "name": "Jumping Lunge",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Lunge, explode upward switching legs in air, land in opposite lunge. Alternate continuously.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "bb5756d3-78b7-47dd-9f03-3793f8bc91be",
+    "name": "Lateral Band Walk",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Band around ankles, take small steps sideways maintaining quarter-squat position throughout.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "050e9ed1-4113-4563-9937-3296ee541be5",
+    "name": "Lateral Bound",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Jump sideways off one foot, land on opposite foot. Control landing, pause, repeat other direction.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "6a9064a5-f729-4048-9768-f42a6028aaf2",
+    "name": "Lateral Lunge",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Step wide to one side, push hips back and bend that knee. Drive through heel back to standing.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9f4c25b4-49be-4918-91cf-d64c800418be",
+    "name": "Lunge Pulse",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Hold bottom of lunge, pulse up and down 2-3 inches. Isometric endurance in lunge position.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "3acb9489-cd25-4594-a86e-2475f13bd4b5",
+    "name": "Nordic Curl",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Hard",
+    "description": "Kneel with feet anchored, lower body toward floor with control. Use arms to return.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "2d35b578-e932-4857-b5b3-f1d52230356b",
+    "name": "Pistol Squat",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Hard",
+    "description": "Single leg squat to full depth with opposite leg extended forward. Stand back up.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "66f0ac4a-58cd-4f2c-b6ff-9a3da7898804",
+    "name": "Rear-Foot Elevated Split Squat",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Rear foot elevated on bench, front foot far forward. Deep lunge with upright torso.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "baf03798-1b41-4f6b-bdf0-5c6cf2fe3b19",
+    "name": "Relevé Hold",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Rise to toes on both feet, maintain balance and alignment. Lower slowly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "3bd50891-9729-4fb7-b91b-b090e9837721",
+    "name": "Reverse Lunge",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Step back onto toes, lower back knee toward floor. Drive through front foot to return. Controlled.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "661e0bf5-775a-4ad5-8b15-ea68d28ccc75",
+    "name": "Romanian Deadlift",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Stand tall, hinge at hips with soft knees lowering weights along legs until hamstring tension. Drive up.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1f4a520c-ecef-4143-973e-4eb20fa075e0",
+    "name": "Seated Calf Raise",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Seated, weight on knees, raise heels through full range of motion. Targets soleus specifically.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0fbb9968-feb9-42d1-9814-6eb2291584cf",
+    "name": "Single Leg Calf Raise",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Stand on one foot on edge of step, raise and lower heel through full range.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "447a5fc5-e6b5-45cd-b7e8-c0e3d66b2b35",
+    "name": "Single-Leg Box Jump",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Hard",
+    "description": "Jump onto box from one leg, land on same leg with control. Maximum single-leg power output.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7402aa9f-82dd-4d76-b1b8-7d4863cf0f65",
+    "name": "Single-Leg Glute Bridge",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Same as glute bridge with one leg extended. Full glute contraction on working side.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "02c3fef7-3955-4fe9-bf63-335de17c3519",
+    "name": "Skater Squat",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Hard",
+    "description": "Single-leg squat lowering back knee toward floor. Non-working leg trails behind, no support.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "b7df041f-d1dd-46fc-9d85-0cadf97160ee",
+    "name": "Split Squat",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Rear foot elevated, lower back knee toward floor. Drive through front heel.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "77576336-f51a-4b58-b934-e50ed87bb0e5",
+    "name": "Squat Hold",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Deep squat with feet flat, hold at bottom. Builds hip and ankle mobility alongside leg strength.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "e823a910-2847-47a3-ad94-df0707e78a7d",
+    "name": "Squat Jump to Tuck",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Hard",
+    "description": "Squat, jump and tuck knees to chest, land softly. Explosive power with body awareness.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "e96fdec1-7a73-4881-83b2-06ec0c70936f",
+    "name": "Standing Calf Raise",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Both feet on edge of step, lower heels below step level and raise to full tip-toe. Full range.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a38afc61-68ef-49e7-af07-38465f587e21",
+    "name": "Standing Hip Circle",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Stand on one leg, trace large circles with opposite knee. Hip mobility and single-leg stability.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "8e6b3ac2-e70b-4c60-b142-6d6589d8f499",
+    "name": "Step-Up",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Step onto a box or bench with one foot, drive through heel to stand on top. Step down controlled.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a8d0aac5-f66b-4dfb-9c2b-5cfe8fd43bbf",
+    "name": "Sumo Squat",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Wide stance with toes pointed out, squat deep while keeping chest tall and knees tracking toes.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "323fe4fc-3477-45ac-9c81-df4cac69267f",
+    "name": "Tempo Squat",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Three-second descent, one-second pause at bottom, one-second rise. Builds eccentric strength.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "73fc6331-6176-49cd-bdae-ed7832d333c1",
+    "name": "Terminal Knee Extension",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Band behind knee, slight knee bend, fully extend knee against band resistance. VMO focused.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "8980ee1c-98ee-46f6-9c37-421509bd5977",
+    "name": "Tuck Jump",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Jump and pull knees to chest at peak height. Land softly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "398218dc-8482-49ad-b3f3-d53652e4fb78",
+    "name": "Wall Sit",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Back flat on wall, thighs parallel to floor. Hold position.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "8ecea9a7-7d21-4f44-8b09-00fb60a23e9b",
+    "name": "Wall-Supported Pistol",
+    "category": "strength",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Use wall for light balance assist only while performing pistol squat. Wean off support over time.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0b931fae-b56a-4ec4-9bce-32e4d707ccb6",
+    "name": "Ab Wheel Rollout",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "From knees, roll wheel forward maintaining rigid torso, roll back. Never let hips drop.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a3084aa7-1a46-4025-b2b5-c82630039d2c",
+    "name": "Arch Body Hold",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Lie face down, lift arms and legs off the floor simultaneously. Hold and squeeze.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "8c806cff-e0e6-42dc-b42f-086fd77411e4",
+    "name": "Bicycle Crunch",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Alternate elbow to opposite knee in a pedaling motion. Full rotation each rep, no rushing.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "3b3e278a-04e8-4847-9b07-ea069a3d5371",
+    "name": "Bird Dog",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "On hands and knees, extend opposite arm and leg simultaneously. Hold 2 seconds. Keep hips level.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "b3b2df58-0f4b-4999-9cd4-213af7ab8443",
+    "name": "Boat Pose Hold",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Seated, legs straight at 45 degrees, arms parallel to floor. Full V-sit hold for time.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "782102c7-b9f4-4051-9b0e-6414b88ccf57",
+    "name": "Copenhagen Plank",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Side plank with top foot on elevated surface and bottom leg hanging. Adductor and core load.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "4253e92a-bb43-497d-bbdc-bada89e25d29",
+    "name": "Dead Bug",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Lie on back, arms and knees at 90 degrees, lower opposite arm and leg toward floor. Press back.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "8d7aa84d-7c80-4356-8556-f67e558bcf18",
+    "name": "Dragon Flag",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Lie on bench, grip behind head, raise body as one rigid unit. Lower slowly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "d0e98576-10ad-477d-ac4e-b0878f4284da",
+    "name": "Dragon Flag Negative",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Start horizontal on bench, lower slowly to floor maintaining rigid body. 5-second descent.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "ac8731db-99d4-42c0-aa5a-fc96f8926f5e",
+    "name": "Flutter Kick",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Lie on back, arms at sides, legs 6 inches off floor. Alternate small rapid kicks. Back stays flat.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1e8ac20f-0350-4c8c-968c-d65ca4155ff2",
+    "name": "Hanging Knee Raise",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Hang from bar, pull knees to chest with control. Lower slowly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "04668c6c-30e6-4278-a90d-e1886d6c7736",
+    "name": "Hanging L-Sit",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "From bar hang, maintain legs at 90 degrees (L position). Keep legs straight throughout.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0b9bca9b-aa3f-4318-9091-b7d3f23c1657",
+    "name": "Hanging Windshield Wiper",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Full rotation version — legs go from horizontal on one side, through vertical, to other side.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "05c40e84-8ea5-4307-a373-b751195086f6",
+    "name": "Hip Circles in Hollow",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Maintain hollow body position while making small circles with both legs together. Extreme core demand.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a8e4d3fc-e3a2-4137-9351-499b16c6cc60",
+    "name": "Hollow Body Hold",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Lie on your back, press lower back to floor, extend arms overhead and legs low. Hold tight.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "3bfde763-d8cc-4a76-82d9-04b744d43e7e",
+    "name": "Hollow Body Rocks",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "In hollow body position, rock forward and back maintaining the shape throughout.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "49fae35e-8d09-4fa2-94b7-788fede02684",
+    "name": "Hollow to Arch",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Lying on floor, alternate between hollow body and arch body position. Full spinal range.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "763d7135-7b5a-46b9-948f-ff6289ad69ab",
+    "name": "Jackknife",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Lie flat, simultaneously raise straight legs and upper body to meet in the middle. V position.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "650d43b6-e268-4d98-afbd-4d06fd9852ad",
+    "name": "L-Sit Hold",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "On parallettes or floor, press down through hands, lift legs parallel to ground. Hold.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "6adc4ed3-223f-490e-9b25-b0f5a3f48d44",
+    "name": "Long Lever Plank",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Forearm plank with arms extended further forward than usual. Increases lever arm difficulty.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1180d5b3-2914-4bd2-ae22-843a14a37ea9",
+    "name": "Pallof Press",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Band anchored at chest height to side, press arms straight ahead and return. Anti-rotation core.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "10d9db60-bb60-430a-ac7d-544602a62185",
+    "name": "Plank Hold",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Forearms and toes on floor, body in a straight line. Brace everything.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "ba9f05dc-0726-4898-adcb-72e74210253c",
+    "name": "Plank Reach",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "In forearm plank, extend one arm forward and hold 2 seconds. Alternate. Anti-rotation demand.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1beab890-c44c-4a7b-a04a-89bccb2b666c",
+    "name": "Plank Shoulder Tap",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "In push-up top position, tap opposite shoulder. Minimal hip rotation. Core stability under movement.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "27998c6d-834f-408c-ae62-9bc7f98e020a",
+    "name": "Plank to Downward Dog",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Alternate between push-up top position and downward dog, pressing through straight arms each time.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "4918ae52-f657-4446-974c-780a377498a6",
+    "name": "Reverse Crunch",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Lie on back, curl hips off floor bringing knees toward chest. Control the lower on the way down.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5b51639c-2f25-4391-89b1-a68febd0a1f2",
+    "name": "Russian Twist",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Seated with knees bent and feet raised, rotate torso side to side. Add weight for challenge.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "3d718019-9a4f-4dc0-a35f-21811c762aa9",
+    "name": "Scissor Kick",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Like flutter kick but with larger alternating cross-body leg movements. Keep lower back pressed down.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "6d4d97fd-ae1b-4a6a-bd36-0b2d1cef11a3",
+    "name": "Seated Leg Raise",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Sit on edge of bench, grip sides, raise straight legs to horizontal and lower. Strict form.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5a2218b1-cd49-4a68-b392-12bcb099bfb3",
+    "name": "Side Plank",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Forearm on floor, body in straight line sideways. Hold. Stack feet or stagger for stability.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a119a727-cc99-41ed-a9c1-dcc05edadfca",
+    "name": "Side Plank Hip Dip",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "In side plank, lower and raise hip repeatedly. Adds dynamic demand to lateral chain.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9db54a61-e7de-46b0-94ec-9579edc050c1",
+    "name": "Standing Ab Wheel",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Full standing rollout — roll all the way to floor and back up. Elite core strength required.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "67aa0257-c39b-451a-8931-757d6497c1b8",
+    "name": "Stir the Pot",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Forearms on stability ball in plank, trace small circles with elbows. Extreme anti-rotation demand.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "bdb3fbb1-9425-48bb-b500-f6b1f5cbbd89",
+    "name": "Straight-Leg Raise",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Lie flat, raise straight legs to vertical and lower slowly without touching floor. Back flat.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "d34f166e-71d8-4f06-afce-268b6217c92d",
+    "name": "Toes to Bar",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Hang from bar, keep legs straight and raise toes to touch the bar. Lower with control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "316a6dc0-8451-4772-a3da-0d011392a9bc",
+    "name": "Tuck Planche Hold",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "On hands, lean forward and tuck knees to chest off the ground. Hold.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "fe71f558-17f6-40e4-96a3-2e049e87405d",
+    "name": "Tuck Up",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "From lying flat, simultaneously tuck knees to chest and sit up. Return to lying with control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5c4cc061-92f7-4903-ac18-3d815e492445",
+    "name": "V-Up",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "From lying flat, simultaneously lift legs and torso to form a V shape. Lower with control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "e318b6b7-8489-423b-9a83-eecb3f373a7d",
+    "name": "Weighted Sit-up",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Full sit-up holding weight plate at chest. Controlled on the way down, powerful on the way up.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0c943d4e-63d8-46f2-a754-620f369f1227",
+    "name": "Windshield Wiper",
+    "category": "strength",
+    "muscle_group": "Core",
+    "difficulty": "Hard",
+    "description": "Hang from bar, raise legs to horizontal and rotate side to side like a windshield wiper.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "345f1396-35bc-4121-90de-ab197be462b7",
+    "name": "Alternating Lateral Raise",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Raise one arm at a time to side, lower with control before raising the other. Slower tempo.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "24edb913-7fb2-4489-9c49-dc1bcec4499f",
+    "name": "Arnold Press",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Start with palms facing you at shoulder height, press overhead rotating palms forward. Full range.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a93a45de-08fe-49ff-9688-f820883868e5",
+    "name": "Band Dislocate",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Wide grip on band, keeping arms straight, pass band over head and behind back and return.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "22d41681-e2d6-468a-b3a8-44220b3e600b",
+    "name": "Band Pull-Apart",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Hold band at chest width, pull apart to full extension behind body. Return slowly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "f90a229c-5077-4055-8a79-0f7d1fd41e4c",
+    "name": "Bear Crawl",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Hands and toes on floor, knees 1 inch off ground. Crawl forward maintaining position.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "cba8c258-0061-4dbc-bb3f-3b943617463e",
+    "name": "Bottoms-Up KB Press",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "Hold kettlebell upside down (bottom up), press overhead. Demands extreme shoulder stability.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "8ce01844-eaa3-424c-b092-536cc2a6519e",
+    "name": "Cable Face Pull",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Rope attachment at face height, pull to face with elbows high and wide. Rear delt and external rot.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "200cba3c-6a19-461d-a7d2-0c412686eaf9",
+    "name": "Cuban Press",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "External rotation at 90 degrees followed by overhead press. Full shoulder health movement.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "09a4c84e-2042-40f2-b6cf-04c4d2bde032",
+    "name": "External Rotation",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Elbow at 90 degrees by side or on surface, rotate forearm outward against band resistance.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "eda40128-2346-415e-91ff-1c1523b89c7f",
+    "name": "Freestanding Handstand Hold",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "Kick up and balance without wall support. Fingertip corrections, hollow body, active shrug.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "635f6356-fb78-4459-bcc6-73b06dd367a8",
+    "name": "Front Raise",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Arms at sides, raise one or both arms to shoulder height in front. Slow and controlled lowering.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "80f8c455-fec8-4cd7-bd1c-847f971e4999",
+    "name": "Half-Kneeling Press",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Half-kneeling position, press single weight overhead. Eliminates leg drive, isolates shoulder.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "2681bd89-98dc-47e2-bfbb-35a29d956557",
+    "name": "Handstand Kick-up Practice",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Kick up to wall handstand repeatedly, focusing on straight body and active shoulder shrug at top.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "ec2ee8ed-004a-4d79-bfbb-f92fbc28fd88",
+    "name": "Handstand Pirouette",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "In wall handstand, practice rotating 180 degrees by shifting weight and walking hands around.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "c50479e5-4891-47b8-be35-c8edb6d70e4d",
+    "name": "Handstand Push-up",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "Full freestanding or wall handstand push-up. Lower head to floor, press to full lockout.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "99105f89-daae-42ed-aa45-d3f3a0416c4c",
+    "name": "Handstand Shrug",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "In wall handstand, perform small shoulder shrugs (elevation and depression). Active shoulder work.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "94db360d-3142-489b-82eb-8ac985be14ff",
+    "name": "Handstand Walk",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "Walk on hands in a straight line. Keep body tight, steer with fingertips and shoulder shifts.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "6a1d48d5-362b-4c3a-8922-94ff5406cfb8",
+    "name": "Handstand Wall Hold",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "Kick up to handstand against wall, maintain straight body and active shrug.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "94290f70-32df-443e-a202-d15400499c68",
+    "name": "Internal Rotation",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Elbow at 90 degrees, rotate forearm inward against band resistance. For rotator cuff balance.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a4f9c388-13e7-49ac-9ce5-4f19750b46bd",
+    "name": "Kipping Swing",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "On bar, alternate between arch and hollow body in rhythmic kipping swing. Gymnastics conditioning.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5199f3a0-a78f-4630-a0d9-5b30e882887f",
+    "name": "Lateral Raise",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "With light weights or bands, raise arms to sides to shoulder height. Lower slowly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a078b688-86e4-4c84-8fd1-a068ecb9a706",
+    "name": "Overhead Hold Walk",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Hold weight directly overhead with locked elbow, walk for distance maintaining alignment.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "113c51ad-6b4f-4760-95ba-5998b43cf0d1",
+    "name": "Overhead Squat Hold",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Arms locked overhead, squat to depth maintaining vertical torso and active shoulders.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "c3b32193-f04b-4a9f-b344-19ef48c4098e",
+    "name": "Pike Shoulder Tap",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "In pike push-up position, tap opposite shoulder while maintaining balance.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5d588b6e-cf29-44d5-b615-6611ea0340de",
+    "name": "Prone W Raise",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Lie face down, arms in W shape (elbows bent, hands up), raise elbows off floor. Mid trap.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "3a5996d4-c0c2-44a6-acfe-8a4265212787",
+    "name": "Prone Y Raise",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Lie face down, raise arms to Y position squeezing shoulder blades. Lower slowly.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "30d7a8e3-212d-463d-a3c3-1651eb130086",
+    "name": "Push Press",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Small knee dip, then drive weight overhead using leg momentum. More load than strict press.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0fa9b40a-48e9-487a-8192-f296a23a7553",
+    "name": "Reverse Fly",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Hinge at hips, raise arms to sides squeezing rear delts. Counteracts internal rotation dominance.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "19e291ec-381a-40aa-9036-62ca481f04bf",
+    "name": "Ring Dip Support",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "Hold top of dip position on rings, rings turned out 45 degrees, maintain for time.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "dc2f3995-cce9-4379-871a-0d4cde740f09",
+    "name": "Ring Support Hold",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "Support hold above rings with arms locked, rings turned out. Foundation of ring gymnastics.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7fcd106c-2fd7-4277-a3d5-ed5d2d8e93fd",
+    "name": "Scapular Wall Slide",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Back against wall, slide arms up in W-to-Y pattern. Trains scapular upward rotation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0b9f5c24-d746-47c8-ab12-d0a1e23fd4fd",
+    "name": "Shoulder Press",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Press weight from shoulders to full lockout overhead. Full extension at top, controlled lowering.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "4b546d70-d122-435a-9b4f-71f1d765530b",
+    "name": "Single-Arm Landmine Press",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "One hand on end of bar in landmine, press at 45-degree angle overhead. Core and shoulder.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a61216b4-1915-4d17-8759-395d69017145",
+    "name": "Trap-3 Raise",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Lie at 45-degree angle on bench, raise arm in line with body angle. Lower trap strengthening.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "930c306f-6ca7-4135-a5d0-c073e58aaab3",
+    "name": "Upright Row",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Grip bar or bands at waist, pull to chin height with elbows flaring wide. Squeeze at top.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "b421cdf0-d30b-431a-abe9-f643ce29246b",
+    "name": "Wall Handstand Shoulder Touch",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "In wall handstand, shift weight and tap one shoulder. Alternate sides.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9122617a-ccba-4f89-ba92-1fe20ea8171d",
+    "name": "Wall Walk",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Start in push-up position feet near wall, walk feet up wall while walking hands toward wall.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "46d69dc8-1f4e-4f59-8272-703a7a923446",
+    "name": "Wall Walk Hold",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "Walk up to chest-to-wall handstand position and hold. Maximum handstand-specific shoulder load.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "ef18cdc8-0fa6-4222-a482-8a4e8fd3176a",
+    "name": "YTWL Raise",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Medium",
+    "description": "Prone, perform Y, T, W, and L raise positions in sequence. Full rotator cuff and trapezius circuit.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "c5f9e7ad-60a2-432c-8cb7-bc282e91c4da",
+    "name": "Z-Press",
+    "category": "strength",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "Seated on floor legs straight in front, press weight overhead. Eliminates any leg or back compensation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "67dbdf75-77d5-4685-b62b-28a080923208",
+    "name": "Active Wrist Pronation/Supination",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Elbow at 90°, actively rotate forearm through full pronation and supination range. Radioulnar joint activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "678d4b42-3204-4752-a923-adeece7f536d",
+    "name": "Elbow Flexor Stretch",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Extend arm fully, rotate palm up, gently press wrist toward floor. Bicep and elbow flexor stretch.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "88baee91-e0c9-44ba-a3ff-b44857d1d078",
+    "name": "Finger Tendon Glide",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Move fingers through: straight, hook fist, full fist, straight knuckle fist. Tendon gliding exercises for finger health.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7cd391a5-e234-4ec8-a93d-86e70e5474ca",
+    "name": "Fist Push-up Wrist Warm-up",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Push-ups on fists to keep wrist neutral. Wrist conditioning without full extension load.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "24abab80-aefc-413b-8ccb-a4d4ef06cb27",
+    "name": "Grip Squeeze (towel)",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Squeeze a rolled towel as hard as possible for 5 seconds, relax. Grip strengthening and forearm endurance.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "765d3f73-31d1-41e4-949f-9e267ce6a7a8",
+    "name": "Hammer Curl (light prehab)",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Neutral grip curl with very light load. Elbow tendon conditioning. Brachioradialis activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "07ab504a-0012-4866-8480-1c676a2062b7",
+    "name": "Pinch Grip Holds",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Pinch a plate or book between thumb and fingers, hold for time. Pinch strength and thumb tendon conditioning.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "c29b7013-7d53-4f7d-b7f1-df9dca3bdfc5",
+    "name": "Reverse Wrist Curl",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Forearms on surface, wrists hanging off edge, extend wrist against gravity. Wrist extensor strengthening.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "158f0a99-5eb6-4dd1-9776-635c243d2d14",
+    "name": "Rice Bucket — Finger Extensions",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Plunge hand into rice bucket, open fingers against resistance. Finger extensor strengthening for grip balance.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "64ddb914-dfa5-4b47-a15f-57e5550797b3",
+    "name": "Tricep Cross-Body Stretch",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Raise arm, bend elbow behind head, use other hand to gently press elbow. Tricep and elbow mobility.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "886cd302-cf3b-4d13-95d1-6988d0d037b7",
+    "name": "Wrist CARs",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Controlled articular rotations of the wrist — trace the largest circle possible in both directions under tension. Essential for gymnastics.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "2b313dea-f40d-4ec8-b4cd-8773e186a075",
+    "name": "Wrist Extensor Stretch",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Arm extended, palm down, gently press fingers toward floor. Hold. Forearm extensor and wrist mobility.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "2eebba13-44f2-4a4c-b162-d3fc10ba3f49",
+    "name": "Wrist Flexor Stretch",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Arm extended, palm up, gently press fingers back toward forearm. Hold at point of tension. Forearm flexor mobility.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "53f017b2-303c-4c92-a557-95aa8bb55d05",
+    "name": "Wrist ISOMETRIC Loading",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "Press palm against wall in flexion, extension, and lateral deviation. Hold each direction. Pain-free wrist loading protocol.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "62b71e07-3d5a-4209-8d1c-8d1b0a22b45e",
+    "name": "Wrist Weight Shifts",
+    "category": "prehab",
+    "muscle_group": "Arms",
+    "difficulty": "Easy",
+    "description": "On all fours, slowly shift weight forward onto fingertips and back. Gradual wrist loading for conditioning.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "ce5a3e08-f21f-4ff6-a0a9-a20ea924e801",
+    "name": "Bird Dog (slow prehab)",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "On all fours, extend opposite arm and leg with 3-second hold at top. Deep multifidus and lumbar stabilizer activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a2a3a432-1671-4da9-b570-914538784c47",
+    "name": "Cat-Cow",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "On all fours, alternate between arching and rounding the spine with full breath. Spinal mobility and segmental control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9bbc87d0-e91e-4cb3-9a98-df1349c411c1",
+    "name": "Child's Pose",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Kneel, sit back on heels, reach arms overhead on floor. Hold. Thoracic spine and lat stretch with gentle traction.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7a4f9fa9-1a06-49a8-8862-1c24dca83223",
+    "name": "Face Pull (prehab)",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Rope at face height, pull to face with elbows high. Posterior shoulder chain activation protecting the thoracic spine.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "e9979d14-034f-4191-808b-52a6d5216d8c",
+    "name": "Hip Hinge Pattern",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Hinge at hips with flat back, dowel touching head/back/tailbone. Teaches proper loading mechanics protecting lumbar spine.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "06cd68e7-9dd8-4699-b360-4e11f52d4b22",
+    "name": "Lumbar ISOMETRIC Hold",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Prone on elbows (sphinx position), gently press pubic bone down, feel lower back muscles engage. Lumbar stabilizer activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "44f292e9-aefb-4389-954d-dab23eed84f5",
+    "name": "McGill Curl-Up",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "One knee bent, hands under lumbar, partial sit-up maintaining neutral spine. Spine-sparing core stability drill.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7264071d-d58a-4726-ab64-d3485bf72be0",
+    "name": "Pallof Press Anti-Rotation",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Medium",
+    "description": "Band anchored at chest height, press straight ahead and return. Trains spine to resist rotation under load.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0f85f4c2-a507-42ff-85ac-e80538d375bc",
+    "name": "Prone Press-Up",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Lie face down, place hands under shoulders, press upper body up while hips stay down. McKenzie extension for disc health.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "cddaa8b4-80ae-421f-bc59-c90b742cb1a4",
+    "name": "Quadruped Hip Extension",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "On all fours, extend one leg back to hip height maintaining neutral pelvis. Glute activation protecting lower back.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "d165741d-5422-4594-ae1d-719e4e00ba28",
+    "name": "Scapular Retraction Hold",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Squeeze shoulder blades together and hold for 5 seconds. Mid-trap activation essential for thoracic spine posture.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "58e4761b-06f7-41aa-80f7-884feae7d4fa",
+    "name": "Side-Lying Thoracic Rotation",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Lie on side knees bent, top arm sweeps overhead to opposite side. Thoracic rotation with rib cage opening.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "59151aa8-077d-4a60-a56d-e04e89e493d6",
+    "name": "Supine Spinal Twist",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Lie on back, bring one knee across body while keeping shoulders flat. Lumbar rotation and paraspinal muscle release.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "76facea7-8148-425c-949e-009731abd873",
+    "name": "Thoracic Extension over Foam Roller",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "Sit with roller behind mid-back, support head, extend over roller one segment at a time. Thoracic mobility.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1cb49aaa-dfae-4c34-9319-f253fe5c5a84",
+    "name": "Thread the Needle",
+    "category": "prehab",
+    "muscle_group": "Back",
+    "difficulty": "Easy",
+    "description": "On all fours, thread one arm under body reaching to opposite side. Thoracic rotation mobility essential for gymnastics.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "e774626c-0a5b-4213-90b6-0990779f5cb2",
+    "name": "Ankle Alphabet",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Draw the alphabet with your foot making shapes as large as possible. Full ankle range of motion activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5ee57c10-7729-4061-99fe-89cd7c1b0079",
+    "name": "Ankle CARs",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Controlled articular rotations of the ankle in full available range under tension. Essential before any jumping or tumbling.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "072d43c0-027c-4fce-9838-224b13dfd6e7",
+    "name": "Ankle Dorsiflexion Mobilisation",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Half-kneeling at wall, push knee over toes as far as possible. Ankle dorsiflexion mobility crucial for landing mechanics.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9c7abc48-b588-479a-9a32-1ffb05ea4205",
+    "name": "Calf Raise Eccentric",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Rise on both feet, lower on one foot over 5 seconds. Soleus and Achilles tendon loading. Injury prevention for jumpers.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1a7312ec-25ab-4e56-a111-b62800af12ff",
+    "name": "Clamshell",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Side-lying, knees bent, rotate top knee up like a clamshell. Glute medius and external hip rotator activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "6f7be935-cba4-4cc5-91a9-d19a5e55cba7",
+    "name": "Couch Stretch",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Rear foot elevated on wall in lunge, drive hips forward. Hip flexor and quad stretch. Corrects anterior pelvic tilt.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "12401164-34b8-4425-94b1-51803e7ee15f",
+    "name": "Glute Bridge ISOMETRIC Hold",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Bridge up and hold with maximal glute squeeze. Gluteal activation and hip extension pattern reinforcement.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "753f494a-0dc0-421a-9b36-3459c4e30d64",
+    "name": "Hip 90/90 Stretch",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Sit with both hips at 90°, rotate between positions. Hip internal and external rotation mobility for healthy knee alignment.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7a12efbd-caae-4d92-b817-07e6de00229a",
+    "name": "Hip FABER Stretch",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Lie on back, cross ankle over opposite knee, gently press knee down or pull shin toward chest. Piriformis and hip external rotator.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "1c4c2007-b43f-463a-a06a-393ac3ef79df",
+    "name": "Lateral Band Walk (prehab)",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Mini-band at ankles, quarter-squat, step side to side. Gluteus medius activation for knee valgus prevention.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "8f90ea05-dd36-4dc7-8113-906e6feddb42",
+    "name": "Nordic Curl Negative (assisted)",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Medium",
+    "description": "Use a band for assistance, lower body toward floor over 5 seconds. Hamstring tendon conditioning essential for gymnastics.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "055be883-095c-4b45-95f0-66536059ddbe",
+    "name": "Pigeon Stretch",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Front shin across body, extend rear leg, hold. Deep hip external rotator and glute stretch. Protects the hip joint.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5d5dcd6c-5a6d-4e13-89d2-79855c731f32",
+    "name": "Single-Leg Balance Eyes Closed",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Stand on one leg, close eyes, hold stable. Proprioception training for ankle and knee joint position sense.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5201af16-1dfd-4ef3-a82c-aa32e052c6cb",
+    "name": "Step-Down (slow eccentric)",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Stand on step, lower opposite foot to tap floor over 5 seconds. Single-leg eccentric quad control for knee health.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a2d40363-f0bd-442f-9efe-57215e3a743e",
+    "name": "Terminal Knee Extension (prehab)",
+    "category": "prehab",
+    "muscle_group": "Legs",
+    "difficulty": "Easy",
+    "description": "Band behind knee, slight bend, extend against band. VMO activation drill for knee stability and patellar tracking.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "eec59dd6-c4ba-49ef-8fa7-ff71611ba7c5",
+    "name": "Abdominal Bracing",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Stand or lie, draw in navel then brace abs as if about to be punched. Hold 5 seconds. Teaches transverse abdominis activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "af1452ea-a149-40da-b791-514b266faadc",
+    "name": "Copenhagen Short Lever",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Side plank with lower knee on bench (not foot), easier lever. Adductor and lateral core loading for groin protection.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5301eb30-3b3e-4839-949a-c82d009eda37",
+    "name": "Dead Bug (prehab)",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Lie on back, arms and knees at 90°, lower opposite arm and leg with 5-second count. Maintain lower back flat throughout. Deep core stability.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "d61999e2-3450-4d29-acab-a04eab104aec",
+    "name": "Diaphragmatic Breathing",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Lie on back, one hand on chest one on belly. Breathe so only belly hand rises. Diaphragm and deep core reset.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "632e3c3d-e407-4119-8d6c-c3a1f4c50979",
+    "name": "Hip Flexor Activation",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Lie on back, press one hand against raised knee for 5 seconds, other leg straight. Psoas and hip flexor activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7f17d8ce-abf7-4378-a1bd-f3710310b5a5",
+    "name": "Hollow Body Progression",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Progress from knees tucked to legs extended as strength allows. Build hollow body position incrementally without compensation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "038e14f9-5d14-4dc8-8531-4c7ff2e496a9",
+    "name": "McGill Big 3 — Bird Dog",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "From all fours, extend opposite arm/leg, hold 10 seconds, sweep under body. The complete McGill bird dog protocol.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "fded360f-7d3a-4edb-98a7-3599b206a811",
+    "name": "McGill Big 3 — Curl-Up",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Partial curl-up with hands under lumbar. Spine neutral throughout. One of McGill's essential spine stability exercises.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "86f3ecef-7cc7-4018-b433-29e6edac289b",
+    "name": "McGill Big 3 — Side Plank",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Side plank held for progressively longer durations. Quadratus lumborum and lateral spine stabilizer activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "c0d7938c-9d1d-4e96-adea-f1260a9c5013",
+    "name": "Plank with Breathing",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Hold plank and take 5 full breaths without losing position. Teaches maintaining brace under respiratory load.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "728178fc-34de-4788-8450-df59d7e5f5b7",
+    "name": "Reverse Crunch (slow)",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Curl hips to chest with 3-second lift and 3-second lower. Lower back stays in contact with floor throughout.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "f6faa505-1ea9-4983-baec-a939a888a8ab",
+    "name": "Segmental Roll-Down",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Stand tall, tuck chin, roll down one vertebra at a time reaching hands toward floor. Spinal mobility and segmental control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "677fe565-fd0a-4f20-98e9-19fe91fe15d8",
+    "name": "Stir the Pot (light)",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Medium",
+    "description": "Forearms on stability ball, make small circles. Begin with small range, build over time. Rotary stability under spinal load.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "5308744c-200b-44c2-bd30-050aba5db33d",
+    "name": "Suitcase Carry",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Hold weight in one hand at side, walk maintaining upright posture. Anti-lateral flexion core stability under load.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "669c2fae-fe10-4993-9b4d-9e6088ca86c9",
+    "name": "Supine Leg Lowering",
+    "category": "prehab",
+    "muscle_group": "Core",
+    "difficulty": "Easy",
+    "description": "Both legs vertical, lower one slowly to just above floor. Back flat. Tests and builds lumbo-pelvic control.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "59515037-c6d1-47ed-9e2a-2cc3854ad839",
+    "name": "Band External Rotation (90°)",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Elbow at 90° at shoulder height, rotate forearm back against band resistance. Slow and controlled. Key rotator cuff activator before overhead work.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "a408d5df-e9db-4197-a958-267a2c71a558",
+    "name": "Band Internal Rotation",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Elbow at 90° at side, rotate forearm inward against band. Balance to external rotation work. Essential for shoulder health.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "d1fee693-0e7d-4118-a283-f115864a845d",
+    "name": "Band Pull-Apart (prehab)",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Hold band at chest width with straight arms, pull apart to full extension. Rear delt and external rotator activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "af6f206e-97ba-4ad1-a0c8-9461778087b3",
+    "name": "Cross-Body Shoulder Stretch",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Pull one arm across chest with opposite hand, hold at point of tension. Posterior shoulder and rotator cuff mobility.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "684d2dc8-84c3-4c9e-9690-21fad4eae104",
+    "name": "Cuban Press",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "From hang position, externally rotate to press overhead. Full shoulder health movement combining ER and press in one pattern.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "401e6f7d-c353-493a-b39f-9135b25fac4c",
+    "name": "Doorway Chest Stretch",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Stand in doorway, place forearms on frame, lean forward until stretch is felt in chest and front shoulder. Anterior shoulder mobility.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "da71e51f-23d5-4d7a-b43a-21b39ca640d5",
+    "name": "GIRD Stretch",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Glenohumeral internal rotation deficit stretch — lie on side, shoulder at 90°, gently press wrist toward floor. Essential for throwing athletes.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "889512e9-0e93-4557-973f-17c871b01406",
+    "name": "Handstand Shoulder Shrug (prehab)",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Hard",
+    "description": "In wall handstand, perform small rhythmic shoulder shrugs (elevation and depression). Active shoulder end-range loading.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7a34d02c-da51-41b1-94b3-4c4c729890ed",
+    "name": "Overhead Banded Distraction",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Band anchored low, place around wrist, raise arm overhead, allow band to gently distract the shoulder joint. Capsular mobility.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9d4f22a7-5c0e-4182-a60d-12604279e76c",
+    "name": "Prone T Raise (prehab)",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Lie face down, raise arms to T (shoulder height) with thumbs up. Rear deltoid and mid trapezius activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "758c43d5-208a-4d24-94ce-8d54742c96bd",
+    "name": "Prone W Raise (prehab)",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Lie face down, arms in W shape (elbows bent, hands up), raise off floor squeezing mid back. Lower trap focused.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "0d4c11c5-602b-4742-ac3c-6c1d4d452238",
+    "name": "Prone Y Raise (prehab)",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Lie face down, raise arms to Y position with thumbs up. Light load only. Lower trapezius activation for shoulder stability.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "473aef54-f1e8-4ff6-99c3-2f991f745fe1",
+    "name": "Rotator Cuff ISOMETRIC",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Press hand against wall at 90° elbow in each rotation direction. Hold 5 seconds each. Pain-free rotator cuff loading.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "e2bc163a-8592-4ccb-9d73-d15133e178c5",
+    "name": "Scapular Push-up (prehab)",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "In push-up top position, alternate between protracting (pushing scapulae apart) and retracting. Serratus anterior activation.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "910da274-9e08-4117-be6a-0eb8b020567c",
+    "name": "Scapular Wall Slide",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Back flat on wall, arms in W position, slide arms overhead into Y while maintaining wall contact. Trains scapular upward rotation pattern.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "f00cb0a9-95ef-4142-aeb0-52a0b00f413d",
+    "name": "Shoulder CARs",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Controlled articular rotations — trace the largest circle possible with your shoulder while maintaining tension. Go slow, feel the edge of your range.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "9f66d521-7d5c-4040-a78d-4dbba3ef6213",
+    "name": "Shoulder Flexion Wall Walk",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Stand facing wall, walk fingers up wall as high as possible, hold briefly. Shoulder flexion range of motion.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "370d221a-fba7-4b24-b3bc-c9b36b36cec1",
+    "name": "Shoulder Pendulum",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Lean forward, let arm hang freely, make small circles with gravity assisting. Joint decompression and gentle mobility warm-up.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "2e8227d3-f9c7-4b90-b0fe-0f5ba06ddf1f",
+    "name": "Sleeper Stretch",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Lie on side on affected shoulder, bend elbow 90°, use other hand to gently press wrist toward floor. Posterior capsule stretch.",
+    "is_custom": false,
+    "coach_id": null
+  },
+  {
+    "id": "7f894008-0b4a-4722-93da-8c9696e35974",
+    "name": "Wall Angels",
+    "category": "prehab",
+    "muscle_group": "Shoulders",
+    "difficulty": "Easy",
+    "description": "Stand with back flat on wall, arms overhead in Y, slowly bring elbows down to sides maintaining wall contact. Scapular control.",
+    "is_custom": false,
+    "coach_id": null
+  }
+]

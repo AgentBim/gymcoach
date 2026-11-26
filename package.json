@@ -6,7 +6,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:media": "node scripts/media/test-schema.mjs && node scripts/media/test-upload.mjs && node scripts/media/test-player-policy.mjs",
+    "media:prepare": "node scripts/media/prepare-import.mjs"
+
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -15,6 +18,7 @@
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.8",
     "vitest": "^2.1.9"
