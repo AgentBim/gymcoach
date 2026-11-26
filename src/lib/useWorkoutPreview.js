@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { hydrateWorkoutMedia } from './exerciseMedia'
 
 // Fetches a workout plus its main exercises and prehab list, read-only —
 // shared by the athlete portal's full-page preview and the coach-side
@@ -25,11 +26,12 @@ export function useWorkoutPreview(workoutId, draftWorkout = null) {
       supabase.from('workouts').select('*').eq('id', fetchId).single(),
       supabase.from('workout_exercises').select('*, exercises(*)').eq('workout_id', fetchId).order('position'),
       supabase.from('workout_prehab').select('*, exercises(*)').eq('workout_id', fetchId).order('position'),
-    ]).then(([{ data: w }, { data: ex }, { data: pre }]) => {
+    ]).then(async ([{ data: w }, { data: ex }, { data: pre }]) => {
+      const media = await hydrateWorkoutMedia(ex || [], pre || [])
       if (cancelled) return
       setWorkout(w)
-      setExercises(ex || [])
-      setPrehabExercises(pre || [])
+      setExercises(media.exercises)
+      setPrehabExercises(media.prehab)
       setLoading(false)
     })
 

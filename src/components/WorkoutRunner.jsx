@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import ExerciseMedia from './ExerciseMedia'
 import { MUSCLE_COLORS, EMOJI_MAP } from '../lib/theme'
 
 const EMOJIS = [
@@ -292,6 +293,7 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', textDecoration: isDone ? 'line-through' : 'none' }}>{ex?.name}</div>
                       <div style={{ fontSize: 11, color: 'rgba(93,217,154,.8)', marginTop: 1 }}>{[sets, reps].filter(Boolean).join(' ')}</div>
+                      <ExerciseMedia exercise={ex} compact />
                     </div>
                   </div>
                 )
@@ -350,6 +352,7 @@ export function WorkoutRunner({ workout, exercises, prehabExercises = [], onSubm
                     <div style={{ fontSize: 13, color: 'var(--mu)', lineHeight: 1.6, marginBottom: isTimed && !isDone && !mainLocked ? 10 : 0 }}>
                       {ex?.description}
                     </div>
+                    <ExerciseMedia exercise={ex} compact disabled={mainLocked} />
 
                     {isTimed && !isDone && !mainLocked && (
                       <>
