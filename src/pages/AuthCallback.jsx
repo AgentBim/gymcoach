@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { coachReturnTo } from '../lib/returnTo'
 import { AuthShell, AuthMessage } from '../components/AuthShell'
 
 // Where Google sends people back to. The two portals share one auth pool, so
@@ -17,7 +18,7 @@ export default function AuthCallback() {
 
   useEffect(() => {
     let done = false
-    const home = role === 'athlete' ? '/athlete/login' : '/login'
+    const home = role === 'athlete' ? '/athlete/login' : `/login?next=${encodeURIComponent(coachReturnTo(params.get('next')))}`
     const bounce = message => { done = true; navigate(home, { replace: true, state: { error: message } }) }
 
     // Google/Supabase report problems (access_denied, cancelled consent) in the
@@ -38,7 +39,7 @@ export default function AuthCallback() {
         navigate(home, { replace: true, state: { error: COACH_ON_ATHLETE } })
       } else {
         // An account that is both (shouldn't happen) is treated as the coach it was asked to be.
-        if (coachRow) { navigate('/today', { replace: true }); return }
+        if (coachRow) { navigate(coachReturnTo(params.get('next')), { replace: true }); return }
         await supabase.auth.signOut()
         navigate(home, { replace: true, state: { error: athleteRow ? ATHLETE_ON_COACH : 'We couldn’t find an account for that Google login. Try again.' } })
       }

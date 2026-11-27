@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { createBrowserRouter, createRoutesFromElements, RouterProvider, Route, Navigate, useParams } from 'react-router-dom'
 import { AuthProvider } from './hooks/useAuth'
 import { AthleteAuthProvider } from './hooks/useAthleteAuth'
+import { useAuth } from './hooks/useAuth'
 import ProtectedRoute from './components/ProtectedRoute'
 import ProtectedAthleteRoute from './components/ProtectedAthleteRoute'
 import Login from './pages/Login'
@@ -39,12 +40,20 @@ function Redirect({ to }) {
 
 const guard = el => <ProtectedRoute>{el}</ProtectedRoute>
 
-export default function App() {
-  return (
-    <AuthProvider>
-      <AthleteAuthProvider>
-        <BrowserRouter>
-          <Routes>
+function WorkoutBuilderRoute() {
+  const { id } = useParams()
+  const { user } = useAuth()
+  return <WorkoutBuilder key={`${user?.id}:${id || 'new'}`} />
+}
+
+function CustomExerciseRoute() {
+  const { id } = useParams()
+  const { user } = useAuth()
+  return <CustomExercise key={`${user?.id}:${id || 'new'}`} />
+}
+
+const router = createBrowserRouter(createRoutesFromElements(<>
+
             <Route path="/login" element={<Login />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -65,11 +74,11 @@ export default function App() {
             <Route path="/plan/programs/new" element={guard(<ProgramBuilder />)} />
             <Route path="/plan/programs/:id" element={guard(<ProgramBuilder />)} />
             <Route path="/plan/workouts" element={guard(<Workouts />)} />
-            <Route path="/plan/workouts/new" element={guard(<WorkoutBuilder />)} />
-            <Route path="/plan/workouts/:id/edit" element={guard(<WorkoutBuilder />)} />
+            <Route path="/plan/workouts/new" element={guard(<WorkoutBuilderRoute />)} />
+            <Route path="/plan/workouts/:id/edit" element={guard(<WorkoutBuilderRoute />)} />
             <Route path="/plan/exercises" element={guard(<Library />)} />
-            <Route path="/plan/exercises/new" element={guard(<CustomExercise />)} />
-            <Route path="/plan/exercises/:id/edit" element={guard(<CustomExercise />)} />
+            <Route path="/plan/exercises/new" element={guard(<CustomExerciseRoute />)} />
+            <Route path="/plan/exercises/:id/edit" element={guard(<CustomExerciseRoute />)} />
 
             {/* History is folded into the Athlete hub (feedback, week) and Today (completed). */}
             <Route path="/history" element={<Navigate to="/today" replace />} />
@@ -104,9 +113,9 @@ export default function App() {
             </Route>
 
             <Route path="/" element={<Navigate to="/today" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </AthleteAuthProvider>
-    </AuthProvider>
-  )
+
+</>))
+
+export default function App() {
+  return <AuthProvider><AthleteAuthProvider><RouterProvider router={router} /></AthleteAuthProvider></AuthProvider>
 }

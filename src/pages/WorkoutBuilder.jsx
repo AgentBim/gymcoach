@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -7,12 +7,16 @@ import Layout from '../components/Layout'
 import PlanTabs from '../components/PlanTabs'
 import ExerciseMedia from '../components/ExerciseMedia'
 import { hydrateExerciseMedia } from '../lib/exerciseMedia'
+import UnsavedChanges from '../components/UnsavedChanges'
+import { CollectionSkeleton, CollectionStatus } from '../components/CollectionLoading'
+import { useCollectionLoad } from '../hooks/useCollectionLoad'
 import AIGeneratorModal from '../components/AIGeneratorModal'
 import { MUSCLE_COLORS } from '../lib/theme'
 import { Button, Card, Chip, Dialog, EmptyState, Icon, Label, Pill, PillRow, SearchBox, UndoToast } from '../components/ui'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const MUSCLE_GROUPS = GROUPS.slice(1)
+const EMPTY_EXERCISES = []
 
 const isTimed = it => !it.reps && !!it.duration_seconds
 const amount = it => (isTimed(it) ? it.duration_seconds : it.reps)
@@ -43,7 +47,7 @@ function randomPick(all, count = 6) {
 }
 
 function Stepper({ label, value, onDown, onUp, unit, suffix = '' }) {
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile(1279)
   const btn = { width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, border: '1px solid var(--br2)', borderRadius: 8, background: 'transparent', color: 'var(--tx)', fontSize: 18, cursor: 'pointer', lineHeight: 1 }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
@@ -61,12 +65,18 @@ export default function WorkoutBuilder() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile(1279)
+  const [params] = useSearchParams()
+  const isPhone = useIsMobile()
+  const incomingId = params.get('exercise')
+  const initialized = useRef(false)
+  const appliedIncoming = useRef(false)
+  const [incomingError, setIncomingError] = useState('')
+
 
   const [workoutId, setWorkoutId] = useState(id || null)
   const [sourceProgram, setSourceProgram] = useState(null)
   const [name, setName] = useState('')
-  const [allExercises, setAllExercises] = useState([])
   const [selected, setSelected] = useState([])
   const [prehab, setPrehab] = useState([])
   const [isAi, setIsAi] = useState(false)
@@ -83,34 +93,58 @@ export default function WorkoutBuilder() {
   const [expanded, setExpanded] = useState(null)
   const [snapshot, setSnapshot] = useState(null)
   const [toast, setToast] = useState('')
+  const revision = useRef(0)
 
-  useEffect(() => {
-    supabase.from('exercises').select('*')
-      .or(user ? `coach_id.is.null,coach_id.eq.${user.id}` : 'coach_id.is.null')
-      .order('muscle_group').order('name')
-      .then(async ({ data }) => setAllExercises(await hydrateExerciseMedia(data || [])))
-  }, [user])
-
-  useEffect(() => { if (id) fetchWorkout() }, [id])
-
-  async function fetchWorkout() {
-    const { data } = await supabase.from('workouts')
+  const loadExercises = useCallback(async signal => {
+    const { data, error } = await supabase.from('exercises').select('*')
+      .or('coach_id.is.null,coach_id.eq.' + user.id)
+      .order('muscle_group').order('name').abortSignal(signal)
+    if (error) throw error
+    return hydrateExerciseMedia(data || [])
+  }, [user.id])
+  const exerciseLoad = useCollectionLoad(user.id, loadExercises, EMPTY_EXERCISES)
+  const allExercises = exerciseLoad.data
+  const loadWorkout = useCallback(async signal => {
+    if (!id) return null
+    const { data, error } = await supabase.from('workouts')
       .select('*, workout_exercises(*, exercises(*)), workout_prehab(*, exercises(*))')
-      .eq('id', id).single()
-    if (!data) return
+      .eq('id', id).single().abortSignal(signal)
+    if (error) throw error
+    if (!data) throw new Error('Workout unavailable')
     const hydrated = await hydrateExerciseMedia([...(data.workout_exercises || []), ...(data.workout_prehab || [])].map(r => r.exercises).filter(Boolean))
     const byId = new Map(hydrated.map(e => [e.id, e]))
-    const conv = rows => (rows || []).sort((a, b) => a.position - b.position)
-      .map(r => ({ exercise: byId.get(r.exercises?.id) || r.exercises, sets: r.sets, reps: r.reps || '', duration_seconds: r.duration_seconds || '', rest_seconds: r.rest_seconds }))
+    const conv = rows => [...(rows || [])].sort((a, b) => a.position - b.position)
+      .filter(r => r.exercises)
+      .map(r => ({ exercise: byId.get(r.exercises.id) || r.exercises, sets: r.sets, reps: r.reps || '', duration_seconds: r.duration_seconds || '', rest_seconds: r.rest_seconds }))
+    return { ...data, main: conv(data.workout_exercises), prehab: conv(data.workout_prehab) }
+  }, [id])
+  const workoutLoad = useCollectionLoad(user.id + ':' + (id || 'new'), loadWorkout, null)
+  useEffect(() => {
+    if (!workoutLoad.hasData || initialized.current) return
+    initialized.current = true
+    const data = workoutLoad.data
+    if (!data) return
     setName(data.name)
     setIsAi(!!data.is_ai_generated)
     setSourceProgram(data.source_program_id || null)
-    setSelected(conv(data.workout_exercises))
-    setPrehab(conv(data.workout_prehab))
+    setSelected(data.main)
+    setPrehab(data.prehab)
     setSaved(true)
-  }
+  }, [workoutLoad.hasData, workoutLoad.data])
+  useEffect(() => {
+    if (!incomingId || appliedIncoming.current || !workoutLoad.hasData || !exerciseLoad.hasData) return
+    appliedIncoming.current = true
+    const exercise = allExercises.find(e => e.id === incomingId)
+    if (!exercise) { setIncomingError('That exercise is no longer available. Choose another from the library.'); return }
+    const list = catOf(exercise) === 'prehab' ? 'prehab' : 'main'
+    const existing = list === 'prehab' ? workoutLoad.data?.prehab : workoutLoad.data?.main
+    if (existing?.some(it => it.exercise.id === incomingId)) { setToast(exercise.name + ' is already in this workout.'); return }
+    ;(list === 'prehab' ? setPrehab : setSelected)(items => items.some(it => it.exercise.id === incomingId) ? items : [...items, toItem(exercise)])
+    setDirty(true); setSaved(false)
+    setToast(exercise.name + ' added. Save the workout to keep it.')
+  }, [incomingId, workoutLoad.hasData, workoutLoad.data, exerciseLoad.hasData, allExercises])
 
-  const touch = fn => { fn(); setDirty(true); setSaved(false) }
+  const touch = fn => { revision.current++; fn(); setDirty(true); setSaved(false) }
 
   const inMain = useMemo(() => new Set(selected.map(s => s.exercise.id)), [selected])
   const inPrehab = useMemo(() => new Set(prehab.map(s => s.exercise.id)), [prehab])
@@ -123,7 +157,7 @@ export default function WorkoutBuilder() {
   const suggest = allExercises.filter(e => catOf(e) === 'prehab' && groups.includes(e.muscle_group) && !inPrehab.has(e.id)).slice(0, 4)
   const secs = selected.reduce((a, it) => a + it.sets * (40 + it.rest_seconds), 0) + prehab.reduce((a, it) => a + it.sets * (30 + it.rest_seconds), 0)
   const minutes = Math.round(secs / 60)
-  const ready = !!name.trim() && selected.length > 0
+  const ready = !!name.trim() && selected.length > 0 && workoutLoad.hasData && (!incomingId || exerciseLoad.hasData)
 
   function addFromLibrary(e) {
     if (tab === 'strength') { if (!inMain.has(e.id)) touch(() => setSelected(s => [...s, toItem(e)])) }
@@ -160,21 +194,24 @@ export default function WorkoutBuilder() {
   }
 
   async function save() {
-    if (!ready) return
+    if (!ready || saving) return
     setSaving(true); setError('')
+    const savingRevision = revision.current
     const shape = (list) => list.map((s, i) => ({
       exercise_id: s.exercise.id, position: i, sets: Number(s.sets) || 3,
       reps: s.reps ? Number(s.reps) : null, duration_seconds: s.duration_seconds ? Number(s.duration_seconds) : null,
-      rest_seconds: Number(s.rest_seconds) || 30,
+      rest_seconds: Number(s.rest_seconds) || 0,
     }))
-    const { data, error: rpcError } = await supabase.rpc('save_workout', {
-      p_workout_id: workoutId, p_name: name.trim(), p_is_ai_generated: isAi, p_exercises: shape(selected), p_prehab: shape(prehab),
-    })
-    setSaving(false)
-    if (rpcError) { setError(rpcError.message || 'Could not save'); return }
-    setWorkoutId(data)
-    setSaved(true); setDirty(false)
-    setToast(`Saved ${name.trim()} · ${selected.length} exercises`)
+    try {
+      const { data, error: rpcError } = await supabase.rpc('save_workout', {
+        p_workout_id: workoutId, p_name: name.trim(), p_is_ai_generated: isAi, p_exercises: shape(selected), p_prehab: shape(prehab),
+      })
+      if (rpcError || !data) { setError('Could not save the workout. Your changes are still here. Please try again.'); return }
+      setWorkoutId(data)
+      const unchanged = savingRevision === revision.current
+      setSaved(unchanged); setDirty(!unchanged)
+      setToast(unchanged ? `Saved ${name.trim()} · ${selected.length} exercises` : 'Saved earlier changes. Save again to keep your latest edits.')
+    } catch { setError('Could not save the workout. Please try again.') } finally { setSaving(false) }
   }
 
   const backTo = sourceProgram ? `/plan/programs/${sourceProgram}` : '/plan/workouts'
@@ -189,14 +226,16 @@ export default function WorkoutBuilder() {
         <div role="group" aria-label="Library" style={{ display: 'flex', gap: 8 }}>
           {[['strength', 'Strength'], ['prehab', 'Prehab']].map(([k, l]) => (
             <button key={k} type="button" aria-pressed={tab === k} onClick={() => { setTab(k); setGroup('All') }}
-              style={{ flex: 1, minHeight: 36, borderRadius: 8, border: `1px solid ${tab === k ? 'var(--ac)' : 'var(--br2)'}`, background: tab === k ? 'rgba(199,228,92,.12)' : 'transparent', color: tab === k ? 'var(--ac)' : 'var(--mu2)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>{l}</button>
+              style={{ flex: 1, minHeight: 44, borderRadius: 8, border: `1px solid ${tab === k ? 'var(--ac)' : 'var(--br2)'}`, background: tab === k ? 'rgba(199,228,92,.12)' : 'transparent', color: tab === k ? 'var(--ac)' : 'var(--mu2)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>{l}</button>
           ))}
         </div>
         <SearchBox value={query} onChange={setQuery} placeholder="Search exercises" label="Search exercises" />
         <PillRow label="Muscle group">{GROUPS.map(g => <Pill key={g} on={group === g} onClick={() => setGroup(g)}>{g}</Pill>)}</PillRow>
       </div>
       <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, maxHeight: isMobile ? '48vh' : 'calc(100vh - 360px)' }}>
-        {library.length === 0 && <EmptyState>No exercises match.</EmptyState>}
+        <CollectionStatus name="exercises" loading={exerciseLoad.loading} error={exerciseLoad.error} onRetry={exerciseLoad.reload} />
+        {exerciseLoad.loading && <CollectionSkeleton kind="exercises" mobile />}
+        {exerciseLoad.hasData && library.length === 0 && <EmptyState title="No exercises match"><p>Try another name or clear your filters.</p><Button onClick={() => { setQuery(''); setGroup('All') }} style={{ marginTop: 12 }}>Clear filters</Button></EmptyState>}
         {library.map(e => {
           const has = tab === 'strength' ? inMain.has(e.id) : inPrehab.has(e.id)
           return (
@@ -304,7 +343,7 @@ export default function WorkoutBuilder() {
 
   const quickFill = (
     <div style={{ position: 'relative' }}>
-      <Button onClick={() => setFillOpen(o => !o)} aria-haspopup="menu" aria-expanded={fillOpen} icon="tools">{isMobile ? '' : 'Quick fill'}</Button>
+      <Button onClick={() => setFillOpen(o => !o)} aria-haspopup="menu" aria-expanded={fillOpen} aria-label="Quick fill" disabled={!exerciseLoad.hasData} icon="tools">{isMobile ? '' : 'Quick fill'}</Button>
       {fillOpen && (
         <>
           <div onClick={() => setFillOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
@@ -332,10 +371,17 @@ export default function WorkoutBuilder() {
     </Card>
   )
 
+  if (!workoutLoad.hasData) return <Layout><PlanTabs /><div style={{ padding: 24 }}>
+    <h1 style={{ fontFamily: 'var(--font-head)', fontSize: 36 }}>Workout</h1>
+    <CollectionStatus name="workout" loading={workoutLoad.loading} error={workoutLoad.error} onRetry={workoutLoad.reload} />
+    {workoutLoad.loading && <CollectionSkeleton kind="workouts" mobile />}
+  </div></Layout>
+
   return (
     <Layout>
+      <UnsavedChanges dirty={dirty} saving={saving} />
       <PlanTabs />
-      <div style={{ padding: isMobile ? 'max(14px, calc(var(--sat) + 8px)) 16px 120px' : '24px 36px 36px', display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
+      <div style={{ padding: isMobile ? '14px 16px 120px' : '24px 36px 36px', display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             {!isMobile && <Link to={backTo} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: 'var(--mu2)', marginBottom: 4 }}><Icon name="back" size={14} />{backLabel}</Link>}
@@ -355,6 +401,8 @@ export default function WorkoutBuilder() {
             <Link to={backTo} style={{ color: 'var(--ac)', fontWeight: 600 }}>Back to {sourceProgram ? 'program' : 'Workouts'}</Link>
           </div>
         )}
+        {incomingError && <p role="alert">{incomingError}</p>}
+        {incomingId && !exerciseLoad.hasData && <CollectionStatus name="selected exercise" loading={exerciseLoad.loading} error={exerciseLoad.error} onRetry={exerciseLoad.reload} />}
         {error && <p role="alert" style={{ fontSize: 13, color: '#E2695A' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
@@ -368,7 +416,7 @@ export default function WorkoutBuilder() {
       </div>
 
       {isMobile && (
-        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 90, display: 'flex', gap: 10, padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', background: 'var(--s1)', borderTop: '1px solid var(--br)' }}>
+        <div style={{ position: 'fixed', left: isPhone ? 0 : 220, right: 0, bottom: 0, zIndex: 90, display: 'flex', gap: 10, padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', background: 'var(--s1)', borderTop: '1px solid var(--br)' }}>
           <Button onClick={() => navigate(backTo)} style={{ flex: 1 }}>Cancel</Button>
           <Button variant="primary" onClick={save} disabled={!ready || saving} style={{ flex: 2 }}>{saving ? 'Saving…' : 'Save workout'}</Button>
         </div>
@@ -386,4 +434,4 @@ export default function WorkoutBuilder() {
   )
 }
 
-const iconBtn = { width: 34, height: 34, display: 'grid', placeItems: 'center', border: '1px solid var(--br)', borderRadius: 8, background: 'transparent', color: 'var(--mu2)', cursor: 'pointer' }
+const iconBtn = { width: 44, height: 44, display: 'grid', placeItems: 'center', border: '1px solid var(--br)', borderRadius: 8, background: 'transparent', color: 'var(--mu2)', cursor: 'pointer' }

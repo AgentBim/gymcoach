@@ -1,184 +1,85 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useCollectionLoad } from '../hooks/useCollectionLoad'
 import Layout from '../components/Layout'
+import PlanTabs from '../components/PlanTabs'
+import UnsavedChanges from '../components/UnsavedChanges'
+import { CollectionStatus } from '../components/CollectionLoading'
+import { Button, Card, Page, PageHeader, Segmented } from '../components/ui'
 
-const MUSCLE_GROUPS = ['Arms', 'Back', 'Legs', 'Core', 'Shoulders']
-const DIFFICULTIES = ['Easy', 'Medium', 'Hard']
-const CATEGORIES = [
-  { value: 'strength', label: '💪 Strength' },
-  { value: 'prehab',   label: '🛡 Prehab' },
-  { value: 'mobility', label: '🧘 Mobility' },
-]
-const PREHAB_FOCUSES = [
-  { value: 'activation', label: 'Activation' },
-  { value: 'stability',  label: 'Stability' },
-  { value: 'mobility',   label: 'Mobility' },
-  { value: 'strength',   label: 'Strength' },
-]
+const GROUPS = ['Arms', 'Back', 'Legs', 'Core', 'Shoulders']
+const DEFAULT = { name: '', description: '', muscle_group: 'Arms', difficulty: 'Medium', category: 'strength', prehab_focus: '', default_sets: 3, default_reps: 10, default_duration_seconds: '', default_rest_seconds: 60 }
+const field = { width: '100%', minHeight: 44, padding: '10px 12px', fontSize: 16, background: 'var(--bg)', border: '1px solid var(--br2)', borderRadius: 8, color: 'var(--tx)' }
+const options = values => values.map(value => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) }))
 
 export default function CustomExercise() {
   const { id } = useParams()
-  const isEdit = Boolean(id)
   const { user } = useAuth()
   const navigate = useNavigate()
-
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [muscleGroup, setMuscleGroup] = useState('')
-  const [difficulty, setDifficulty] = useState('')
-  const [sets, setSets] = useState(3)
-  const [reps, setReps] = useState('')
-  const [duration, setDuration] = useState('')
-  const [rest, setRest] = useState(30)
-  const [useTime, setUseTime] = useState(false)
+  const [form, setForm] = useState(DEFAULT)
+  const [timed, setTimed] = useState(false)
+  const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [savedId, setSavedId] = useState(null)
   const [error, setError] = useState('')
-  const [category, setCategory] = useState('strength')
-  const [prehabFocus, setPrehabFocus] = useState('')
-
-  useEffect(() => { if (isEdit) fetchExercise() }, [id])
-
-  async function fetchExercise() {
-    const { data } = await supabase.from('exercises').select('*').eq('id', id).single()
-    if (data) {
-      setName(data.name)
-      setDescription(data.description)
-      setMuscleGroup(data.muscle_group)
-      setDifficulty(data.difficulty)
-      setSets(data.default_sets)
-      setReps(data.default_reps || '')
-      setDuration(data.default_duration_seconds || '')
-      setRest(data.default_rest_seconds)
-      setUseTime(!!data.default_duration_seconds)
-      setCategory(data.category || 'strength')
-      setPrehabFocus(data.prehab_focus || '')
+  const initialized = useRef(null)
+  const load = useCallback(async signal => {
+    if (!id) return null
+    const { data, error } = await supabase.from('exercises').select('*').eq('id', id).eq('coach_id', user.id).eq('is_custom', true).single().abortSignal(signal)
+    if (error || !data) throw new Error('Exercise unavailable')
+    return data
+  }, [id, user.id])
+  const resource = useCollectionLoad(user.id + ':' + (id || 'new'), load, null)
+  useEffect(() => {
+    const key = id || 'new'
+    if (!resource.hasData || initialized.current === key) return
+    initialized.current = key
+    setForm(resource.data || DEFAULT)
+    setTimed(!!resource.data?.default_duration_seconds)
+    setDirty(false)
+  }, [id, resource.hasData, resource.data])
+  useEffect(() => { if (savedId) navigate(`/plan/exercises?exercise=${encodeURIComponent(savedId)}`, { replace: true }) }, [savedId, navigate])
+  function change(key, value) { setDirty(true); setForm(f => ({ ...f, [key]: value })) }
+  async function save(e) {
+    e.preventDefault()
+    if (saving) return
+    const dose = Number(timed ? form.default_duration_seconds : form.default_reps)
+    const rest = Number(form.default_rest_seconds)
+    if (!form.name.trim() || !Number.isInteger(Number(form.default_sets)) || Number(form.default_sets) < 1 || !Number.isInteger(dose) || dose < 1 || !Number.isInteger(rest) || rest < 0) {
+      setError('Enter a name, at least one set, and a positive number of reps or seconds.'); return
     }
-  }
-
-  async function save() {
-    if (!name.trim()) { setError('Name is required'); return }
-    if (!muscleGroup) { setError('Muscle group is required'); return }
-    if (!difficulty) { setError('Difficulty is required'); return }
     setSaving(true); setError('')
-
-    const payload = {
-      name: name.trim(),
-      description: description.trim(),
-      muscle_group: muscleGroup,
-      difficulty,
-      default_sets: Number(sets) || 3,
-      default_reps: useTime ? null : (Number(reps) || null),
-      default_duration_seconds: useTime ? (Number(duration) || null) : null,
-      default_rest_seconds: Number(rest) || 30,
-      coach_id: user.id,
-      is_custom: true,
-      category,
-      prehab_focus: category === 'prehab' ? (prehabFocus || null) : null,
-    }
-
-    if (isEdit) {
-      await supabase.from('exercises').update(payload).eq('id', id)
-    } else {
-      await supabase.from('exercises').insert(payload)
-    }
-    navigate('/plan/exercises')
+    const payload = { name: form.name.trim(), description: (form.description || '').trim(), muscle_group: form.muscle_group, difficulty: form.difficulty,
+      category: form.category, prehab_focus: form.category === 'prehab' ? form.prehab_focus || null : null,
+      default_sets: Number(form.default_sets), default_reps: timed ? null : Number(form.default_reps), default_duration_seconds: timed ? Number(form.default_duration_seconds) : null,
+      default_rest_seconds: Math.max(0, Number(form.default_rest_seconds) || 0), coach_id: user.id, is_custom: true }
+    try {
+      const query = id ? supabase.from('exercises').update(payload).eq('id', id).eq('coach_id', user.id) : supabase.from('exercises').insert(payload)
+      const { data, error } = await query.select('id').single()
+      if (error || !data) throw error || new Error('No exercise returned')
+      setDirty(false); setSavedId(data.id)
+    } catch { setError('Couldn’t save this exercise. Your changes are still here. Please try again.') }
+    finally { setSaving(false) }
   }
-
-  const inp = { background: 'var(--br)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, color: 'var(--tx)', padding: '10px 12px', fontSize: 14, outline: 'none', width: '100%', fontFamily: 'var(--font-sans)', boxSizing: 'border-box' }
-
-  return (
-    <Layout>
-      <div style={{ maxWidth: 540, margin: '0 auto', padding: '24px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <button onClick={() => navigate('/plan/exercises')} style={{ background: 'none', border: 'none', color: 'var(--mu)', fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 700 }}>{isEdit ? 'Edit exercise' : 'Create custom exercise'}</h1>
-            <p style={{ fontSize: 12, color: 'var(--mu)', marginTop: 2 }}>Visible only to your account · marked ★ in the library</p>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Exercise name *</div>
-            <input style={inp} value={name} onChange={e => setName(e.target.value)} placeholder="Cast to Handstand" />
-          </div>
-
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Description</div>
-            <textarea value={description} onChange={e => setDescription(e.target.value)}
-              placeholder="Describe the movement, cues, and what to focus on..."
-              style={{ ...inp, height: 80, resize: 'none', lineHeight: 1.5 }} />
-          </div>
-
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Muscle group *</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {MUSCLE_GROUPS.map(g => (
-                <button key={g} onClick={() => setMuscleGroup(g)} style={{
-                  padding: '8px 14px', borderRadius: 20, fontSize: 13, border: 'none', cursor: 'pointer',
-                  background: muscleGroup === g ? 'rgba(199,228,92,.12)' : 'var(--br)',
-                  color: muscleGroup === g ? 'var(--ac)' : 'var(--mu)',
-                  outline: muscleGroup === g ? '1px solid rgba(199,228,92,.3)' : 'none',
-                  fontWeight: muscleGroup === g ? 600 : 400,
-                }}>{g}</button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Difficulty *</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {DIFFICULTIES.map(d => (
-                <button key={d} onClick={() => setDifficulty(d)} style={{
-                  flex: 1, padding: '10px 8px', borderRadius: 10, fontSize: 13, border: 'none', cursor: 'pointer',
-                  background: difficulty === d ? 'rgba(199,228,92,.12)' : 'var(--br)',
-                  color: difficulty === d ? 'var(--ac)' : 'var(--mu)',
-                  outline: difficulty === d ? '1px solid rgba(199,228,92,.3)' : 'none',
-                  fontWeight: difficulty === d ? 600 : 400,
-                }}>{d}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Reps vs time toggle */}
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>Measured by</div>
-            <div style={{ display: 'flex', background: 'var(--br)', borderRadius: 8, padding: 3, marginBottom: 10 }}>
-              <button onClick={() => setUseTime(false)} style={{ flex: 1, padding: '10px 7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, background: !useTime ? 'var(--s2)' : 'transparent', color: !useTime ? 'var(--tx)' : 'var(--mu)', minHeight: 40 }}>Reps</button>
-              <button onClick={() => setUseTime(true)} style={{ flex: 1, padding: '10px 7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, background: useTime ? 'var(--s2)' : 'transparent', color: useTime ? 'var(--tx)' : 'var(--mu)', minHeight: 40 }}>Time (s)</button>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Sets</div>
-              <input style={{ ...inp, textAlign: 'center' }} type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>{useTime ? 'Duration (s)' : 'Reps'}</div>
-              <input style={{ ...inp, textAlign: 'center' }} type="number" min="1"
-                value={useTime ? duration : reps}
-                onChange={e => useTime ? setDuration(e.target.value) : setReps(e.target.value)}
-                placeholder={useTime ? '30' : '10'} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 5 }}>Rest (s)</div>
-              <input style={{ ...inp, textAlign: 'center' }} type="number" min="0" value={rest} onChange={e => setRest(e.target.value)} />
-            </div>
-          </div>
-
-          {error && <p style={{ fontSize: 12, color: '#E2695A' }}>{error}</p>}
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-            <button onClick={() => navigate('/plan/exercises')} style={{ flex: 1, background: 'transparent', border: '1px solid var(--br)', borderRadius: 10, color: 'var(--mu)', padding: 12, fontSize: 13, cursor: 'pointer', minHeight: 48 }}>Cancel</button>
-            <button onClick={save} disabled={saving} style={{ flex: 2, background: 'var(--ac)', color: 'var(--ac-ink)', border: 'none', borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, minHeight: 48 }}>
-              {saving ? 'Saving...' : isEdit ? 'Update exercise' : 'Add to library'}
-            </button>
-          </div>
-        </div>
+  return <Layout><UnsavedChanges dirty={dirty} saving={saving} noun="exercise" /><PlanTabs /><Page style={{ maxWidth: 760, width: '100%', margin: '0 auto' }}>
+    <PageHeader title={id ? 'Edit exercise' : 'New exercise'} eyebrow="Your exercise library" />
+    <p style={{ color: 'var(--mu2)' }}>Add a coaching cue and check the default dose before saving. This exercise is visible only to you.</p>
+    <CollectionStatus name="exercise" loading={resource.loading} error={resource.error} onRetry={resource.reload} />
+    {resource.hasData && <Card as="form" onSubmit={save} style={{ padding: 18 }}><fieldset disabled={saving} style={{ border: 0, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <label>Name <input required maxLength={160} value={form.name} onChange={e => change('name', e.target.value)} style={field} /></label>
+      <label>Coaching cue <textarea value={form.description || ''} onChange={e => change('description', e.target.value)} placeholder="Describe the movement and what to focus on" style={{ ...field, minHeight: 100 }} /></label>
+      <label>Muscle group <select value={form.muscle_group} onChange={e => change('muscle_group', e.target.value)} style={field}>{GROUPS.map(g => <option key={g}>{g}</option>)}</select></label>
+      <div><p>Type</p><Segmented label="Exercise type" options={options(['strength', 'prehab', 'mobility'])} value={form.category} onChange={v => change('category', v)} /></div>
+      {form.category === 'prehab' && <label>Prehab focus <select value={form.prehab_focus || ''} onChange={e => change('prehab_focus', e.target.value)} style={field}><option value="">Not specified</option>{['activation', 'stability', 'mobility', 'strength'].map(v => <option key={v}>{v}</option>)}</select></label>}
+      <div><p>Difficulty</p><Segmented label="Difficulty" options={options(['Easy', 'Medium', 'Hard'])} value={form.difficulty} onChange={v => change('difficulty', v)} /></div>
+      <div><p>Measured by</p><Segmented label="Measured by" options={[{ value: 'reps', label: 'Reps' }, { value: 'time', label: 'Seconds' }]} value={timed ? 'time' : 'reps'} onChange={v => { setDirty(true); setTimed(v === 'time') }} /></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+        {[['default_sets', 'Sets', 1], [timed ? 'default_duration_seconds' : 'default_reps', timed ? 'Seconds' : 'Reps', 1], ['default_rest_seconds', 'Rest (s)', 0]].map(([key, label, min]) => <label key={key}>{label}<input type="number" required min={min} step="1" value={form[key] ?? ''} onChange={e => change(key, e.target.value)} style={field} /></label>)}
       </div>
-    </Layout>
-  )
+      {error && <p role="alert">{error}</p>}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}><Button disabled={saving} onClick={() => navigate('/plan/exercises')}>Cancel</Button><Button type="submit" variant="primary" disabled={saving}>{saving ? 'Saving…' : 'Save exercise'}</Button></div>
+    </fieldset></Card>}
+  </Page></Layout>
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -8,9 +8,11 @@ import PlanTabs from '../components/PlanTabs'
 import { CollectionSkeleton, CollectionStatus } from '../components/CollectionLoading'
 import { useCollectionLoad } from '../hooks/useCollectionLoad'
 import ExerciseMedia from '../components/ExerciseMedia'
+import AddExerciseToWorkout from '../components/AddExerciseToWorkout'
 import { hydrateExerciseMedia } from '../lib/exerciseMedia'
 import { MUSCLE_COLORS } from '../lib/theme'
-import { Button, Card, Chip, Dialog, EmptyState, Icon, Label, Page, PageHeader, Pill, PillRow, SearchBox, Segmented } from '../components/ui'
+import { rememberLibrary } from '../lib/libraryView'
+import { Button, Card, Chip, Dialog, EmptyState, Icon, Label, Page, PageHeader, Pill, PillRow, SearchBox } from '../components/ui'
 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const CATS = [['all', 'All'], ['strength', 'Strength'], ['prehab', 'Prehab'], ['mobility', 'Mobility']]
@@ -37,6 +39,7 @@ function Stat({ label, value }) {
 
 function Detail({ ex, usedIn, onClose }) {
   const navigate = useNavigate()
+  const [adding, setAdding] = useState(false)
   const timed = !ex.default_reps && ex.default_duration_seconds
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -66,26 +69,38 @@ function Detail({ ex, usedIn, onClose }) {
           : <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{usedIn.map(w => <Link key={w.id} to={`/plan/workouts/${w.id}/edit`} style={{ padding: '4px 10px', border: '1px solid var(--br2)', borderRadius: 20, fontSize: 12.5 }}>{w.name}</Link>)}</div>}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <Button variant="primary" onClick={() => navigate('/plan/workouts/new')}>Add to a workout</Button>
+        <Button variant="primary" onClick={() => setAdding(true)}>Add to a workout</Button>
         {ex.is_custom && <Button onClick={() => navigate(`/plan/exercises/${ex.id}/edit`)}>Edit</Button>}
       </div>
+      {adding && <AddExerciseToWorkout exercise={ex} onClose={() => setAdding(false)} />}
     </div>
   )
 }
 
 export default function Library() {
   const { user } = useAuth()
-  const isMobile = useIsMobile()
-  const [cat, setCat] = useState('all')
-  const [group, setGroup] = useState('All')
-  const [query, setQuery] = useState('')
-  const [selId, setSelId] = useState(null)
-  const [newOpen, setNewOpen] = useState(false)
-  const [nName, setNName] = useState('')
-  const [nGroup, setNGroup] = useState('Arms')
-  const [nCat, setNCat] = useState('strength')
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
+  const navigate = useNavigate()
+  const isMobile = useIsMobile(1279)
+  const [params, setParams] = useSearchParams()
+  const search = params.toString()
+  useEffect(() => { rememberLibrary(user?.id, search) }, [user?.id, search])
+  const cat = CATS.some(([c]) => c === params.get('category')) ? params.get('category') : 'all'
+  const group = GROUPS.includes(params.get('group')) ? params.get('group') : 'All'
+  const query = params.get('q') || ''
+  const selId = params.get('exercise')
+  function updateParams(values) {
+    setParams(previous => {
+      const next = new URLSearchParams(previous)
+      Object.entries(values).forEach(([key, value]) => value && value !== 'all' && value !== 'All' ? next.set(key, value) : next.delete(key))
+      return next
+    }, { replace: true })
+  }
+  const setCat = category => updateParams({ category, exercise: null })
+  const setGroup = group => updateParams({ group, exercise: null })
+  const setQuery = q => updateParams({ q, exercise: null })
+  const setSelId = exercise => updateParams({ exercise })
+  const clearFilters = () => updateParams({ category: null, group: null, q: null, exercise: null })
+
   const loadLibrary = useCallback(async signal => {
     const [exRes, weRes, wpRes] = await Promise.all([
       supabase.from('exercises').select('*')
@@ -106,25 +121,8 @@ export default function Library() {
     })
     return { exercises, usage: new Map([...map].map(([k, v]) => [k, [...v.values()]])) }
   }, [user?.id])
-  const { data, hasData, loading, refreshing, error: loadError, reload: fetchAll } = useCollectionLoad(user?.id, loadLibrary, EMPTY_LIBRARY)
+  const { data, hasData, loading, refreshing, error: loadError, reload: retryLibrary } = useCollectionLoad(user?.id, loadLibrary, EMPTY_LIBRARY)
   const { exercises, usage } = data
-
-  async function createExercise() {
-    setSaving(true)
-    setSaveError('')
-    const prehab = nCat === 'prehab'
-    const { data, error } = await supabase.from('exercises').insert({
-      name: nName.trim(), description: '', muscle_group: nGroup, difficulty: 'Medium',
-      default_sets: prehab ? 2 : 3, default_reps: 10, default_duration_seconds: null, default_rest_seconds: prehab ? 20 : 60,
-      coach_id: user.id, is_custom: true, category: nCat, prehab_focus: null,
-    }).select().single()
-    setSaving(false)
-    if (error) { setSaveError(error.message); return }
-    setNewOpen(false); setNName('')
-    setCat('all'); setGroup('All'); setQuery('')
-    await fetchAll()
-    setSelId(data.id)
-  }
 
   const q = query.trim().toLowerCase()
   const shown = exercises.filter(e =>
@@ -133,10 +131,10 @@ export default function Library() {
   const sel = exercises.find(e => e.id === selId) || null
   const custom = exercises.filter(e => e.is_custom).length
   useEffect(() => {
-    if (selId && !exercises.some(e => e.id === selId &&
+    if (hasData && selId && !exercises.some(e => e.id === selId &&
       (cat === 'all' || catOf(e) === cat) && (group === 'All' || e.muscle_group === group) &&
       (!query.trim() || e.name.toLowerCase().includes(query.trim().toLowerCase())))) setSelId(null)
-  }, [exercises, cat, group, query, selId])
+  }, [exercises, cat, group, query, selId, hasData])
 
   return (
     <Layout>
@@ -144,7 +142,7 @@ export default function Library() {
       <Page>
         <PageHeader eyebrow={hasData ? `${exercises.length} exercises · ${custom} yours` : 'Your exercise library'} title="Exercises">
           <SearchBox value={query} onChange={setQuery} placeholder="Search exercises" label="Search exercises" style={{ width: isMobile ? '100%' : 220 }} />
-          <Button variant="primary" icon="plus" onClick={() => setNewOpen(true)}>New exercise</Button>
+          <Button variant="primary" icon="plus" onClick={() => navigate('/plan/exercises/new')}>New exercise</Button>
         </PageHeader>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
@@ -152,7 +150,7 @@ export default function Library() {
           <PillRow label="Muscle group">{GROUPS.map(g => <Pill key={g} on={group === g} onClick={() => setGroup(g)}>{g}</Pill>)}</PillRow>
         </div>
 
-        <CollectionStatus name="exercises" loading={loading} refreshing={refreshing} error={loadError} onRetry={fetchAll} />
+        <CollectionStatus name="exercises" loading={loading} refreshing={refreshing} error={loadError} onRetry={retryLibrary} />
         {loading ? <CollectionSkeleton kind="exercises" columns={COLS} mobile={isMobile} /> : !hasData ? null : (
           <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
             <Card style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
@@ -161,7 +159,10 @@ export default function Library() {
                   <Label>Exercise</Label><Label>Muscle group</Label><Label>Type</Label><Label>Default</Label><Label>Used in</Label><span />
                 </div>
               )}
-              {shown.length === 0 && <EmptyState>No exercises match.</EmptyState>}
+              {shown.length === 0 && <EmptyState title={cat === 'mobility' && count('mobility') === 0 ? 'Mobility is coming soon' : 'No exercises match'}>
+                <p>{cat === 'mobility' && count('mobility') === 0 ? 'There are no mobility exercises in your library yet.' : 'Try another name or clear your filters.'}</p>
+                <Button onClick={clearFilters} style={{ marginTop: 12 }}>Clear filters</Button>
+              </EmptyState>}
               {shown.map(e => {
                 const used = usage.get(e.id)?.length || 0
                 const on = e.id === selId
@@ -215,28 +216,6 @@ export default function Library() {
         </Dialog>
       )}
 
-      {newOpen && (
-        <Dialog title="New exercise" subtitle="It joins your library and shows up in the workout builder." onClose={() => setNewOpen(false)} busy={saving}
-          footer={<><Button onClick={() => setNewOpen(false)}>Cancel</Button><Button variant="primary" onClick={createExercise} disabled={!nName.trim() || saving}>{saving ? 'Adding…' : 'Add exercise'}</Button></>}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <Label>Name</Label>
-            <input value={nName} onChange={e => setNName(e.target.value)} placeholder="e.g. Ring row" autoFocus
-              style={{ minHeight: 44, background: 'var(--bg)', border: '1px solid var(--br2)', borderRadius: 10, color: 'var(--tx)', padding: '0 12px', fontSize: 15, outline: 'none' }} />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <Label>Muscle group</Label>
-            <select value={nGroup} onChange={e => setNGroup(e.target.value)}
-              style={{ minHeight: 44, background: 'var(--bg)', border: '1px solid var(--br2)', borderRadius: 10, color: 'var(--tx)', padding: '0 12px', fontSize: 15 }}>
-              {GROUPS.slice(1).map(g => <option key={g}>{g}</option>)}
-            </select>
-          </label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <Label>Type</Label>
-            <Segmented label="Type" value={nCat} onChange={setNCat} options={[{ value: 'strength', label: 'Strength' }, { value: 'prehab', label: 'Prehab' }, { value: 'mobility', label: 'Mobility' }]} />
-          </div>
-          {saveError && <p role="alert" style={{ fontSize: 12.5, color: '#E2695A' }}>{saveError}</p>}
-        </Dialog>
-      )}
     </Layout>
   )
 }

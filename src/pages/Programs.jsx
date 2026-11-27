@@ -188,7 +188,7 @@ export default function Programs() {
           <CollectionSkeleton kind="programs" mobile={isMobile} />
         ) : !hasData ? null : (
           <>
-            {shown.length === 0 && <Card><EmptyState>{programs.length === 0 ? 'No programs yet. Start one below.' : 'No programs match.'}</EmptyState></Card>}
+            {shown.length === 0 && <Card><EmptyState><p>{programs.length === 0 ? 'No programs yet. Create your first one above.' : 'No programs match.'}</p>{(query || filter !== 'all') && <Button onClick={() => { setQuery(''); setFilter('all') }} style={{ marginTop: 12 }}>Clear filters</Button>}</EmptyState></Card>}
             <section style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))', gap: isMobile ? 12 : 16 }}>
               {shown.map((p, idx) => {
                 const use = inUse(p)
