@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import PlanTabs from '../components/PlanTabs'
+import { CollectionSkeleton, CollectionStatus } from '../components/CollectionLoading'
+import { useCollectionLoad } from '../hooks/useCollectionLoad'
 import { SelectionBar, ConfirmDeleteSheet, Toast } from '../components/BulkDelete'
 import { describeSelection, fetchProgramImpact, programDeletePlan } from '../lib/bulkDelete'
 import { todayLocal } from '../lib/streaks'
@@ -19,6 +21,7 @@ function cellKind(d) {
   return d.workout_id || d.day_type === 'training' ? 'training' : 'rest'
 }
 const CELL = { training: 'var(--ac)', meet: '#E2695A', recovery: '#6BA9DE', rest: 'var(--br2)' }
+const EMPTY_PROGRAMS = { programs: [], allAthletes: [] }
 
 function Thumb({ program }) {
   const byCell = new Map((program.program_days || []).map(d => [`${d.week_number}:${d.day_of_week}`, d]))
@@ -45,9 +48,6 @@ export default function Programs() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [programs, setPrograms] = useState([])
-  const [allAthletes, setAllAthletes] = useState([])
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
   const [assignFor, setAssignFor] = useState(null)
@@ -65,21 +65,20 @@ export default function Programs() {
   const deleteReqId = useRef(0)
   const shiftClick = useRef(false)
 
-  useEffect(() => { fetchPrograms() }, [user])
-
-  async function fetchPrograms() {
-    if (!user) return
+  const loadPrograms = useCallback(async signal => {
     const [pRes, aRes] = await Promise.all([
       supabase.from('programs')
         .select('*, program_days(week_number, day_of_week, day_type, workout_id), athletes!athletes_active_program_id_fkey(id, full_name)')
         .eq('coach_id', user.id)
-        .order('created_at', { ascending: false }),
-      supabase.from('athletes').select('id, full_name, active_program_id').eq('coach_id', user.id).order('full_name'),
+        .order('created_at', { ascending: false }).abortSignal(signal),
+      supabase.from('athletes').select('id, full_name, active_program_id').eq('coach_id', user.id).order('full_name').abortSignal(signal),
     ])
-    setPrograms(pRes.data || [])
-    setAllAthletes(aRes.data || [])
-    setLoading(false)
-  }
+    const failure = [pRes, aRes].find(r => r.error)?.error
+    if (failure) throw failure
+    return { programs: pRes.data || [], allAthletes: aRes.data || [] }
+  }, [user?.id])
+  const { data, hasData, loading, refreshing, error: loadError, reload: fetchPrograms } = useCollectionLoad(user?.id, loadPrograms, EMPTY_PROGRAMS)
+  const { programs, allAthletes } = data
 
   async function duplicate(p) {
     const { error } = await supabase.rpc('duplicate_program', { p_program_id: p.id })
@@ -170,7 +169,7 @@ export default function Programs() {
     <Layout>
       <PlanTabs />
       <Page>
-        <PageHeader eyebrow={`${programs.length} program${programs.length === 1 ? '' : 's'}`} title="Programs">
+        <PageHeader eyebrow={hasData ? `${programs.length} program${programs.length === 1 ? '' : 's'}` : 'Your program library'} title="Programs">
           <SearchBox value={query} onChange={setQuery} placeholder="Search programs" label="Search programs" style={{ width: isMobile ? '100%' : 220 }} />
           {programs.length > 0 && (
             <Button onClick={selecting ? stopSelecting : startSelecting} aria-pressed={selecting}>{selecting ? 'Done' : 'Select'}</Button>
@@ -179,14 +178,15 @@ export default function Programs() {
         </PageHeader>
 
         <PillRow label="Filter programs">
-          <Pill on={filter === 'all'} count={count('all')} onClick={() => setFilter('all')}>All</Pill>
-          <Pill on={filter === 'use'} count={count('use')} onClick={() => setFilter('use')}>In use</Pill>
-          <Pill on={filter === 'none'} count={count('none')} onClick={() => setFilter('none')}>Not assigned</Pill>
+          <Pill on={filter === 'all'} count={hasData ? count('all') : undefined} onClick={() => setFilter('all')}>All</Pill>
+          <Pill on={filter === 'use'} count={hasData ? count('use') : undefined} onClick={() => setFilter('use')}>In use</Pill>
+          <Pill on={filter === 'none'} count={hasData ? count('none') : undefined} onClick={() => setFilter('none')}>Not assigned</Pill>
         </PillRow>
 
+        <CollectionStatus name="programs" loading={loading} refreshing={refreshing} error={loadError} onRetry={fetchPrograms} />
         {loading ? (
-          <div style={{ color: 'var(--mu)', padding: 24 }}>Loading…</div>
-        ) : (
+          <CollectionSkeleton kind="programs" mobile={isMobile} />
+        ) : !hasData ? null : (
           <>
             {shown.length === 0 && <Card><EmptyState>{programs.length === 0 ? 'No programs yet. Start one below.' : 'No programs match.'}</EmptyState></Card>}
             <section style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))', gap: isMobile ? 12 : 16 }}>
