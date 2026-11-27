@@ -1,0 +1,44 @@
+.plan-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--br);
+  background: var(--bg);
+  overflow-x: auto;
+}
+
+.plan-tab {
+  padding: 14px 14px 12px;
+  font-size: 13.5px;
+  white-space: nowrap;
+  margin-bottom: -1px;
+}
+
+.plan-tab:focus-visible {
+  outline: 2px solid var(--ac);
+  outline-offset: -4px;
+}
+
+@media (max-width: 768px) {
+  .plan-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    padding: 0 8px;
+    overflow: visible;
+  }
+
+  .plan-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 52px;
+    padding-left: 8px;
+    padding-right: 8px;
+    touch-action: manipulation;
+  }
+}
