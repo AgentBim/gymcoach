@@ -8,7 +8,17 @@ import path from 'node:path'
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const missing=error=>String(error.statusCode)==='404' || error.message==='Object not found'
 
-export async function uploadApprovedFiles({plan,versionIds,readVersions,storage,markVerified}) {
+export async function boundedEach(items,concurrency,task) {
+  if(!Number.isInteger(concurrency)||concurrency<1||concurrency>4)throw new Error('Upload concurrency must be 1–4')
+  let cursor=0,failure=null
+  await Promise.all(Array.from({length:Math.min(concurrency,items.length)},async()=>{
+    while(!failure&&cursor<items.length){const item=items[cursor++];try{await task(item)}catch(error){failure ||= error}}
+  }))
+  if(failure)throw failure
+}
+
+export async function uploadApprovedFiles({plan,versionIds,readVersions,storage,markVerified,concurrency=1,onProgress=()=>{}}) {
+  if(!Number.isInteger(concurrency)||concurrency<1||concurrency>4)throw new Error('Upload concurrency must be 1–4')
   if(plan.bucket!=='exercise-library')throw new Error('Unexpected media bucket')
   const selected=plan.versions.filter(v=>!versionIds||versionIds.includes(v.id))
   if(!selected.length || (versionIds && new Set(versionIds).size!==selected.length))throw new Error('Unknown or empty version selection')
@@ -41,8 +51,8 @@ export async function uploadApprovedFiles({plan,versionIds,readVersions,storage,
   const bucket=await storage.getBucket(plan.bucket)
   if(bucket.error || !bucket.data?.public)throw new Error('An explicitly configured public exercise-library bucket is required')
   const api=storage.from(plan.bucket)
-  let uploaded=0,reused=0
-  for(const f of files){
+  let uploaded=0,reused=0,completed=0
+  await boundedEach(files,concurrency,async f=>{
     let remote=await api.download(f.path)
     if(remote.error){
       if(!missing(remote.error))throw new Error('Cannot check existing object: '+f.path)
@@ -55,10 +65,11 @@ export async function uploadApprovedFiles({plan,versionIds,readVersions,storage,
     const downloaded=Buffer.from(await remote.data.arrayBuffer())
     if(hash(downloaded)!==f.sha256 || downloaded.length!==f.bytes || remote.data.type.split(';')[0]!==f.mime_type)
       throw new Error('Remote bytes or MIME differ; object was not overwritten: '+f.path)
-  }
+    onProgress({completed:++completed,total:files.length})
+  })
   // A failed/partial upload never marks a version verified. A rerun rechecks
   // existing hashes and can finish without replacing previously uploaded objects.
-  for(const v of selected)await markVerified(v)
+  await boundedEach(selected,concurrency,markVerified)
   return {versions_verified:selected.length,uploaded_files:uploaded,reused_files:reused,published_versions:0}
 }
 
