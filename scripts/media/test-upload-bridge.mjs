@@ -1,4 +1,4 @@
-// Operator-only, short-lived test-project upload capability. Never imported by Vite.
+// Operator-only, short-lived, project-pinned upload capability. Never imported by Vite.
 const fields='id,media_asset_id,video_path,poster_path,video_sha256,poster_sha256,video_bytes,poster_bytes,technical_status,content_review_status,approved_at,approved_by';
 const sha=async value=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',value))).map(x=>x.toString(16).padStart(2,'0')).join('');
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
@@ -18,7 +18,7 @@ export function createUploadBridge({client,config,url,now=Date.now}) {
     const token=req.headers.get('x-upload-capability')||'';
     if(token.length!==64||await sha(new TextEncoder().encode(token))!==config.capabilitySha256)return json({error:'Unauthorized'},401);
     if(now()>=config.expiresAt)return json({error:'Capability expired'},410);
-    if(url!==`https://${config.projectRef}.supabase.co`||config.projectRef!=='vlladyjynzmkswvnelku'||ids.size!==40)return json({error:'Test target mismatch'},403);
+    if(url!==`https://${config.projectRef}.supabase.co`||!['vlladyjynzmkswvnelku','nqrlhotrwyrphwumxtty'].includes(config.projectRef)||ids.size<1||ids.size>40||ids.size!==config.versionIds.length)return json({error:'Upload target or batch mismatch'},403);
     try {
       const body=await req.json();
       const versions=await approved();

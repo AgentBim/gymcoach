@@ -1,5 +1,11 @@
 # Isolated pilot upload without exporting a server key
 
+## Full-library rollout
+
+After the iPhone pilot passed, the user requested all existing animations be attached to their exercises. The same operator bridge now accepts batches of 1–40 exact approved version IDs for either the explicitly pinned test or production ChalkUp project. The client requires the expected project ref as its fifth argument; a mismatch fails before a request. No app build deploys this bridge. Deploy as chalkup-library-media-upload, replace it with HTTP410 after each batch, and issue a fresh short-lived capability for the next batch. Four requests at most run concurrently; failures stop scheduling and await active work before returning. Publication remains a separate database operation after verification.
+
+Full-library enablement uses the ten explicit Strength/Prehab muscle-group section keys in the Vercel environment variable. Custom exercises remain excluded. Existing exercise IDs, names, descriptions, prescriptions and workout references stay intact. Shared aliases retain their own names and notes.
+
 The test upload bridge is an operator tool, never imported by the app and never deployed by a Vite build. It is pinned to ChalkUp Test (`vlladyjynzmkswvnelku`), 40 exact approved version IDs, and a short-lived random upload capability. The function reads the platform's server key internally; the key is never returned or copied to this computer. Requests require the gateway's valid test-project JWT plus the operator capability. The deployed config contains only the capability hash. Keep the local capability outside the repository and out of logs.
 
 Deploy a wrapper using a pinned Supabase SDK and `createUploadBridge`, with `verify_jwt:true`. Provide config with projectRef, versionIds, capabilitySha256 and expiresAt (at most one hour from deployment). All operations recheck the complete approval set. The bridge configures only the exercise-library public bucket (5 MiB; MP4/WebP only), signs immutable approved paths without upsert, and verifies downloaded bytes/MIME before marking a version verified. It cannot publish, change exercise prescriptions, or accept arbitrary paths. Signed upload tokens may remain valid until their provider expiry; no file replacements are permitted.

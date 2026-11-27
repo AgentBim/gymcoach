@@ -28,4 +28,8 @@ corrupt=false;wrongMime=true;assert.equal((await handler(req({action:'verify',id
 wrongMime=false;changed=true;assert.equal((await handler(req({action:'verify',id:'version-0'}))).status,409);
 changed=false;const ok=await handler(req({action:'verify',id:'version-0'}));assert.equal(ok.status,200);assert.deepEqual(await ok.json(),{verified:'version-0',published:false});
 assert.equal((await handler(req({action:'verify',id:'not-allowed'}))).status,403);
+const duplicate=createUploadBridge({client,config:{...config,versionIds:[...config.versionIds,config.versionIds[0]]},url:`https://${config.projectRef}.supabase.co`,now:()=>1000});
+assert.equal((await duplicate(req({action:'versions'}))).status,403);
+const unrecognized=createUploadBridge({client,config:{...config,projectRef:'unrecognized'},url:'https://unrecognized.supabase.co',now:()=>1000});
+assert.equal((await unrecognized(req({action:'versions'}))).status,403);
 console.log('Passed 19 test upload bridge assertions (auth, expiry, project, approval, paths, hashes, MIME and approval race).');
