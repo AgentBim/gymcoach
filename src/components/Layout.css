@@ -1,0 +1,17 @@
+/* A single, bounded scroll area keeps Plan navigation inside the PWA viewport.
+   Safe-area padding belongs to the shell, so it does not scroll away. */
+.mobile-plan-layout {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  padding-top: var(--sat, 0px);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.mobile-plan-content {
+  min-height: 0;
+  scroll-padding-top: 60px;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}

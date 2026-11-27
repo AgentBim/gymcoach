@@ -1,17 +1,21 @@
 import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { useLocation } from 'react-router-dom'
+import './Layout.css'
 
 export default function Layout({ children }) {
   const isMobile = useIsMobile()
+  const { pathname } = useLocation()
+  const mobilePlan = isMobile && pathname.startsWith('/plan/')
 
   if (isMobile) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <main style={{
+      <div className={mobilePlan ? 'mobile-plan-layout' : undefined} style={{ display: 'flex', flexDirection: 'column', ...(!mobilePlan && { minHeight: '100vh' }) }}>
+        <main className={mobilePlan ? 'mobile-plan-content' : undefined} style={{
           flex: 1,
           overflowY: 'auto',
-          paddingBottom: 'calc(60px + env(safe-area-inset-bottom))',
+          paddingBottom: `calc(${mobilePlan ? 72 : 60}px + env(safe-area-inset-bottom))`,
         }}>
           {children}
         </main>
