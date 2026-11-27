@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { uploadApprovedFiles } from './upload-approved.mjs'
+import { uploadApprovedFiles, boundedEach } from './upload-approved.mjs'
 
 const repo=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..')
 const plan=JSON.parse(await readFile(path.join(repo,'.media-test-output/upload-plan.json'),'utf8'))
@@ -65,3 +65,14 @@ const result={status:'pass',checks,transport:'In-memory storage adapter with rea
   scope:'Approval gating, interrupted uploads, idempotency, existing-object integrity, MIME and local-hash checks. Hosted Storage integration remains pending.'}
 await writeFile(path.join(repo,'.media-test-output/upload-test-results.json'),JSON.stringify(result,null,2)+'\n')
 console.log(JSON.stringify(result,null,2))
+
+await check('bounded uploads stop scheduling on failure and settle active requests before returning',async()=>{
+  let active=0,maxActive=0,finished=0,started=0
+  await assert.rejects(boundedEach([0,1,2,3,4,5],3,async item=>{
+    started++;active++;maxActive=Math.max(active,maxActive)
+    await new Promise(resolve=>setTimeout(resolve,item===0?5:20))
+    active--;finished++;if(item===0)throw Error('interrupt')
+  }),/interrupt/)
+  assert.equal(active,0);assert.equal(started,3);assert.equal(finished,3);assert.equal(maxActive,3)
+  await assert.rejects(boundedEach([1],5,async()=>{}),/concurrency/)
+})
