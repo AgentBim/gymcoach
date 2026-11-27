@@ -31,6 +31,16 @@ function MediaPlayer({ name, media, compact, disabled }) {
   const wasExpanded = useRef(false)
 
   useEffect(() => {
+    if (!waiting || error) return
+    const timer = setTimeout(() => {
+      videoRef.current?.pause()
+      setWaiting(false)
+      setError('The demonstration is taking too long to load. Check your connection and retry.')
+    }, 15000)
+    return () => clearTimeout(timer)
+  }, [waiting, error, request])
+
+  useEffect(() => {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
     const change = () => { setReducedMotion(preference.matches); videoRef.current?.pause() }
     preference.addEventListener('change', change)
@@ -67,6 +77,7 @@ function MediaPlayer({ name, media, compact, disabled }) {
     if (!loaded || disabled || !videoRef.current || request === lastRequest.current) return
     lastRequest.current = request
     const video = videoRef.current
+    video.currentTime = 0
     claimPlayback(video)
     let current = true
     video.play().catch(error => {
@@ -110,7 +121,7 @@ function MediaPlayer({ name, media, compact, disabled }) {
     </div>
     <div className="exercise-media-actions">
       <button type="button" disabled={disabled} onClick={play} aria-label={`${error ? 'Retry' : 'Play'} ${name} demonstration`}>
-        {error ? 'Retry demonstration' : loaded ? 'Play again' : 'Play demonstration'}
+        {error ? 'Retry demonstration' : loaded ? 'Replay demonstration' : 'Play demonstration'}
       </button>
       {!expanded && <button ref={expandButton} type="button" onClick={() => { videoRef.current?.pause(); setExpanded(true) }} aria-label={`Enlarge ${name} demonstration`}>Enlarge</button>}
     </div>
@@ -127,7 +138,9 @@ function MediaPlayer({ name, media, compact, disabled }) {
     </button>}
     {open && !expanded && body}
     {expanded && <dialog className="exercise-media-dialog" ref={dialogRef} aria-label={`${name} demonstration enlarged`}
-      onCancel={e => { e.preventDefault(); closeDialog() }} onClick={e => { if (e.target === e.currentTarget) closeDialog() }}>
+      onCancel={e => { e.preventDefault(); e.stopPropagation(); closeDialog() }}
+      onKeyDown={e => { if (e.key === 'Escape') e.stopPropagation() }}
+      onClick={e => { if (e.target === e.currentTarget) closeDialog() }}>
       <header><strong>{name}</strong><button type="button" onClick={closeDialog}>Close demonstration</button></header>
       {body}
     </dialog>}

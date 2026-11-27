@@ -1,6 +1,6 @@
 .collection-status { min-height: 36px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--mu2); }
 .collection-list-placeholder { display: flex; gap: 18px; align-items: flex-start; }
-.collection-row-placeholder { display: grid; gap: 12px; align-items: center; padding: 12px 16px; min-height: 70px; border-top: 1px solid var(--br); }
+.collection-row-placeholder { display: grid; gap: 12px; align-items: center; padding: 12px 16px; min-height: 62px; border-top: 1px solid var(--br); }
 .collection-placeholder-heading { min-height: 38px; border-top: 0; padding: 10px 16px; }
 .collection-placeholder-name { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
 .collection-ghost { display: block; height: 14px; max-width: 100%; border-radius: 4px; background: var(--br); animation: collection-pulse 2s ease-in-out infinite; }

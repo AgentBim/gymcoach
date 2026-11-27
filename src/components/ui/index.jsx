@@ -1,6 +1,8 @@
 // Shared building blocks taken from the redesign mockup: avatar, chip, pill,
 // segmented control, stat card, week dots, dialog/sheet and the undo toast.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import './ui.css'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { avatarColor, initials } from '../../lib/theme'
 import { Icon } from './Icon'
@@ -46,7 +48,7 @@ export function Pill({ on, onClick, children, count }) {
   const isMobile = useIsMobile()
   return (
     <button type="button" aria-pressed={!!on} onClick={onClick}
-      style={{ padding: '0 14px', minHeight: isMobile ? 40 : 32, borderRadius: 20, whiteSpace: 'nowrap', fontSize: 12.5, cursor: 'pointer',
+      style={{ padding: '0 14px', minHeight: isMobile ? 44 : 32, borderRadius: 20, whiteSpace: 'nowrap', fontSize: 12.5, cursor: 'pointer',
         border: `1px solid ${on ? 'var(--ac)' : 'var(--br)'}`, background: on ? 'var(--ac)' : 'transparent', color: on ? 'var(--ac-ink)' : 'var(--mu2)', fontWeight: on ? 700 : 500 }}>
       {children}{count != null ? ` ${count}` : ''}
     </button>
@@ -60,13 +62,14 @@ export function PillRow({ label, children }) {
 }
 
 export function Segmented({ label, options, value, onChange, style }) {
+  const isMobile = useIsMobile()
   return (
     <div role="group" aria-label={label} style={{ display: 'flex', border: '1px solid var(--br2)', borderRadius: 9, overflow: 'hidden', ...style }}>
       {options.map(o => {
         const on = o.value === value
         return (
           <button key={o.value} type="button" aria-pressed={on} onClick={() => onChange(o.value)}
-            style={{ flex: 1, minHeight: 36, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 500, background: on ? 'var(--ac)' : 'transparent', color: on ? 'var(--ac-ink)' : 'var(--mu2)' }}>
+            style={{ flex: 1, minHeight: isMobile ? 44 : 36, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 500, background: on ? 'var(--ac)' : 'transparent', color: on ? 'var(--ac-ink)' : 'var(--mu2)' }}>
             {o.label}
           </button>
         )
@@ -160,41 +163,43 @@ export function PageHeader({ eyebrow, title, children }) {
 }
 
 export function SearchBox({ value, onChange, placeholder, label, style }) {
+  const isMobile = useIsMobile()
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 36, padding: '0 12px', background: 'var(--s1)', border: '1px solid var(--br2)', borderRadius: 8, color: 'var(--mu)', ...style }}>
+    <label style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: isMobile ? 44 : 36, padding: '0 12px', background: 'var(--s1)', border: '1px solid var(--br2)', borderRadius: 8, color: 'var(--mu)', ...style }}>
       <Icon name="search" size={16} />
       <input aria-label={label || placeholder} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: 'var(--tx)', fontSize: 13 }} />
+        style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: 'var(--tx)', fontSize: isMobile ? 16 : 13 }} />
     </label>
   )
 }
 
 // Centered dialog on desktop, bottom sheet on phones.
 export function Dialog({ title, subtitle, onClose, children, footer, width = 480, busy }) {
-  const isMobile = useIsMobile()
+  const ref = useRef(null)
   useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape' && !busy) onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [busy, onClose])
-
-  return (
-    <div onClick={busy ? undefined : onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(9,13,14,.6)', zIndex: 400, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 16 }}>
-      <div role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}
-        style={{ width: isMobile ? '100%' : width, maxWidth: '100%', maxHeight: isMobile ? '92vh' : '88vh', overflowY: 'auto', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 14,
-          background: 'var(--s1)', border: '1px solid var(--br2)', borderRadius: isMobile ? '20px 20px 0 0' : 16,
-          padding: isMobile ? '10px 16px calc(env(safe-area-inset-bottom) + 20px)' : 22 }}>
-        {isMobile && <div style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, background: '#4A5559' }} />}
-        <div>
-          <h2 style={{ fontSize: isMobile ? 17 : 22, fontWeight: isMobile ? 700 : 800, fontFamily: isMobile ? undefined : 'var(--font-head)', letterSpacing: '-.01em' }}>{title}</h2>
-          {subtitle && <p style={{ fontSize: 12.5, color: 'var(--mu2)', marginTop: 4, lineHeight: 1.45 }}>{subtitle}</p>}
-        </div>
-        {children}
-        {footer && <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>{footer}</div>}
-      </div>
-    </div>
-  )
+    const dialog = ref.current
+    const opener = document.activeElement
+    dialog.showModal()
+    return () => {
+      dialog.close()
+      if (opener?.isConnected) opener.focus({ preventScroll: true })
+    }
+  }, [])
+  return createPortal(
+    <dialog ref={ref} className="ui-dialog" aria-label={title} style={{ '--dialog-width': width + 'px' }}
+      onCancel={e => { e.preventDefault(); e.stopPropagation(); if (!busy) onClose() }}
+      onKeyDown={e => { if (e.key === 'Escape') e.stopPropagation() }}
+      onClick={e => { if (e.target === e.currentTarget && !busy) {
+        const r = e.currentTarget.getBoundingClientRect()
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) onClose()
+      } }}>
+      <header className="ui-dialog-header">
+        <div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
+        <Button aria-label={'Close ' + title} disabled={busy} onClick={onClose} style={{ minWidth: 44, minHeight: 44 }}>Close</Button>
+      </header>
+      {children}
+      {footer && <div className="ui-dialog-footer">{footer}</div>}
+    </dialog>, document.body)
 }
 
 // Light toast with an optional Undo, as in the mockup's destructive actions.

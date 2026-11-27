@@ -28,7 +28,7 @@ function groupsOf(w) {
 export default function Workouts() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile(1279)
   const [filter, setFilter] = useState('All')
   const [query, setQuery] = useState('')
   const [assign, setAssign] = useState(null) // { workout, mode }
@@ -187,7 +187,7 @@ export default function Workouts() {
     const names = (w.workout_assignments || []).map(a => a.athletes?.full_name || '').filter(Boolean)
     return names.length ? (
       <button type="button" onClick={() => setAssign({ workout: w, mode: 'assign' })} aria-label={`Edit who ${w.name} is assigned to`}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 36, background: 'none', border: 'none', color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', padding: 0 }}>
+        style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: isMobile ? 44 : 36, background: 'none', border: 'none', color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', padding: 0 }}>
         <AvatarStack names={names} max={3} />{names.length} athlete{names.length === 1 ? '' : 's'}
       </button>
     ) : (
@@ -237,7 +237,7 @@ export default function Workouts() {
                 <Label>Workout</Label><Label>Focus</Label><Label>Exercises</Label><Label>Assigned to</Label><Label>Last done</Label><span />
               </div>
             )}
-            {shown.length === 0 && <EmptyState>{workouts.length === 0 ? 'No workouts yet. Create your first one.' : 'No workouts match.'}</EmptyState>}
+            {shown.length === 0 && <EmptyState><p>{workouts.length === 0 ? 'No workouts yet. Create your first one.' : 'No workouts match.'}</p>{(query || filter !== 'All') && <Button onClick={() => { setQuery(''); setFilter('All') }} style={{ marginTop: 12 }}>Clear filters</Button>}</EmptyState>}
             {shown.map((w, idx) => {
               const on = selected.has(w.id)
               const select = selecting && (
@@ -299,7 +299,7 @@ export default function Workouts() {
                       <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</span>
                     </label>
                     <button type="button" onClick={e => setPreview({ workoutId: w.id, anchorRect: e.currentTarget.getBoundingClientRect() })} aria-label={`Preview ${w.name}`}
-                      style={{ width: 36, height: 36, background: 'none', border: 'none', color: 'var(--mu2)', cursor: 'pointer' }}><Icon name="note" /></button>
+                      style={{ width: 44, height: 44, background: 'none', border: 'none', color: 'var(--mu2)', cursor: 'pointer' }}><Icon name="note" /></button>
                   </div>
                 ))}
               </div>

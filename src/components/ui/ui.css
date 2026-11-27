@@ -1,0 +1,13 @@
+.ui-dialog { width: min(var(--dialog-width), calc(100vw - 32px)); max-width: none; max-height: 88dvh; margin: auto; padding: 22px; border: 1px solid var(--br2); border-radius: 16px; background: var(--s1); color: var(--tx); overflow-y: auto; overscroll-behavior: contain; }
+.ui-dialog[open] { display: flex; flex-direction: column; gap: 14px; }
+.ui-dialog::backdrop { background: rgba(9,13,14,.7); }
+body:has(dialog[open]) { overflow: hidden; }
+.ui-dialog-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.ui-dialog-header h2 { font-family: var(--font-head); font-size: 22px; }
+.ui-dialog-header p { font-size: 13px; color: var(--mu2); margin-top: 4px; }
+.ui-dialog-footer { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.ui-dialog :focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+@media (max-width: 768px) {
+  .ui-dialog { width: 100%; max-height: min(92dvh, calc(100dvh - var(--sat) - 8px)); margin: auto 0 0; border-radius: 20px 20px 0 0; padding: 16px 16px calc(env(safe-area-inset-bottom) + 20px); }
+  .ui-dialog-header h2 { font-family: var(--font-sans); font-size: 17px; }
+}

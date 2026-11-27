@@ -6,6 +6,8 @@ import { useAuth } from '../hooks/useAuth'
 import { AUTH_LINK_ERROR } from '../lib/supabase'
 import { signInWithGoogle, googleErrorMessage } from '../lib/oauth'
 
+import { coachReturnTo } from '../lib/returnTo'
+
 const ATHLETE_ACCOUNT_ERROR = 'This is an athlete account'
 
 export default function Login() {
@@ -14,6 +16,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const location = useLocation()
+  const returnTo = coachReturnTo(new URLSearchParams(location.search).get('next'))
   const [error, setError] = useState(location.state?.error || '')
   const [googling, setGoogling] = useState(false)
   const [notice, setNotice] = useState(AUTH_LINK_ERROR ? 'This email link has expired or was already used — just log in below.' : '')
@@ -29,7 +32,7 @@ export default function Login() {
     if (tab === 'login') {
       const { error } = await signIn(email, password)
       if (error) setError(error.message)
-      else navigate('/today')
+      else navigate(returnTo, { replace: true })
     } else {
       if (!name.trim()) { setError('Full name is required'); setLoading(false); return }
       const { error } = await signUp(email, password, name)
@@ -41,7 +44,7 @@ export default function Login() {
 
   async function handleGoogle() {
     setError(''); setNotice(''); setGoogling(true)
-    const { error } = await signInWithGoogle('/auth/callback?role=coach')
+    const { error } = await signInWithGoogle(`/auth/callback?role=coach&next=${encodeURIComponent(returnTo)}`)
     if (error) { setError(googleErrorMessage(error)); setGoogling(false) }
   }
 
