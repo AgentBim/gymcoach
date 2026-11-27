@@ -1,31 +1,31 @@
 # Plan UX audit remediation
 
-The goal is to resolve the Plan UX audit without losing accessibility, data integrity or existing behavior.
+The goal is to resolve the Plan UX audit while preserving accessibility, data integrity and the existing visual system.
 
-| Issue | Implemented solution | Regression coverage |
+| Issue | Solution | Evidence |
 | --- | --- | --- |
-| Selected exercise lost | Choose new/existing workout; carry id into builder; add to main/prehab once; prevent duplicates | WorkoutBuilder and Library DOM tests |
-| Unsaved drafts lost | Router navigation blocker with Keep editing/Discard; beforeunload protection; pending-save and concurrent-edit handling | WorkoutBuilder DOM tests |
-| Dialog close/focus gaps | Native modal dialogs, explicit Close, focus restore and topmost Escape handling | Dialog/player DOM tests; native browser check still required |
-| Tablet columns clipped | Compact exercise/workout rows and sheet details below1280px; corresponding skeletons | Real responsive browser check still required |
-| Small mobile fields/targets | 16px/44px shared search;44px pills/segmented and assignment controls | Source review; device check still required |
-| Builder false empty/error states | Abortable timed loads with Retry; keep existing-workout form unavailable on failed initial load | Collection load and WorkoutBuilder DOM tests |
-| Library context/empty states | URL filters/selection, account-scoped session restoration, Clear filters and explicit empty Mobility message | Library DOM tests and navigation unit tests |
-| Replay/stalled media | Replay starts at0;15second stall recovery; Retry; isolated enlarged-dialog dismissal | MediaInteraction DOM tests |
-| Partial custom exercise creation | Single complete form with labels/cue/defaults, load/save errors, zero-rest preservation, unsaved protection | CustomExercise DOM test |
-| Post-login destination | Validated internal coach destination carried through password and Google callbacks | Safe-navigation unit tests; OAuth walkthrough pending |
-| Skeleton alignment | Exercise skeleton62px row minimum, compact layouts share actual page breakpoints; reduced motion retained | Existing skeleton tests; visual alignment check pending |
+| Selected exercise lost | New/existing workout chooser; apply id once to main/prehab without autosaving | Builder/Library DOM tests; both handoffs verified in browser |
+| Unsaved drafts lost | Router blocker, Keep editing/Discard and browser-exit protection; newer edits remain dirty after a save | DOM tests; browser draft guard and deliberate discard |
+| Dialog close/focus gaps | Native modal, explicit 44px Close, focus restoration, topmost Escape | Browser focus moves inside, stays contained, returns to row; enlarged Escape preserves parent |
+| Tablet columns clipped | Compact rows and sheet details below 1280px | Browser 1024px and 1440px: no clipped section content |
+| Small mobile controls | 16px/44px search; 44px pills, segmented and assignment controls | Browser 320/390px field sizing and 52px Plan tabs |
+| Builder false empty/error states | Abortable 15-second loads, Retry and safe existing-workout loading gate | Collection/Builder DOM tests; rendered first-load skeletons |
+| Lost library context and empty states | URL filters/selection, account-scoped session restoration and Clear filters | Browser search survives Plan navigation; empty Mobility explanation and reset |
+| Replay/stalled media | Replay from 0, 15-second stall recovery and Retry | DOM recovery test; browser MP4 readyState4 and replay position reset |
+| Partial custom exercise creation | One complete labeled form, cue/defaults, load/save recovery and unsaved protection | Browser failed save retains text; retry saves selected entry; zero rest retained |
+| Post-login destination lost | Validated internal destination through password/Google login and callback | Password, Google handoff/callback DOM tests; external-redirect rejection tests |
+| Skeleton alignment | Compact skeletons use the same breakpoint as actual content; 62px exercise rows; reduced motion retained | Browser compact/desktop skeletons and loaded content; existing accessibility tests |
 
 ## Engineering decisions
 
-- Use React Router's data router to support its navigation blocker, covering programmatic navigation and history instead of intercepting clicks. Existing routes and legacy redirects are preserved.
-- Native dialogs provide browser focus containment/inert background behavior. Nested player Escape is stopped at the top dialog. Browser-native behavior is not proven by the jsdom polyfill.
-- Owner-keyed editor instances and requests prevent cross-account state reuse. Successful snapshots remain cached during refresh; late/cancelled requests cannot replace current data.
-- No schema, access policy, production records or media asset changes. jsdom is a pinned development dependency only.
-- A save response only clears dirty state if no newer edit occurred. Custom exercise forms retain changes on failure.
+- Use React Router's data router for supported navigation blocking across programmatic and history navigation. Existing routes and legacy redirects remain.
+- Native dialogs provide focus containment and inert background behavior. Each enlarged player stops Escape at the top dialog and restores its opener.
+- Owner-keyed editors and requests prevent cross-account state reuse. Timed loads reject stale/cancelled responses and preserve successful refresh snapshots.
+- No schema, access policy, production records or media asset changes. jsdom is a pinned development dependency; no new runtime dialog library is retained.
+- Saving only clears dirty state if no newer edit occurred. Custom exercise forms retain changes on failure.
 
-## Release gate
+## Validation
 
-Automated tests/build must pass. Complete native modal focus, Escape, Close, chooser handoff, draft guard and responsive visual checks before merging. Check320/390/1024/1440px. Browser control currently stalls after viewport changes and some native dialog interactions; do not describe the visual check as passed. The draft PR is intended for review while this is resolved.
+78 committed regression tests and production build pass. A temporary full-App fixture test also passed. Browser checks used actual app routes/components with isolated local data at320,390,1024 and 1440px. The temporary fixture was corrected to preserve the authenticated user object's identity, resolving its inbox-refresh loop. Fixture files are excluded from the PR and removed after verification.
 
-Actual iPhone installed-PWA keyboard, safe area and VoiceOver validation remain a device-test limitation.
+The production review still follows PR checks, merge and deployment verification. Actual iPhone installed-PWA keyboard, safe-area and VoiceOver checks remain device-test limitations; viewport simulation does not prove those behaviors.

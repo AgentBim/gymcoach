@@ -28,7 +28,7 @@ beforeEach(async () => {
     return query
   })
   host = document.createElement('div'); document.body.append(host); root = createRoot(host)
-  router = createMemoryRouter([{ path: '/plan/exercises', element: <Library /> }, { path: '/plan/workouts', element: <><PlanTabs /><p>Workouts</p></> }, { path: '/plan/workouts/new', element: <p>New builder</p> }, { path: '/plan/workouts/:id/edit', element: <p>Existing builder</p> }], { initialEntries: ['/plan/exercises?category=strength&group=Legs&q=Bridge&exercise=bridge'] })
+  router = createMemoryRouter([{ path: '/plan/exercises', element: <Library /> }, { path: '/plan/exercises/new', element: <p>Complete exercise form</p> }, { path: '/plan/workouts', element: <><PlanTabs /><p>Workouts</p></> }, { path: '/plan/workouts/new', element: <p>New builder</p> }, { path: '/plan/workouts/:id/edit', element: <p>Existing builder</p> }], { initialEntries: ['/plan/exercises?category=strength&group=Legs&q=Bridge&exercise=bridge'] })
   await act(async () => root.render(<React.StrictMode><RouterProvider router={router} /></React.StrictMode>)); await settle()
 })
 afterEach(async () => { await act(async () => root.unmount()); router.dispose(); host.remove(); sessionStorage.clear(); vi.unstubAllGlobals() })
@@ -57,4 +57,10 @@ it('explains the empty mobility section and clears all filters in one action', a
   await click(button('Clear filters'))
   expect(router.state.location.search).toBe('')
   expect(document.querySelector('input').value).toBe('')
+})
+it('opens the complete creation form from New exercise', async () => {
+  await click(button('Close Exercise'))
+  await click(button('New exercise'))
+  expect(router.state.location.pathname).toBe('/plan/exercises/new')
+  expect(document.body.textContent).toContain('Complete exercise form')
 })

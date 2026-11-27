@@ -79,6 +79,7 @@ function Detail({ ex, usedIn, onClose }) {
 
 export default function Library() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const isMobile = useIsMobile(1279)
   const [params, setParams] = useSearchParams()
   const search = params.toString()
