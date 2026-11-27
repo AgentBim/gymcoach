@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import PlanTabs from '../components/PlanTabs'
+import { CollectionSkeleton, CollectionStatus } from '../components/CollectionLoading'
+import { useCollectionLoad } from '../hooks/useCollectionLoad'
 import AssignModal from '../components/AssignModal'
 import WorkoutPreviewPanel from '../components/WorkoutPreviewPanel'
 import { SelectionBar, ConfirmDeleteSheet, Toast } from '../components/BulkDelete'
@@ -17,6 +19,7 @@ import { AvatarStack, Button, Card, Chip, Dialog, EmptyState, Icon, Label, MoreM
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const TONE = { warn: '#E7A23E', info: '#6BA9DE', muted: 'var(--mu2)', ok: '#4FB88A' }
 const COLS = 'minmax(220px, 2.2fr) minmax(130px, 1.3fr) 100px minmax(150px, 1.4fr) 90px 44px'
+const EMPTY_WORKOUTS = { workouts: [], programWorkouts: [] }
 
 function groupsOf(w) {
   return [...new Set((w.workout_exercises || []).map(we => we.exercises?.muscle_group).filter(Boolean))]
@@ -26,9 +29,6 @@ export default function Workouts() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [workouts, setWorkouts] = useState([])
-  const [programWorkouts, setProgramWorkouts] = useState([])
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('All')
   const [query, setQuery] = useState('')
   const [assign, setAssign] = useState(null) // { workout, mode }
@@ -53,27 +53,26 @@ export default function Workouts() {
   const shiftClick = useRef(false)
   const today = todayLocal()
 
-  useEffect(() => { fetchAll() }, [user])
-
-  async function fetchAll() {
-    if (!user) return
+  const loadWorkouts = useCallback(async signal => {
     const [wRes, pwRes] = await Promise.all([
       supabase.from('workouts')
         .select('*, workout_exercises(exercise_id, exercises(muscle_group)), workout_assignments(id, athlete_id, assignment_token, revoked_at, athletes(full_name)), workout_feedback(id, submitted_at)')
         .eq('coach_id', user.id)
         .eq('program_generated', false)
         .is('archived_at', null)
-        .order('updated_at', { ascending: false }),
+        .order('updated_at', { ascending: false }).abortSignal(signal),
       supabase.from('workouts')
         .select('id, name, source_program_id, programs!workouts_source_program_id_fkey(id, name, duration_weeks)')
         .eq('coach_id', user.id)
         .eq('program_generated', true)
-        .order('name'),
+        .order('name').abortSignal(signal),
     ])
-    setWorkouts((wRes.data || []).map(w => ({ ...w, workout_assignments: (w.workout_assignments || []).filter(a => !a.revoked_at) })))
-    setProgramWorkouts(pwRes.data || [])
-    setLoading(false)
-  }
+    const failure = [wRes, pwRes].find(r => r.error)?.error
+    if (failure) throw failure
+    return { workouts: (wRes.data || []).map(w => ({ ...w, workout_assignments: (w.workout_assignments || []).filter(a => !a.revoked_at) })), programWorkouts: pwRes.data || [] }
+  }, [user?.id])
+  const { data, hasData, loading, refreshing, error: loadError, reload: fetchAll } = useCollectionLoad(user?.id, loadWorkouts, EMPTY_WORKOUTS)
+  const { workouts, programWorkouts } = data
 
   async function duplicate(w) {
     const { error } = await supabase.rpc('duplicate_workout', { p_workout_id: w.id })
@@ -218,7 +217,7 @@ export default function Workouts() {
     <Layout>
       <PlanTabs />
       <Page>
-        <PageHeader eyebrow={`${workouts.length} workout${workouts.length === 1 ? '' : 's'} you built`} title="Workouts">
+        <PageHeader eyebrow={hasData ? `${workouts.length} workout${workouts.length === 1 ? '' : 's'} you built` : 'Your workout library'} title="Workouts">
           <SearchBox value={query} onChange={setQuery} placeholder="Search workouts" label="Search workouts" style={{ width: isMobile ? '100%' : 220 }} />
           {workouts.length > 0 && <Button onClick={selecting ? stopSelecting : startSelecting} aria-pressed={selecting}>{selecting ? 'Done' : 'Select'}</Button>}
           <Button variant="primary" icon="plus" onClick={() => navigate('/plan/workouts/new')}>New workout</Button>
@@ -228,9 +227,10 @@ export default function Workouts() {
           {GROUPS.map(g => <Pill key={g} on={filter === g} onClick={() => setFilter(g)}>{g}</Pill>)}
         </PillRow>
 
+        <CollectionStatus name="workouts" loading={loading} refreshing={refreshing} error={loadError} onRetry={fetchAll} />
         {loading ? (
-          <div style={{ color: 'var(--mu)', padding: 24 }}>Loading…</div>
-        ) : (
+          <CollectionSkeleton kind="workouts" columns={COLS} mobile={isMobile} />
+        ) : !hasData ? null : (
           <Card style={{ overflow: 'hidden' }}>
             {!isMobile && (
               <div style={{ display: 'grid', gridTemplateColumns: COLS, gap: 12, padding: '10px 16px', alignItems: 'center' }}>

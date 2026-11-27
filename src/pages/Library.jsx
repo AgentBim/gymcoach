@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useIsMobile } from '../hooks/useIsMobile'
 import Layout from '../components/Layout'
 import PlanTabs from '../components/PlanTabs'
+import { CollectionSkeleton, CollectionStatus } from '../components/CollectionLoading'
+import { useCollectionLoad } from '../hooks/useCollectionLoad'
 import ExerciseMedia from '../components/ExerciseMedia'
 import { hydrateExerciseMedia } from '../lib/exerciseMedia'
 import { MUSCLE_COLORS } from '../lib/theme'
@@ -13,6 +15,7 @@ import { Button, Card, Chip, Dialog, EmptyState, Icon, Label, Page, PageHeader, 
 const GROUPS = ['All', 'Arms', 'Back', 'Legs', 'Core', 'Shoulders']
 const CATS = [['all', 'All'], ['strength', 'Strength'], ['prehab', 'Prehab'], ['mobility', 'Mobility']]
 const COLS = 'minmax(150px, 2fr) 104px 72px 76px 84px 16px'
+const EMPTY_LIBRARY = { exercises: [], usage: new Map() }
 
 const dose = e => `${e.default_sets} × ${e.default_reps || (e.default_duration_seconds ? e.default_duration_seconds + 's' : '–')}`
 const catOf = e => e.category || 'strength'
@@ -73,8 +76,6 @@ function Detail({ ex, usedIn, onClose }) {
 export default function Library() {
   const { user } = useAuth()
   const isMobile = useIsMobile()
-  const [exercises, setExercises] = useState([])
-  const [usage, setUsage] = useState(new Map()) // exerciseId -> [{ id, name }]
   const [cat, setCat] = useState('all')
   const [group, setGroup] = useState('All')
   const [query, setQuery] = useState('')
@@ -85,19 +86,17 @@ export default function Library() {
   const [nCat, setNCat] = useState('strength')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => { fetchAll() }, [user])
-
-  async function fetchAll() {
+  const loadLibrary = useCallback(async signal => {
     const [exRes, weRes, wpRes] = await Promise.all([
       supabase.from('exercises').select('*')
         .or(user ? `coach_id.is.null,coach_id.eq.${user.id}` : 'coach_id.is.null')
-        .order('is_custom', { ascending: false }).order('muscle_group').order('name'),
-      supabase.from('workout_exercises').select('exercise_id, workouts(id, name, program_generated, archived_at)'),
-      supabase.from('workout_prehab').select('exercise_id, workouts(id, name, program_generated, archived_at)'),
+        .order('is_custom', { ascending: false }).order('muscle_group').order('name').abortSignal(signal),
+      supabase.from('workout_exercises').select('exercise_id, workouts(id, name, program_generated, archived_at)').abortSignal(signal),
+      supabase.from('workout_prehab').select('exercise_id, workouts(id, name, program_generated, archived_at)').abortSignal(signal),
     ])
-    setExercises(await hydrateExerciseMedia(exRes.data || []))
+    const failure = [exRes, weRes, wpRes].find(r => r.error)?.error
+    if (failure) throw failure
+    const exercises = await hydrateExerciseMedia(exRes.data || [])
     const map = new Map()
     ;[...(weRes.data || []), ...(wpRes.data || [])].forEach(r => {
       const w = r.workouts
@@ -105,9 +104,10 @@ export default function Library() {
       if (!map.has(r.exercise_id)) map.set(r.exercise_id, new Map())
       map.get(r.exercise_id).set(w.id, { id: w.id, name: w.name })
     })
-    setUsage(new Map([...map].map(([k, v]) => [k, [...v.values()]])))
-    setLoading(false)
-  }
+    return { exercises, usage: new Map([...map].map(([k, v]) => [k, [...v.values()]])) }
+  }, [user?.id])
+  const { data, hasData, loading, refreshing, error: loadError, reload: fetchAll } = useCollectionLoad(user?.id, loadLibrary, EMPTY_LIBRARY)
+  const { exercises, usage } = data
 
   async function createExercise() {
     setSaving(true)
@@ -142,17 +142,18 @@ export default function Library() {
     <Layout>
       <PlanTabs />
       <Page>
-        <PageHeader eyebrow={`${exercises.length} exercises · ${custom} yours`} title="Exercises">
+        <PageHeader eyebrow={hasData ? `${exercises.length} exercises · ${custom} yours` : 'Your exercise library'} title="Exercises">
           <SearchBox value={query} onChange={setQuery} placeholder="Search exercises" label="Search exercises" style={{ width: isMobile ? '100%' : 220 }} />
           <Button variant="primary" icon="plus" onClick={() => setNewOpen(true)}>New exercise</Button>
         </PageHeader>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-          <PillRow label="Category">{CATS.map(([k, l]) => <Pill key={k} on={cat === k} count={count(k)} onClick={() => setCat(k)}>{l}</Pill>)}</PillRow>
+          <PillRow label="Category">{CATS.map(([k, l]) => <Pill key={k} on={cat === k} count={hasData ? count(k) : undefined} onClick={() => setCat(k)}>{l}</Pill>)}</PillRow>
           <PillRow label="Muscle group">{GROUPS.map(g => <Pill key={g} on={group === g} onClick={() => setGroup(g)}>{g}</Pill>)}</PillRow>
         </div>
 
-        {loading ? <div style={{ color: 'var(--mu)', padding: 24 }}>Loading…</div> : (
+        <CollectionStatus name="exercises" loading={loading} refreshing={refreshing} error={loadError} onRetry={fetchAll} />
+        {loading ? <CollectionSkeleton kind="exercises" columns={COLS} mobile={isMobile} /> : !hasData ? null : (
           <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
             <Card style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
               {!isMobile && (
